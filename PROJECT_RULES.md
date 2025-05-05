@@ -1,0 +1,68 @@
+# Kazi Huru Project Rules & Development Policies
+
+## Purpose
+These rules and policies are established to ensure high-quality, maintainable, and scalable development for the Kazi Huru app. They also guide the use of AI/code assistants (such as Cursor AI) to maximize productivity and code quality.
+
+---
+
+## 1. Code Quality & Best Practices
+- Follow Clean Architecture and feature-first folder structure.
+- Use Dart null-safety throughout the codebase.
+- Write readable, well-documented, and maintainable code.
+- Use meaningful variable, class, and file names.
+- Avoid code duplication; use reusable widgets and helpers.
+- All code must pass static analysis and linter checks before merging.
+
+## 2. UI/UX Standards
+- Adhere to Material Design 3 guidelines.
+- Ensure all screens are responsive and accessible.
+- Support both Swahili and English (localization for all user-facing text).
+- Prioritize user-friendly flows and clear error messages.
+- Test UI on multiple device sizes and orientations.
+
+## 3. Security & Privacy
+- Enforce strong Firebase security rules for all data access.
+- Never expose sensitive keys or credentials in the codebase.
+- Implement proper authentication and role-based access control.
+- Handle user data in compliance with privacy policies and local regulations.
+- Use secure communication (HTTPS) for all network requests.
+
+## 4. Testing & Validation
+- Write unit, widget, and integration tests for all critical features.
+- Ensure all tests pass before merging code.
+- Use mock data/services for testing where appropriate.
+- Perform manual QA on new features before release.
+
+## 5. Documentation
+- Keep README, feature guides, and architecture docs up to date.
+- Document all public classes, methods, and complex logic in code comments.
+- Update documentation with every major feature or architectural change.
+
+## 6. Collaboration & Workflow
+- Use feature branches for all new work (`feature/your-feature-name`).
+- Write clear, descriptive commit messages.
+- Open Pull Requests for all changes; require code review before merging.
+- Resolve merge conflicts promptly and communicate blockers early.
+- Use project boards or issue trackers to manage tasks and progress.
+
+## 7. AI/Code Assistant Usage (Cursor AI, etc.)
+- Use AI/code assistants to suggest, refactor, and document code, but always review and test generated code.
+- Prefer AI suggestions that follow project architecture and best practices.
+- Do not blindly accept code; ensure it fits the context and requirements.
+- Use AI to generate boilerplate, but customize for business logic and app needs.
+- Ask AI for explanations, alternatives, and error analysis when needed.
+
+## 8. Release & Deployment
+- Tag releases with semantic versioning (e.g., v1.0.0).
+- Prepare release notes for every version.
+- Ensure all environment variables and configs are set for production.
+- Perform final QA and user acceptance testing before deployment.
+
+## 9. Ethics & Professionalism
+- Treat all team members with respect and professionalism.
+- Respect user privacy and data at all times.
+- Strive for inclusivity and accessibility in all app features.
+
+---
+
+**By following these rules, we ensure a high standard of quality, security, and user experience for Kazi Huru.** 

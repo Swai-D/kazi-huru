@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1012955227412",
+    "project_id": "kazi-huru-2e239",
+    "storage_bucket": "kazi-huru-2e239.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1012955227412:android:2d398cb1953f8c8c194e01",
+        "android_client_info": {
+          "package_name": "app.kazi_huru.blm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJxph8mZ34jyPxhrzIznNLJa3jnTao7dc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
