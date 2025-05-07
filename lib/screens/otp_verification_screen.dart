@@ -28,19 +28,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
-      // Check if user exists first
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .where('phone', isEqualTo: widget.phoneNumber)
-          .get();
-
-      if (userDoc.docs.isNotEmpty) {
-        setState(() {
-          _errorMessage = 'Mtumiaji tayari ameshasajiriwa. Tafadhali ingia kwa njia nyingine.';
-          _isLoading = false;
-        });
-        return;
-      }
+      print('Starting OTP verification for phone: ${widget.phoneNumber}');
+      print('Entered OTP: ${_otpController.text}');
 
       // Get the OTP document using the phone number as document ID
       final otpDoc = await FirebaseFirestore.instance
@@ -48,6 +37,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           .doc(widget.phoneNumber)
           .get();
 
+      print('OTP Document exists: ${otpDoc.exists}');
+      
       if (!otpDoc.exists) {
         setState(() {
           _errorMessage = 'OTP haipo. Tafadhali omba OTP mpya.';
@@ -57,9 +48,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       }
 
       final otpData = otpDoc.data()!;
+      print('OTP Data: $otpData');
+      
       final storedOTP = otpData['otp'] as String;
       final timestamp = (otpData['timestamp'] as Timestamp).toDate();
       final now = DateTime.now();
+
+      print('Stored OTP: $storedOTP');
+      print('Timestamp: $timestamp');
+      print('Current time: $now');
 
       // Check if OTP is expired (5 minutes)
       if (now.difference(timestamp).inMinutes > 5) {
@@ -72,14 +69,29 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
       // Verify OTP
       if (storedOTP == _otpController.text) {
+        print('OTP matched successfully');
+        
         // Mark OTP as verified
         await otpDoc.reference.update({'verified': true});
-        
+        print('OTP marked as verified');
+
+        // Create user document with phone number
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.phoneNumber)
+            .set({
+          'phone': widget.phoneNumber,
+          'createdAt': FieldValue.serverTimestamp(),
+          'role': 'pending', // Will be updated in role selection
+        });
+        print('User document created');
+
         // Navigate to role selection
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/role_selection');
         }
       } else {
+        print('OTP mismatch. Entered: ${_otpController.text}, Stored: $storedOTP');
         setState(() {
           _errorMessage = 'OTP si sahihi. Tafadhali jaribu tena.';
           _isLoading = false;
