@@ -31,7 +31,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ThemeConstants.primaryColor,
-          side: BorderSide(color: ThemeConstants.primaryColor),
+          side: const BorderSide(color: ThemeConstants.primaryColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
           ),
@@ -66,15 +66,15 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
-          borderSide: BorderSide(color: ThemeConstants.primaryColor),
+          borderSide: const BorderSide(color: ThemeConstants.primaryColor),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
-          borderSide: BorderSide(color: ThemeConstants.errorColor),
+          borderSide: const BorderSide(color: ThemeConstants.errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
-          borderSide: BorderSide(color: ThemeConstants.errorColor),
+          borderSide: const BorderSide(color: ThemeConstants.errorColor),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: ThemeConstants.spacingMedium,

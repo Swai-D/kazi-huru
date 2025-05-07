@@ -1,0 +1,33 @@
+{
+  "app": {
+    "title": "Kazi Huru",
+    "balance": "Salio Lako",
+    "addBalance": "Ongeza Salio"
+  },
+  "jobs": {
+    "available": "Kazi Zilizopo",
+    "apply": "Omba",
+    "search": "Tafuta Kazi",
+    "filter": "Chuja",
+    "sort": "Panga"
+  },
+  "navigation": {
+    "home": "Mwanzo",
+    "postJob": "Tuma Kazi",
+    "myJobs": "Kazi Zangu"
+  },
+  "auth": {
+    "login": "Ingia",
+    "register": "Jisajili",
+    "phone": "Namba ya Simu",
+    "email": "Barua Pepe",
+    "password": "Nywila",
+    "forgotPassword": "Umesahau Nywila?"
+  },
+  "profile": {
+    "title": "Wasifu",
+    "edit": "Hariri Wasifu",
+    "settings": "Mipangilio",
+    "logout": "Toka"
+  }
+} 

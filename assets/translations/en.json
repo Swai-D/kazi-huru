@@ -1,0 +1,33 @@
+{
+  "app": {
+    "title": "Kazi Huru",
+    "balance": "Your Balance",
+    "addBalance": "Add Balance"
+  },
+  "jobs": {
+    "available": "Available Jobs",
+    "apply": "Apply",
+    "search": "Search Jobs",
+    "filter": "Filter",
+    "sort": "Sort"
+  },
+  "navigation": {
+    "home": "Home",
+    "postJob": "Post Job",
+    "myJobs": "My Jobs"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "phone": "Phone Number",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?"
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit Profile",
+    "settings": "Settings",
+    "logout": "Logout"
+  }
+} 
