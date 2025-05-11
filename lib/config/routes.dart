@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../features/auth/presentation/screens/splash_screen.dart';
-import '../features/auth/presentation/pages/login_page.dart';
-import '../features/auth/presentation/pages/register_page.dart';
-import '../features/job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
-import '../features/job_provider/presentation/screens/job_provider_dashboard_screen.dart';
-import '../features/job_seeker/presentation/screens/job_details_screen.dart';
-import '../features/profile/presentation/screens/profile_screen.dart';
-import '../features/settings/presentation/screens/settings_screen.dart';
-import '../features/chat/presentation/screens/chat_screen.dart';
-import '../features/notifications/presentation/screens/notifications_screen.dart';
+import '../screens/splash_screen.dart';
+import '../screens/login_page.dart';
+import '../screens/register_page.dart';
+import '../screens/job_seeker/job_seeker_dashboard.dart';
+import '../screens/job_provider/job_provider_dashboard.dart';
+import '../screens/job_details_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/settings_screen.dart';
+import '../screens/chat_screen.dart';
+import '../screens/notifications_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -31,9 +31,9 @@ class AppRoutes {
       case register:
         return MaterialPageRoute(builder: (_) => const RegisterPage());
       case jobSeekerDashboard:
-        return MaterialPageRoute(builder: (_) => const JobSeekerDashboardScreen());
+        return MaterialPageRoute(builder: (_) => const JobSeekerDashboard());
       case jobProviderDashboard:
-        return MaterialPageRoute(builder: (_) => const JobProviderDashboardScreen());
+        return MaterialPageRoute(builder: (_) => const JobProviderDashboard());
       case jobDetails:
         final args = settings.arguments as Map<String, dynamic>;
         return MaterialPageRoute(

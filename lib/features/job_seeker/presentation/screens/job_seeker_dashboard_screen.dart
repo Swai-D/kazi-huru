@@ -20,8 +20,7 @@ class JobSeekerDashboardScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          'Quickjobs',
-          style: TextStyle(
+          'Kazi za Chap',   style: TextStyle(
             color: textColor,
             fontWeight: FontWeight.bold,
             fontSize: 26,

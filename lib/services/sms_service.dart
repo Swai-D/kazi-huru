@@ -1,5 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SMSService {
   // API Configuration
@@ -7,6 +9,79 @@ class SMSService {
   static const String _authHeader = 'Basic ZGF2eXN3YWk6ZGF2eXN3YWkxOTk1';
   static const String _senderId = 'OTP';
   static const String _clientId = 'KAZI-HURU'; // Your client ID
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Generate a 6-digit OTP
+  String _generateOTP() {
+    Random random = Random();
+    return List.generate(6, (_) => random.nextInt(10)).join();
+  }
+
+  // Generate and send OTP, store it in Firestore
+  Future<String?> generateAndSendOTP(String phoneNumber) async {
+    try {
+      // Generate OTP
+      final otp = _generateOTP();
+      
+      // Store OTP in Firestore with 5-minute expiry
+      final otpDoc = await _firestore.collection('otps').add({
+        'phoneNumber': phoneNumber,
+        'otp': otp,
+        'createdAt': FieldValue.serverTimestamp(),
+        'expiresAt': DateTime.now().add(const Duration(minutes: 5)),
+        'isUsed': false,
+      });
+
+      // Send OTP via SMS
+      final success = await sendOTP(phoneNumber, otp);
+      
+      if (success) {
+        return otp;
+      } else {
+        // If SMS sending fails, delete the OTP document
+        await otpDoc.delete();
+        return null;
+      }
+    } catch (e) {
+      print('Error generating and sending OTP: $e');
+      return null;
+    }
+  }
+
+  // Verify OTP from Firestore
+  Future<bool> verifyOTP(String phoneNumber, String otp) async {
+    try {
+      final otpQuery = await _firestore
+          .collection('otps')
+          .where('phoneNumber', isEqualTo: phoneNumber)
+          .where('otp', isEqualTo: otp)
+          .where('isUsed', isEqualTo: false)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (otpQuery.docs.isEmpty) {
+        return false;
+      }
+
+      final otpDoc = otpQuery.docs.first;
+      final otpData = otpDoc.data();
+      final createdAt = (otpData['createdAt'] as Timestamp).toDate();
+      final expiresAt = createdAt.add(const Duration(minutes: 5));
+
+      // Check if OTP is expired
+      if (DateTime.now().isAfter(expiresAt)) {
+        return false;
+      }
+
+      // Mark OTP as used
+      await otpDoc.reference.update({'isUsed': true});
+      return true;
+    } catch (e) {
+      print('Error verifying OTP: $e');
+      return false;
+    }
+  }
 
   static Future<bool> sendOTP(String phoneNumber, String otp) async {
     try {

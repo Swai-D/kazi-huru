@@ -3,7 +3,14 @@ import '../services/auth_service.dart';
 import 'otp_verification_screen.dart';
 
 class PhoneLoginPage extends StatefulWidget {
-  const PhoneLoginPage({super.key});
+  final String email;
+  final String password;
+
+  const PhoneLoginPage({
+    super.key,
+    required this.email,
+    required this.password,
+  });
 
   @override
   State<PhoneLoginPage> createState() => _PhoneLoginPageState();
@@ -16,6 +23,8 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
   final AuthService _authService = AuthService();
 
   Future<void> _sendOTP() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -31,24 +40,21 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
 
     try {
       // Send OTP using AuthService
-      final success = await _authService.sendOTP(phoneNumber);
+      final otp = await _authService.sendOTP(phoneNumber);
       
-      if (success) {
+      if (otp != null) {
         setState(() {
           _isLoading = false;
         });
-        // Show success message and navigate to OTP screen
+        // Navigate to OTP screen
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP imetumwa kwa simu yako. Tafadhali subiri.'),
-              backgroundColor: Colors.green,
-            ),
-          );
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => OTPVerificationScreen(
                 phoneNumber: phoneNumber,
+                otp: otp,
+                email: widget.email,
+                password: widget.password,
               ),
             ),
           );
@@ -71,47 +77,54 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ingia kwa Simu'),
+        title: const Text('Thibitisha Namba ya Simu'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Weka namba yako ya simu',
-              style: TextStyle(fontSize: 18),
+            Text(
+              'Weka namba yako ya simu ili kuendelea',
+              style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              maxLength: 10,
               decoration: const InputDecoration(
                 labelText: 'Namba ya Simu',
+                hintText: 'Mfano: 0712345678',
                 border: OutlineInputBorder(),
-                hintText: 'Mfano: 0767265780',
-                counterText: '',
+                prefixIcon: Icon(Icons.phone),
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _sendOTP,
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Tuma OTP'),
             ),
             if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
               ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _sendOTP,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Endelea'),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tutaenda kukutumia namba ya uthibitisho (OTP) kwenye namba hii ya simu.',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

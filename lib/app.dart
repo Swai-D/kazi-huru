@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:get/get.dart';
 import 'config/theme.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'screens/job_seeker/job_seeker_dashboard.dart';
@@ -22,22 +23,24 @@ class KaziHuruApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Kazi Huru',
       theme: AppTheme.lightTheme,
+      debugShowCheckedModeBanner: false,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       initialRoute: '/',
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const LoginPage(),
-        '/phone_login': (context) => const PhoneLoginPage(),
-        '/role_selection': (context) => const RoleSelectionScreen(),
-        '/job_seeker_dashboard': (context) => const JobSeekerDashboard(),
-        '/job_provider_dashboard': (context) => const JobProviderDashboard(),
-      },
-      
-      // Add localization support
+      getPages: [
+        GetPage(name: '/', page: () => const SplashScreen()),
+        GetPage(name: '/login', page: () => const LoginPage()),
+        GetPage(name: '/phone_login', page: () => PhoneLoginPage(
+          email: '',
+          password: '',
+        )),
+        GetPage(name: '/role_selection', page: () => const RoleSelectionScreen()),
+        GetPage(name: '/job_seeker_dashboard', page: () => const JobSeekerDashboard()),
+        GetPage(name: '/job_provider_dashboard', page: () => const JobProviderDashboard()),
+      ],
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -54,6 +57,9 @@ class KaziHuruApp extends StatelessWidget {
           return MaterialPageRoute(
             builder: (context) => OTPVerificationScreen(
               phoneNumber: args['phoneNumber'] as String,
+              otp: args['otp'] as String,
+              email: args['email'] as String,
+              password: args['password'] as String,
             ),
           );
         }

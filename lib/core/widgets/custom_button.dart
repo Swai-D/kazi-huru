@@ -27,28 +27,23 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: width ?? double.infinity,
-      height: height ?? 48,
-      child: isOutlined
-          ? OutlinedButton(
-              onPressed: isLoading ? null : onPressed,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: backgroundColor ?? ThemeConstants.primaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
-                ),
-              ),
-              child: _buildChild(),
-            )
-          : ElevatedButton(
-              onPressed: isLoading ? null : onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: backgroundColor ?? ThemeConstants.primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
-                ),
-              ),
-              child: _buildChild(),
-            ),
+      height: height ?? 50,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor ?? ThemeConstants.primaryColor,
+          foregroundColor: textColor ?? Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: ThemeConstants.spacingLarge,
+            vertical: ThemeConstants.spacingMedium,
+          ),
+        ),
+        child: _buildChild(),
+      ),
     );
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ThemeConstants {
   // Colors
-  static const Color primaryColor = Color(0xFF2196F3);
+  static const Color primaryColor = Color(0xFF1E88E5);
   static const Color secondaryColor = Color(0xFF03DAC6);
   static const Color errorColor = Color(0xFFB00020);
   
@@ -31,9 +31,9 @@ class ThemeConstants {
   static const double spacingLarge = 24.0;
   
   // Border Radius
-  static const double borderRadiusSmall = 4.0;
-  static const double borderRadiusMedium = 8.0;
-  static const double borderRadiusLarge = 12.0;
+  static const double borderRadiusSmall = 0.0;
+  static const double borderRadiusMedium = 4.0;
+  static const double borderRadiusLarge = 8.0;
   
   // Animation Durations
   static const Duration animationShort = Duration(milliseconds: 200);

@@ -1,106 +1,193 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import 'dart:async';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
+  final String otp;
+  final String email;
+  final String password;
+  final bool isNewUser;
+  final String? name;
+  final String? role;
 
   const OTPVerificationScreen({
-    super.key,
+    Key? key,
     required this.phoneNumber,
-  });
+    required this.otp,
+    required this.email,
+    required this.password,
+    this.isNewUser = false,
+    this.name,
+    this.role,
+  }) : super(key: key);
 
   @override
-  State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
+  _OTPVerificationScreenState createState() => _OTPVerificationScreenState();
 }
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  final _otpController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
   String? _errorMessage;
-  final AuthService _authService = AuthService();
+  Timer? _resendTimer;
+  int _resendCountdown = 60;
+  bool _canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendTimer();
+    _otpController.text = widget.otp; // Pre-fill the OTP
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    _resendTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startResendTimer() {
+    setState(() {
+      _canResend = false;
+      _resendCountdown = 60;
+    });
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_resendCountdown > 0) {
+          _resendCountdown--;
+        } else {
+          _canResend = true;
+          timer.cancel();
+        }
+      });
+    });
+  }
 
   Future<void> _verifyOTP() async {
+    if (_otpController.text.length != 6) {
+      setState(() {
+        _errorMessage = 'Tafadhali weka namba sahihi ya uthibitishaji';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      print('Starting OTP verification for phone: ${widget.phoneNumber}');
-      print('Entered OTP: ${_otpController.text}');
-
-      // Get the OTP document using the phone number as document ID
-      final otpDoc = await FirebaseFirestore.instance
-          .collection('otps')
-          .doc(widget.phoneNumber)
-          .get();
-
-      print('OTP Document exists: ${otpDoc.exists}');
-      
-      if (!otpDoc.exists) {
-        setState(() {
-          _errorMessage = 'OTP haipo. Tafadhali omba OTP mpya.';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final otpData = otpDoc.data()!;
-      print('OTP Data: $otpData');
-      
-      final storedOTP = otpData['otp'] as String;
-      final timestamp = (otpData['timestamp'] as Timestamp).toDate();
-      final now = DateTime.now();
-
-      print('Stored OTP: $storedOTP');
-      print('Timestamp: $timestamp');
-      print('Current time: $now');
-
-      // Check if OTP is expired (5 minutes)
-      if (now.difference(timestamp).inMinutes > 5) {
-        setState(() {
-          _errorMessage = 'OTP imeisha muda wake. Tafadhali omba mpya.';
-          _isLoading = false;
-        });
-        return;
-      }
-
       // Verify OTP
-      if (storedOTP == _otpController.text) {
-        print('OTP matched successfully');
+      final isValid = await _authService.verifyOTP(
+        widget.phoneNumber,
+        _otpController.text,
+      );
+
+      if (!isValid) {
+        throw Exception('Namba ya uthibitishaji si sahihi au imeisha muda wake');
+      }
+
+      UserCredential userCredential;
+      
+      if (widget.isNewUser) {
+        // Create new user
+        userCredential = await _authService.createUserWithEmailAndPassword(
+          widget.email,
+          widget.password,
+        );
         
-        // Mark OTP as verified
-        await otpDoc.reference.update({'verified': true});
-        print('OTP marked as verified');
-
-        // Create user document with phone number
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.phoneNumber)
-            .set({
-          'phone': widget.phoneNumber,
+        // Create user document in Firestore
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'email': widget.email,
+          'name': widget.name ?? '',
           'createdAt': FieldValue.serverTimestamp(),
-          'role': 'pending', // Will be updated in role selection
+          'isProfileComplete': false,
+          'role': widget.role ?? 'job_seeker',
+          'phoneNumber': widget.phoneNumber,
+          'isPhoneVerified': true,
+          'uid': userCredential.user!.uid,
         });
-        print('User document created');
-
-        // Navigate to role selection
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/role_selection');
-        }
       } else {
-        print('OTP mismatch. Entered: ${_otpController.text}, Stored: $storedOTP');
-        setState(() {
-          _errorMessage = 'OTP si sahihi. Tafadhali jaribu tena.';
-          _isLoading = false;
+        // Sign in existing user
+        userCredential = await _authService.signInWithEmailAndPassword(
+          widget.email,
+          widget.password,
+        );
+
+        // Update user's phone verification status
+        await _firestore.collection('users').doc(userCredential.user!.uid).update({
+          'isPhoneVerified': true,
+          'phoneNumber': widget.phoneNumber,
         });
+      }
+
+      if (userCredential.user == null) {
+        throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena');
+      }
+
+      // Navigate to appropriate dashboard based on role
+      if (mounted) {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final userRole = userData['role'] as String? ?? 'job_seeker';
+
+        if (userRole == 'job_provider') {
+          Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
+        }
       }
     } catch (e) {
-      print('Error during OTP verification: $e');
       setState(() {
-        _errorMessage = 'Kuna tatizo. Tafadhali jaribu tena.';
+        _errorMessage = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _resendOTP() async {
+    if (!_canResend) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final otp = await _authService.sendOTP(widget.phoneNumber);
+      if (otp != null) {
+        _startResendTimer();
+        setState(() {
+          _otpController.text = otp;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Namba mpya ya uthibitishaji imetumwa'),
+          ),
+        );
+      } else {
+        throw Exception('Imeshindwa kutuma namba ya uthibitishaji');
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      setState(() {
         _isLoading = false;
       });
     }
@@ -110,26 +197,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thibitisha OTP'),
+        title: const Text('Thibitisha Namba'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Weka OTP uliotumiwa',
-              style: TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
             Text(
-              'OTP imetumwa kwa: ${widget.phoneNumber}',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              'Weka namba ya uthibitishaji iliyotumwa kwenye namba yako ya simu',
+              style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -138,37 +215,42 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               keyboardType: TextInputType.number,
               maxLength: 6,
               decoration: const InputDecoration(
-                labelText: 'OTP',
+                labelText: 'Namba ya Uthibitishaji',
                 border: OutlineInputBorder(),
-                hintText: 'Mfano: 123456',
                 counterText: '',
               ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _verifyOTP,
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Thibitisha'),
-            ),
             if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
               ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _verifyOTP,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Thibitisha'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: _canResend ? _resendOTP : null,
+              child: Text(
+                _canResend
+                    ? 'Tuma tena namba ya uthibitishaji'
+                    : 'Tuma tena baada ya sekunde $_resendCountdown',
+              ),
+            ),
           ],
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _otpController.dispose();
-    super.dispose();
   }
 } 

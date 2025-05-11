@@ -44,6 +44,9 @@ dependencies:
   equatable: ^2.0.5
   internet_connection_checker: ^1.0.0+1
   flutter_svg: ^2.0.9
+  google_sign_in: ^6.3.0
+  flutter_facebook_auth: ^6.0.3
+  get: ^4.6.6
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +72,9 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translations/
+    - assets/images/google_logo.png
+    - assets/images/facebook_logo.png
+    - assets/images/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
