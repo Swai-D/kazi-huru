@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'dart:async';
+import '../core/constants/theme_constants.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -30,6 +31,7 @@ class OTPVerificationScreen extends StatefulWidget {
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final TextEditingController _otpController = TextEditingController();
+  final FocusNode _otpFocusNode = FocusNode();
   final AuthService _authService = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
@@ -42,12 +44,19 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   void initState() {
     super.initState();
     _startResendTimer();
-    _otpController.text = widget.otp; // Pre-fill the OTP
+    _otpController.text = widget.otp;
+    // Request focus after a short delay to ensure widget is built
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _otpFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _otpController.dispose();
+    _otpFocusNode.dispose();
     _resendTimer?.cancel();
     super.dispose();
   }
@@ -94,39 +103,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         throw Exception('Namba ya uthibitishaji si sahihi au imeisha muda wake');
       }
 
-      UserCredential userCredential;
-      
-      if (widget.isNewUser) {
-        // Create new user
-        userCredential = await _authService.createUserWithEmailAndPassword(
-          widget.email,
-          widget.password,
-        );
-        
-        // Create user document in Firestore
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'email': widget.email,
-          'name': widget.name ?? '',
-          'createdAt': FieldValue.serverTimestamp(),
-          'isProfileComplete': false,
-          'role': widget.role ?? 'job_seeker',
-          'phoneNumber': widget.phoneNumber,
-          'isPhoneVerified': true,
-          'uid': userCredential.user!.uid,
-        });
-      } else {
-        // Sign in existing user
-        userCredential = await _authService.signInWithEmailAndPassword(
-          widget.email,
-          widget.password,
-        );
-
-        // Update user's phone verification status
-        await _firestore.collection('users').doc(userCredential.user!.uid).update({
-          'isPhoneVerified': true,
-          'phoneNumber': widget.phoneNumber,
-        });
-      }
+      // Sign in with phone number
+      final userCredential = await _authService.signInWithPhoneNumber(
+        widget.phoneNumber,
+        widget.name,
+        widget.role,
+      );
 
       if (userCredential.user == null) {
         throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena');
@@ -139,8 +121,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             .doc(userCredential.user!.uid)
             .get();
 
-        final userData = userDoc.data() as Map<String, dynamic>;
-        final userRole = userData['role'] as String? ?? 'job_seeker';
+        if (!userDoc.exists) {
+          throw Exception('User data not found');
+        }
+
+        final userData = userDoc.data();
+        final userRole = userData?['role'] as String? ?? 'job_seeker';
 
         if (userRole == 'job_provider') {
           Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
@@ -195,60 +181,110 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Thibitisha Namba'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Weka namba ya uthibitishaji iliyotumwa kwenye namba yako ya simu',
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              decoration: const InputDecoration(
-                labelText: 'Namba ya Uthibitishaji',
-                border: OutlineInputBorder(),
-                counterText: '',
+    return GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping outside
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Thibitisha Namba'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Weka namba ya uthibitishaji iliyotumwa kwenye namba yako ya simu',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
               ),
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
+              const SizedBox(height: 24),
+              TextField(
+                controller: _otpController,
+                focusNode: _otpFocusNode,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _verifyOTP(),
+                decoration: InputDecoration(
+                  labelText: 'Namba ya Uthibitishaji',
+                  border: const OutlineInputBorder(),
+                  counterText: '',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  // Add clear button
+                  suffixIcon: _otpController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _otpController.clear();
+                            _otpFocusNode.requestFocus();
+                          },
+                        )
+                      : null,
                 ),
               ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _verifyOTP,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _verifyOTP,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ThemeConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'Thibitisha',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Thibitisha'),
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _canResend ? _resendOTP : null,
-              child: Text(
-                _canResend
-                    ? 'Tuma tena namba ya uthibitishaji'
-                    : 'Tuma tena baada ya sekunde $_resendCountdown',
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _canResend ? _resendOTP : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: ThemeConstants.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  _canResend
+                      ? 'Tuma tena namba ya uthibitishaji'
+                      : 'Tuma tena baada ya sekunde $_resendCountdown',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

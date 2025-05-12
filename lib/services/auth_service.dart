@@ -20,10 +20,13 @@ class AuthService {
       String otp = _generateOTP();
       
       // Store OTP in Firestore with timestamp
-      await _firestore.collection('otps').doc(phoneNumber).set({
+      await _firestore.collection('otps').add({
+        'phoneNumber': phoneNumber,
         'otp': otp,
         'timestamp': FieldValue.serverTimestamp(),
         'verified': false,
+        'verifiedAt': null,
+        'isUsed': false
       });
 
       // Send OTP via custom SMS service
@@ -62,10 +65,13 @@ class AuthService {
         if (currentUser != null) {
           // User is already authenticated with email
           // Update user data in Firestore
-          await _firestore.collection('users').doc(currentUser.uid).update({
+          final userData = {
             'phoneNumber': phoneNumber,
             'isPhoneVerified': true,
-          });
+            'updatedAt': FieldValue.serverTimestamp(),
+          };
+          
+          await _firestore.collection('users').doc(currentUser.uid).update(userData);
           
           // Return a new credential for the current user
           return await _auth.signInWithEmailAndPassword(
@@ -79,8 +85,12 @@ class AuthService {
             password: phoneNumber, // Use phone number as password
           );
 
+          if (userCredential.user == null) {
+            throw Exception('Failed to create user account');
+          }
+
           // Store user data in Firestore
-          await _firestore.collection('users').doc(userCredential.user?.uid).set({
+          final userData = {
             'phoneNumber': phoneNumber,
             'name': name ?? '',
             'role': role ?? 'job_seeker',
@@ -88,7 +98,10 @@ class AuthService {
             'isProfileComplete': false,
             'isPhoneVerified': true,
             'email': '$phoneNumber@kazihuru.com',
-          });
+            'uid': userCredential.user!.uid,
+          };
+
+          await _firestore.collection('users').doc(userCredential.user!.uid).set(userData);
         }
       } else {
         // Get the existing user document
@@ -102,9 +115,14 @@ class AuthService {
           password: phoneNumber,
         );
 
+        if (userCredential.user == null) {
+          throw Exception('Failed to sign in user');
+        }
+
         // Update phone verification status
-        await _firestore.collection('users').doc(userCredential.user?.uid).update({
+        await _firestore.collection('users').doc(userCredential.user!.uid).update({
           'isPhoneVerified': true,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       }
 
@@ -135,6 +153,7 @@ class AuthService {
       }
       throw Exception(errorMessage);
     } catch (e) {
+      print('Error in signInWithPhoneNumber: $e');
       throw Exception('Hitilafu imetokea. Tafadhali jaribu tena');
     }
   }
@@ -142,16 +161,20 @@ class AuthService {
   // Verify OTP
   Future<bool> verifyOTP(String phoneNumber, String otp) async {
     try {
-      DocumentSnapshot doc = await _firestore
+      // Query for the most recent OTP document for this phone number
+      final otpQuery = await _firestore
           .collection('otps')
-          .doc(phoneNumber)
+          .where('phoneNumber', isEqualTo: phoneNumber)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
           .get();
 
-      if (!doc.exists) {
+      if (otpQuery.docs.isEmpty) {
         return false;
       }
 
-      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      final otpDoc = otpQuery.docs.first;
+      final data = otpDoc.data();
       
       // Check if OTP matches and is not expired (5 minutes validity)
       if (data['otp'] != otp || 
@@ -161,12 +184,14 @@ class AuthService {
       }
 
       // Mark OTP as verified
-      await _firestore.collection('otps').doc(phoneNumber).update({
-        'verified': true
+      await otpDoc.reference.update({
+        'verified': true,
+        'verifiedAt': FieldValue.serverTimestamp()
       });
 
       return true;
     } catch (e) {
+      print('Error verifying OTP: $e');
       return false;
     }
   }
@@ -182,65 +207,216 @@ class AuthService {
   // Stream of auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<UserCredential> signInWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
+  // Create user with email and password
+  Future<UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      print('Starting user creation with email: $email');
+      print('Attempting to create user in Firebase Auth...');
+      
+      // Create user in Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      print('User created successfully with UID: ${userCredential.user?.uid}');
+      
+      if (userCredential.user == null) {
+        throw FirebaseAuthException(
+          code: 'user-creation-failed',
+          message: 'Imeshindwa kuunda akaunti. Tafadhali jaribu tena',
+        );
+      }
+
+      // Verify user was created successfully
+      final currentUser = _auth.currentUser;
+      if (currentUser == null || currentUser.uid != userCredential.user!.uid) {
+        throw FirebaseAuthException(
+          code: 'user-verification-failed',
+          message: 'Imeshindwa kuthibitisha akaunti. Tafadhali jaribu tena',
+        );
+      }
+
+      return userCredential;
     } on FirebaseAuthException catch (e) {
-      String message;
+      print('Firebase Auth Exception in createUserWithEmailAndPassword: ${e.code} - ${e.message}');
+      String errorMessage;
+      
       switch (e.code) {
-        case 'user-not-found':
-          message = 'Mtumiaji hajapatikana';
-          break;
-        case 'wrong-password':
-          message = 'Nywila si sahihi';
+        case 'email-already-in-use':
+          errorMessage = 'Barua pepe hii tayari inatumika';
           break;
         case 'invalid-email':
-          message = 'Barua pepe si sahihi';
+          errorMessage = 'Barua pepe si sahihi';
           break;
-        case 'user-disabled':
-          message = 'Akaunti hii imezimwa';
+        case 'operation-not-allowed':
+          errorMessage = 'Kusajiliwa na barua pepe hakijaruhusiwa';
+          break;
+        case 'weak-password':
+          errorMessage = 'Nywila ni dhaifu sana';
           break;
         default:
-          message = 'Hitilafu imetokea: ${e.message}';
+          errorMessage = e.message ?? 'Hitilafu imetokea. Tafadhali jaribu tena';
       }
-      throw Exception(message);
+      
+      throw FirebaseAuthException(
+        code: e.code,
+        message: errorMessage,
+      );
+    } catch (e) {
+      print('Unexpected error in createUserWithEmailAndPassword: $e');
+      throw FirebaseAuthException(
+        code: 'unknown-error',
+        message: 'Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena',
+      );
     }
   }
 
-  Future<UserCredential> createUserWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
+  // Sign in with email and password
+  Future<UserCredential> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      return userCredential;
     } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'weak-password':
-          message = 'Nywila ni dhaifu sana';
-          break;
-        case 'email-already-in-use':
-          message = 'Barua pepe tayari inatumika';
-          break;
-        case 'invalid-email':
-          message = 'Barua pepe si sahihi';
-          break;
-        case 'operation-not-allowed':
-          message = 'Operesheni hii haijaruhusiwa';
-          break;
-        default:
-          message = 'Hitilafu imetokea: ${e.message}';
-      }
-      throw Exception(message);
+      throw _handleAuthException(e);
     }
+  }
+
+  // Get user data from Firestore
+  Future<Map<String, dynamic>?> getUserData(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
+  }
+
+  // Save user data to Firestore
+  Future<void> saveUserData(String uid, Map<String, dynamic> userData) async {
+    try {
+      print('Saving user data to Firestore for UID: $uid');
+      print('User data: $userData');
+
+      // Verify user exists in Firebase Auth
+      final currentUser = _auth.currentUser;
+      if (currentUser == null || currentUser.uid != uid) {
+        throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'Mtumiaji hajapatikana. Tafadhali jaribu tena',
+        );
+      }
+
+      // Check if user document already exists
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      
+      if (userDoc.exists) {
+        print('Updating existing user document...');
+        // Update existing user document
+        await _firestore.collection('users').doc(uid).update({
+          ...userData,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        print('Creating new user document...');
+        // Create new user document
+        await _firestore.collection('users').doc(uid).set({
+          ...userData,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      print('User data saved successfully');
+    } on FirebaseException catch (e) {
+      print('Firebase Exception in saveUserData: ${e.code} - ${e.message}');
+      throw FirebaseAuthException(
+        code: e.code,
+        message: 'Imeshindwa kuhifadhi taarifa za mtumiaji. Tafadhali jaribu tena',
+      );
+    } catch (e) {
+      print('Unexpected error in saveUserData: $e');
+      throw FirebaseAuthException(
+        code: 'unknown-error',
+        message: 'Hitilafu isiyotarajiwa imetokea. Tafadhali jaribu tena',
+      );
+    }
+  }
+
+  // Update user data in Firestore
+  Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('users').doc(uid).update(data);
+    } catch (e) {
+      print('Error updating user data: $e');
+      throw Exception('Failed to update user data');
+    }
+  }
+
+  // Check if username is taken
+  Future<bool> isUsernameTaken(String username) async {
+    try {
+      final query = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print('Error checking username: $e');
+      return false;
+    }
+  }
+
+  // Handle Firebase Auth exceptions
+  FirebaseAuthException _handleAuthException(FirebaseAuthException e) {
+    String message;
+    switch (e.code) {
+      case 'weak-password':
+        message = 'Nywila ni dhaifu sana';
+        break;
+      case 'email-already-in-use':
+        message = 'Barua pepe tayari inatumika';
+        break;
+      case 'invalid-email':
+        message = 'Barua pepe si sahihi';
+        break;
+      case 'operation-not-allowed':
+        message = 'Operesheni hii haijaruhusiwa';
+        break;
+      case 'user-disabled':
+        message = 'Akaunti hii imezimwa';
+        break;
+      case 'user-not-found':
+        message = 'Hakuna akaunti inayopatikana';
+        break;
+      case 'wrong-password':
+        message = 'Nywila si sahihi';
+        break;
+      case 'invalid-verification-code':
+        message = 'Namba ya uthibitishaji si sahihi';
+        break;
+      case 'invalid-verification-id':
+        message = 'Kitambulisho cha uthibitishaji si sahihi';
+        break;
+      default:
+        message = 'Hitilafu imetokea. Tafadhali jaribu tena';
+    }
+    return FirebaseAuthException(
+      code: e.code,
+      message: message,
+    );
   }
 } 

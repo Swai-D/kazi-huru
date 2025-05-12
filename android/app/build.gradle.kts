@@ -31,6 +31,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -40,6 +41,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.android.support:multidex:1.0.3")
 }
 
 flutter {
