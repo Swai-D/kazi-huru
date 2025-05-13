@@ -9,6 +9,7 @@ import '../core/constants/theme_constants.dart';
 import '../models/user_details.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_screen.dart';
+import 'role_selection_screen.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -206,6 +207,85 @@ class _RegisterPageState extends State<RegisterPage> {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Social Login Section
+              const Text(
+                'Au jisajili na',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Google Sign In Button
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final userCredential = await _authService.signInWithGoogle();
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RoleSelectionScreen(),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    }
+                  }
+                },
+                icon: Image.asset(
+                  'assets/images/google_logo.png',
+                  height: 24,
+                ),
+                label: const Text('Endelea na Google'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Facebook Sign In Button
+              ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final userCredential = await _authService.signInWithFacebook();
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RoleSelectionScreen(),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.toString())),
+                      );
+                    }
+                  }
+                },
+                icon: Image.asset(
+                  'assets/images/facebook_logo.png',
+                  height: 24,
+                ),
+                label: const Text('Endelea na Facebook'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1877F2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ],

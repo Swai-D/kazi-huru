@@ -1,0 +1,12 @@
+android {
+    namespace "com.example.kazi_huru"
+    compileSdkVersion flutter.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.example.kazi_huru"
+        minSdkVersion 21
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+} 

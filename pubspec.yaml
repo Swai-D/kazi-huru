@@ -48,6 +48,27 @@ dependencies:
   flutter_facebook_auth: ^6.0.3
   get: ^4.6.6
   google_api_availability: 5.0.1
+  flutter_local_notifications: ^16.3.2
+  provider: ^6.1.1
+  image_picker: ^1.0.7
+  cached_network_image: ^3.3.1
+  url_launcher: ^6.2.4
+  share_plus: ^7.2.2
+  flutter_rating_bar: ^4.0.1
+  geolocator: ^10.1.0
+  google_maps_flutter: ^2.5.3
+  flutter_secure_storage: ^9.0.0
+  path_provider: ^2.1.2
+  permission_handler: ^11.2.0
+  flutter_native_splash: ^2.3.10
+  flutter_launcher_icons: ^0.13.1
+  flutter_dotenv: ^5.1.0
+  logger: ^2.0.2+1
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  flutter_offline: ^2.0.0
+  flutter_spinkit: ^5.2.0
+  flutter_stripe: ^10.0.0
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +93,8 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/fonts/
+    - .env
     - assets/translations/
     - assets/images/google_logo.png
     - assets/images/facebook_logo.png

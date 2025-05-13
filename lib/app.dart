@@ -26,7 +26,7 @@ class KaziHuruApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Kazi Huru',
       theme: AppTheme.lightTheme,
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: true,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       initialRoute: '/',

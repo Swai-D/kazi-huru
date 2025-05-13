@@ -44,7 +44,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   void initState() {
     super.initState();
     _startResendTimer();
-    _otpController.text = widget.otp;
+    // Remove autofill of OTP
+    // _otpController.text = widget.otp;
     // Request focus after a short delay to ensure widget is built
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
@@ -93,55 +94,61 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
+      print('Starting OTP verification...');
+      
       // Verify OTP
       final isValid = await _authService.verifyOTP(
         widget.phoneNumber,
         _otpController.text,
       );
 
+      print('OTP verification result: $isValid');
+
       if (!isValid) {
         throw Exception('Namba ya uthibitishaji si sahihi au imeisha muda wake');
       }
 
-      // Sign in with phone number
-      final userCredential = await _authService.signInWithPhoneNumber(
-        widget.phoneNumber,
-        widget.name,
-        widget.role,
+      print('Registering user...');
+      
+      // Register user with password
+      final userCredential = await _authService.registerUser(
+        phoneNumber: widget.phoneNumber,
+        password: widget.password,
+        name: widget.name ?? '',
+        role: widget.role ?? 'job_seeker',
       );
 
+      print('Registration result: ${userCredential.user?.uid}');
+
       if (userCredential.user == null) {
-        throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena');
+        throw Exception('Imeshindwa kusajili. Tafadhali jaribu tena');
       }
 
       // Navigate to appropriate dashboard based on role
       if (mounted) {
-        final userDoc = await _firestore
-            .collection('users')
-            .doc(userCredential.user!.uid)
-            .get();
+        print('Getting user role...');
+        final userRole = await _authService.getUserRole();
+        print('User role: $userRole');
 
-        if (!userDoc.exists) {
-          throw Exception('User data not found');
-        }
-
-        final userData = userDoc.data();
-        final userRole = userData?['role'] as String? ?? 'job_seeker';
-
-        if (userRole == 'job_provider') {
-          Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
+        if (mounted) {
+          // Clear all previous routes
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            userRole == 'job_provider' ? '/job_provider_dashboard' : '/job_seeker_dashboard',
+            (route) => false,
+          );
         }
       }
     } catch (e) {
+      print('Error in _verifyOTP: $e');
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
+      if (mounted) {
       setState(() {
         _isLoading = false;
       });
+      }
     }
   }
 
@@ -187,31 +194,31 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Thibitisha Namba'),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Weka namba ya uthibitishaji iliyotumwa kwenye namba yako ya simu',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _otpController,
+      appBar: AppBar(
+        title: const Text('Thibitisha Namba'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Weka namba ya uthibitishaji iliyotumwa kwenye namba yako ya simu',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _otpController,
                 focusNode: _otpFocusNode,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _verifyOTP(),
                 decoration: InputDecoration(
-                  labelText: 'Namba ya Uthibitishaji',
+                labelText: 'Namba ya Uthibitishaji',
                   border: const OutlineInputBorder(),
-                  counterText: '',
+                counterText: '',
                   prefixIcon: const Icon(Icons.lock_outline),
                   // Add clear button
                   suffixIcon: _otpController.text.isNotEmpty
@@ -223,30 +230,30 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                           },
                         )
                       : null,
-                ),
               ),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
+            ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
                   ),
                 ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _verifyOTP,
-                style: ElevatedButton.styleFrom(
+            ElevatedButton(
+              onPressed: _isLoading ? null : _verifyOTP,
+              style: ElevatedButton.styleFrom(
                   backgroundColor: ThemeConstants.primaryColor,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                   minimumSize: const Size(double.infinity, 50),
-                ),
-                child: _isLoading
+              ),
+              child: _isLoading
                     ? const SizedBox(
                         width: 24,
                         height: 24,
@@ -262,10 +269,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: _canResend ? _resendOTP : null,
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: _canResend ? _resendOTP : null,
                 style: TextButton.styleFrom(
                   foregroundColor: ThemeConstants.primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -273,10 +280,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text(
-                  _canResend
-                      ? 'Tuma tena namba ya uthibitishaji'
-                      : 'Tuma tena baada ya sekunde $_resendCountdown',
+              child: Text(
+                _canResend
+                    ? 'Tuma tena namba ya uthibitishaji'
+                    : 'Tuma tena baada ya sekunde $_resendCountdown',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -284,7 +291,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 ),
               ),
             ],
-          ),
+            ),
         ),
       ),
     );

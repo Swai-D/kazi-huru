@@ -145,13 +145,19 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 32),
               TextFormField(
                 controller: _identifierController,
+                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  labelText: 'Barua pepe / Namba ya simu / Jina la mtumiaji',
+                  labelText: 'Namba ya simu',
+                  hintText: 'Mfano: +255767265780',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone_android),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Tafadhali weka barua pepe, namba ya simu, au jina la mtumiaji';
+                    return 'Tafadhali weka namba ya simu yako';
+                  }
+                  if (!value.startsWith('+') && !value.startsWith('0')) {
+                    return 'Tafadhali weka namba ya simu kwa muundo sahihi';
                   }
                   return null;
                 },
@@ -162,6 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: const InputDecoration(
                   labelText: 'Nywila',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
