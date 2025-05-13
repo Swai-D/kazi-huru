@@ -140,6 +140,7 @@ class AuthService {
         throw Exception('Namba ya simu hii tayari inatumika');
       }
 
+      // Create user in Firebase Auth
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -151,6 +152,9 @@ class AuthService {
         throw Exception('Imeshindwa kuunda akaunti. Tafadhali jaribu tena');
       }
 
+      // Update the user's display name in Firebase Auth
+      await userCredential.user?.updateDisplayName(name);
+
       // Store user data in Firestore
       final userData = {
         'phoneNumber': formattedPhone,
@@ -160,10 +164,23 @@ class AuthService {
         'isProfileComplete': false,
         'email': email,
         'uid': userCredential.user!.uid,
+        'isPhoneVerified': true, // Since we verified with OTP
+        'username': null,
+        'photoURL': null,
+        'updatedAt': null,
       };
 
       print('Saving user data to Firestore...');
-      await _firestore.collection('users').doc(userCredential.user!.uid).set(userData);
+      
+      // Use a transaction to ensure atomic operation
+      await _firestore.runTransaction((transaction) async {
+        // Create the user document
+        transaction.set(
+          _firestore.collection('users').doc(userCredential.user!.uid),
+          userData,
+        );
+      });
+
       print('User data saved successfully');
 
       return userCredential;
@@ -191,6 +208,15 @@ class AuthService {
       throw Exception(errorMessage);
     } catch (e) {
       print('Error in registerUser: $e');
+      // If there's an error, try to clean up the Firebase Auth user
+      try {
+        final currentUser = _auth.currentUser;
+        if (currentUser != null) {
+          await currentUser.delete();
+        }
+      } catch (cleanupError) {
+        print('Error during cleanup: $cleanupError');
+      }
       throw Exception('Hitilafu imetokea. Tafadhali jaribu tena');
     }
   }

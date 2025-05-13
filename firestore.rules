@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // OTP collection rules
+    match /otps/{document=**} {
+      // Allow read/write for OTP verification
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if false; // Prevent deletion of OTP records
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read for authenticated users
+      allow read: if isAuthenticated();
+      // Allow create/update only for the user themselves
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      // Prevent deletion of user documents
+      allow delete: if false;
+    }
+  }
+} 

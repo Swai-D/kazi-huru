@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'dart:async';
 import '../core/constants/theme_constants.dart';
+import '../screens/role_selection_screen.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -83,7 +84,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   Future<void> _verifyOTP() async {
     if (_otpController.text.length != 6) {
       setState(() {
-        _errorMessage = 'Tafadhali weka namba sahihi ya uthibitishaji';
+        _errorMessage = 'Tafadhali weka namba ya uthibitishaji kamili';
       });
       return;
     }
@@ -94,60 +95,43 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
-      print('Starting OTP verification...');
-      
-      // Verify OTP
-      final isValid = await _authService.verifyOTP(
+      print('Verifying OTP...');
+      final isVerified = await _authService.verifyOTP(
         widget.phoneNumber,
         _otpController.text,
       );
 
-      print('OTP verification result: $isValid');
+      print('OTP verification result: $isVerified');
 
-      if (!isValid) {
-        throw Exception('Namba ya uthibitishaji si sahihi au imeisha muda wake');
-      }
-
-      print('Registering user...');
-      
-      // Register user with password
-      final userCredential = await _authService.registerUser(
-        phoneNumber: widget.phoneNumber,
-        password: widget.password,
-        name: widget.name ?? '',
-        role: widget.role ?? 'job_seeker',
-      );
-
-      print('Registration result: ${userCredential.user?.uid}');
-
-      if (userCredential.user == null) {
-        throw Exception('Imeshindwa kusajili. Tafadhali jaribu tena');
-      }
-
-      // Navigate to appropriate dashboard based on role
-      if (mounted) {
-        print('Getting user role...');
-        final userRole = await _authService.getUserRole();
-        print('User role: $userRole');
-
+      if (isVerified) {
+        print('OTP verified successfully');
         if (mounted) {
-          // Clear all previous routes
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            userRole == 'job_provider' ? '/job_provider_dashboard' : '/job_seeker_dashboard',
-            (route) => false,
+          // Navigate to role selection screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => RoleSelectionScreen(
+                phoneNumber: widget.phoneNumber,
+                password: widget.password,
+                name: widget.name ?? '',
+              ),
+            ),
           );
         }
+      } else {
+        setState(() {
+          _errorMessage = 'Namba ya uthibitishaji si sahihi';
+        });
       }
     } catch (e) {
-      print('Error in _verifyOTP: $e');
+      print('Error verifying OTP: $e');
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
       if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

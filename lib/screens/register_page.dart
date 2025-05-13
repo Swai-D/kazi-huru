@@ -187,7 +187,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),
+                ),
               ),
               const SizedBox(height: 16),
               TextButton(
@@ -222,71 +222,58 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 16),
               
-              // Google Sign In Button
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    final userCredential = await _authService.signInWithGoogle();
-                    if (mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RoleSelectionScreen(),
+              // Social Login Buttons
+              Row(
+                children: [
+                  // Google Sign In Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Implement Google Sign In
+                      },
+                      icon: Image.asset(
+                        'assets/images/google_logo.png',
+                        height: 24,
+                      ),
+                      label: const Text('Google'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: const BorderSide(color: Colors.grey),
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString())),
-                      );
-                    }
-                  }
-                },
-                icon: Image.asset(
-                  'assets/images/google_logo.png',
-                  height: 24,
-                ),
-                label: const Text('Endelea na Google'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Facebook Sign In Button
-              ElevatedButton.icon(
-                onPressed: () async {
-                  try {
-                    final userCredential = await _authService.signInWithFacebook();
-                    if (mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RoleSelectionScreen(),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Facebook Sign In Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Implement Facebook Sign In
+                      },
+                      icon: const Icon(
+                        Icons.facebook,
+                        color: Colors.blue,
+                        size: 24,
+                      ),
+                      label: const Text('Facebook'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: const BorderSide(color: Colors.grey),
                         ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(e.toString())),
-                      );
-                    }
-                  }
-                },
-                icon: Image.asset(
-                  'assets/images/facebook_logo.png',
-                  height: 24,
-                ),
-                label: const Text('Endelea na Facebook'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1877F2),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

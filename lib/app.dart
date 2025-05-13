@@ -37,7 +37,14 @@ class KaziHuruApp extends StatelessWidget {
           email: '',
           password: '',
         )),
-        GetPage(name: '/role_selection', page: () => const RoleSelectionScreen()),
+        GetPage(
+          name: '/role_selection',
+          page: () => RoleSelectionScreen(
+            phoneNumber: Get.arguments['phoneNumber'] ?? '',
+            password: Get.arguments['password'] ?? '',
+            name: Get.arguments['name'] ?? '',
+          ),
+        ),
         GetPage(name: '/job_seeker_dashboard', page: () => const JobSeekerDashboard()),
         GetPage(name: '/job_provider_dashboard', page: () => const JobProviderDashboard()),
       ],
