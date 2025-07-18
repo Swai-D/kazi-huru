@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import 'job_details_screen.dart';
 
 class JobSeekerDashboardScreen extends StatelessWidget {
   const JobSeekerDashboardScreen({super.key});
@@ -108,14 +108,60 @@ class JobSeekerDashboardScreen extends StatelessWidget {
                     title: 'Kumuhamisha Mtu',
                     location: 'Dar es Salaam',
                     pay: 'TZS 20,000',
-                    onPressed: () {},
+                    onPressed: () {
+                      // Navigate to job details
+                      final job = {
+                        'id': '1',
+                        'title': 'Kumuhamisha Mtu',
+                        'location': 'Dar es Salaam',
+                        'payment': 'TZS 20,000',
+                        'category': 'Transport',
+                        'type': 'Part-time',
+                        'description': 'Need someone to help move furniture from one house to another.',
+                        'requirements': ['Physical strength', 'Reliable transportation', 'Good communication'],
+                        'provider_name': 'Moving Services Ltd',
+                        'provider_location': 'Dar es Salaam',
+                        'schedule': 'Flexible',
+                        'start_date': 'Immediate',
+                        'payment_method': 'M-Pesa',
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsScreen(job: job),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _JobCard(
                     title: 'Kusafisha Compound',
                     location: 'Dar es Salaam',
                     pay: 'TZS 15,000',
-                    onPressed: () {},
+                    onPressed: () {
+                      // Navigate to job details
+                      final job = {
+                        'id': '2',
+                        'title': 'Kusafisha Compound',
+                        'location': 'Dar es Salaam',
+                        'payment': 'TZS 15,000',
+                        'category': 'Cleaning',
+                        'type': 'One-time',
+                        'description': 'Cleaning services needed for a residential compound.',
+                        'requirements': ['Cleaning experience', 'Attention to detail', 'Reliable'],
+                        'provider_name': 'Clean Pro Services',
+                        'provider_location': 'Dar es Salaam',
+                        'schedule': 'Morning',
+                        'start_date': 'Tomorrow',
+                        'payment_method': 'M-Pesa',
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsScreen(job: job),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -135,25 +181,29 @@ class JobSeekerDashboardScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _BottomNavItem(
-                  iconPath: 'assets/icons/home.svg',
+                  icon: Icons.home,
                   label: context.tr('home'),
                   selected: true,
                   color: primaryColor,
                   onTap: () {},
                 ),
                 _BottomNavItem(
-                  iconPath: 'assets/icons/job.svg',
-                  label: context.tr('post_job'),
+                  icon: Icons.work,
+                  label: context.tr('search_jobs'),
                   selected: false,
                   color: textColor,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pushNamed(context, '/job_search');
+                  },
                 ),
                 _BottomNavItem(
-                  iconPath: 'assets/icons/profile.svg',
-                  label: context.tr('my_jobs'),
+                  icon: Icons.person,
+                  label: context.tr('profile'),
                   selected: false,
                   color: textColor,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pushNamed(context, '/profile');
+                  },
                 ),
               ],
             ),
@@ -247,14 +297,14 @@ class _JobCard extends StatelessWidget {
 }
 
 class _BottomNavItem extends StatelessWidget {
-  final String iconPath;
+  final IconData icon;
   final String label;
   final bool selected;
   final Color color;
   final VoidCallback onTap;
 
   const _BottomNavItem({
-    required this.iconPath,
+    required this.icon,
     required this.label,
     required this.selected,
     required this.color,
@@ -268,11 +318,10 @@ class _BottomNavItem extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(
-            iconPath,
+          Icon(
+            icon,
             color: selected ? color : Colors.grey,
-            width: 28,
-            height: 28,
+            size: 28,
           ),
           const SizedBox(height: 2),
           Text(

@@ -1,0 +1,536 @@
+import 'package:flutter/material.dart';
+import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/services/localization_service.dart';
+import 'job_details_screen.dart';
+
+class JobSearchScreen extends StatefulWidget {
+  const JobSearchScreen({super.key});
+
+  @override
+  State<JobSearchScreen> createState() => _JobSearchScreenState();
+}
+
+class _JobSearchScreenState extends State<JobSearchScreen> {
+  final _searchController = TextEditingController();
+  String _selectedCategory = 'all';
+  String _selectedLocation = 'all';
+  String _selectedSortBy = 'recent';
+  bool _isLoading = false;
+
+  // Mock job data
+  final List<Map<String, dynamic>> _jobs = [
+    {
+      'id': '1',
+      'title': 'Kumuhamisha Mtu',
+      'location': 'Dar es Salaam',
+      'payment': 'TZS 20,000',
+      'category': 'Transport',
+      'type': 'Part-time',
+      'description': 'Need someone to help move furniture from one house to another.',
+      'requirements': ['Physical strength', 'Reliable transportation', 'Good communication'],
+      'provider_name': 'Moving Services Ltd',
+      'provider_location': 'Dar es Salaam',
+      'schedule': 'Flexible',
+      'start_date': 'Immediate',
+      'payment_method': 'M-Pesa',
+    },
+    {
+      'id': '2',
+      'title': 'Kusafisha Compound',
+      'location': 'Dar es Salaam',
+      'payment': 'TZS 15,000',
+      'category': 'Cleaning',
+      'type': 'One-time',
+      'description': 'Cleaning services needed for a residential compound.',
+      'requirements': ['Cleaning experience', 'Attention to detail', 'Reliable'],
+      'provider_name': 'Clean Pro Services',
+      'provider_location': 'Dar es Salaam',
+      'schedule': 'Morning',
+      'start_date': 'Tomorrow',
+      'payment_method': 'M-Pesa',
+    },
+    {
+      'id': '3',
+      'title': 'Kusaidia Kwenye Event',
+      'location': 'Arusha',
+      'payment': 'TZS 25,000',
+      'category': 'Events',
+      'type': 'Part-time',
+      'description': 'Event assistance needed for a wedding ceremony.',
+      'requirements': ['Event experience', 'Good communication', 'Team player'],
+      'provider_name': 'Event Masters',
+      'provider_location': 'Arusha',
+      'schedule': 'Weekend',
+      'start_date': 'Next Saturday',
+      'payment_method': 'M-Pesa',
+    },
+  ];
+
+  List<Map<String, dynamic>> _filteredJobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredJobs = _jobs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.tr('search_jobs')),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              _showFilterDialog();
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          _buildSearchBar(),
+          
+          // Filter Chips
+          _buildFilterChips(),
+          
+          // Job List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredJobs.isEmpty
+                    ? _buildEmptyState()
+                    : _buildJobList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: context.tr('search_jobs_placeholder'),
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              _performSearch();
+            },
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+        ),
+        onChanged: (value) {
+          _performSearch();
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildFilterChip('all', context.tr('all')),
+          _buildFilterChip('transport', 'Transport'),
+          _buildFilterChip('cleaning', 'Cleaning'),
+          _buildFilterChip('events', 'Events'),
+          _buildFilterChip('construction', 'Construction'),
+          _buildFilterChip('delivery', 'Delivery'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label) {
+    final isSelected = _selectedCategory == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() {
+            _selectedCategory = selected ? value : 'all';
+            _applyFilters();
+          });
+        },
+        backgroundColor: Colors.grey[200],
+        selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+        checkmarkColor: ThemeConstants.primaryColor,
+      ),
+    );
+  }
+
+  Widget _buildJobList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _filteredJobs.length,
+      itemBuilder: (context, index) {
+        final job = _filteredJobs[index];
+        return _JobCard(
+          job: job,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => JobDetailsScreen(job: job),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            context.tr('no_jobs_found'),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.tr('try_different_search'),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performSearch() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredJobs = _jobs.where((job) {
+        final title = job['title'].toString().toLowerCase();
+        final location = job['location'].toString().toLowerCase();
+        final category = job['category'].toString().toLowerCase();
+        
+        return title.contains(query) ||
+               location.contains(query) ||
+               category.contains(query);
+      }).toList();
+      
+      _applyFilters();
+    });
+  }
+
+  void _applyFilters() {
+    var filtered = _jobs;
+
+    // Apply search filter
+    final query = _searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((job) {
+        final title = job['title'].toString().toLowerCase();
+        final location = job['location'].toString().toLowerCase();
+        final category = job['category'].toString().toLowerCase();
+        
+        return title.contains(query) ||
+               location.contains(query) ||
+               category.contains(query);
+      }).toList();
+    }
+
+    // Apply category filter
+    if (_selectedCategory != 'all') {
+      filtered = filtered.where((job) {
+        return job['category'].toString().toLowerCase() == _selectedCategory;
+      }).toList();
+    }
+
+    // Apply location filter
+    if (_selectedLocation != 'all') {
+      filtered = filtered.where((job) {
+        return job['location'].toString().toLowerCase() == _selectedLocation;
+      }).toList();
+    }
+
+    // Apply sorting
+    switch (_selectedSortBy) {
+      case 'recent':
+        // Keep original order (most recent first)
+        break;
+      case 'payment_high':
+        filtered.sort((a, b) {
+          final aPayment = int.tryParse(a['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          final bPayment = int.tryParse(b['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          return bPayment.compareTo(aPayment);
+        });
+        break;
+      case 'payment_low':
+        filtered.sort((a, b) {
+          final aPayment = int.tryParse(a['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          final bPayment = int.tryParse(b['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          return aPayment.compareTo(bPayment);
+        });
+        break;
+    }
+
+    setState(() {
+      _filteredJobs = filtered;
+    });
+  }
+
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _FilterBottomSheet(
+        selectedLocation: _selectedLocation,
+        selectedSortBy: _selectedSortBy,
+        onLocationChanged: (location) {
+          setState(() {
+            _selectedLocation = location;
+            _applyFilters();
+          });
+        },
+        onSortByChanged: (sortBy) {
+          setState(() {
+            _selectedSortBy = sortBy;
+            _applyFilters();
+          });
+        },
+      ),
+    );
+  }
+}
+
+class _JobCard extends StatelessWidget {
+  final Map<String, dynamic> job;
+  final VoidCallback onTap;
+
+  const _JobCard({
+    required this.job,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job['title'],
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              job['location'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        job['payment'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeConstants.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          job['type'],
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                job['description'],
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterBottomSheet extends StatelessWidget {
+  final String selectedLocation;
+  final String selectedSortBy;
+  final Function(String) onLocationChanged;
+  final Function(String) onSortByChanged;
+
+  const _FilterBottomSheet({
+    required this.selectedLocation,
+    required this.selectedSortBy,
+    required this.onLocationChanged,
+    required this.onSortByChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.tr('filters'),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Location Filter
+          Text(
+            context.tr('location'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildFilterChip('all', context.tr('all_locations'), selectedLocation, onLocationChanged),
+              _buildFilterChip('dar_es_salaam', 'Dar es Salaam', selectedLocation, onLocationChanged),
+              _buildFilterChip('arusha', 'Arusha', selectedLocation, onLocationChanged),
+              _buildFilterChip('mwanza', 'Mwanza', selectedLocation, onLocationChanged),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Sort By
+          Text(
+            context.tr('sort_by'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildFilterChip('recent', context.tr('most_recent'), selectedSortBy, onSortByChanged),
+              _buildFilterChip('payment_high', context.tr('highest_payment'), selectedSortBy, onSortByChanged),
+              _buildFilterChip('payment_low', context.tr('lowest_payment'), selectedSortBy, onSortByChanged),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, String selected, Function(String) onChanged) {
+    final isSelected = selected == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        onChanged(value);
+      },
+      backgroundColor: Colors.grey[200],
+      selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+      checkmarkColor: ThemeConstants.primaryColor,
+    );
+  }
+} 
