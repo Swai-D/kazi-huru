@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/analytics_service.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
-import '../../../analytics/presentation/widgets/analytics_summary_widget.dart';
+
 import 'job_details_screen.dart';
 
 class JobSeekerDashboardScreen extends StatefulWidget {
@@ -18,6 +19,38 @@ class JobSeekerDashboardScreen extends StatefulWidget {
 class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final WalletService _walletService = WalletService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final LocationService _locationService = LocationService();
+  bool _isLocationEnabled = false;
+  String? _currentLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLocation();
+  }
+
+  Future<void> _initializeLocation() async {
+    try {
+      // Check if location services are enabled
+      bool isEnabled = await _locationService.isLocationServiceEnabled();
+      if (isEnabled) {
+        // Request location permission
+        bool hasPermission = await _locationService.requestLocationPermission();
+        if (hasPermission) {
+          // Get current location
+          var locationData = await _locationService.getCurrentLocationWithAddress();
+          if (locationData != null) {
+            setState(() {
+              _currentLocation = locationData['address'];
+              _isLocationEnabled = true;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error initializing location: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +69,15 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: Icon(
+              _isLocationEnabled ? Icons.location_on : Icons.location_off,
+              color: _isLocationEnabled ? primaryColor : Colors.grey,
+            ),
+            onPressed: () {
+              _initializeLocation();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.chat_outlined),
             onPressed: () {
@@ -111,30 +153,33 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
             ),
             const SizedBox(height: 28),
             
-            // Analytics Summary
-            FutureBuilder(
-              future: _analyticsService.getRealAnalytics('job_seeker', 
-                DateTime.now().subtract(const Duration(days: 7)), 
-                DateTime.now()),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                if (snapshot.hasData && !snapshot.hasError) {
-                  final analytics = snapshot.data!;
-                  return AnalyticsSummaryWidget(
-                    analytics: analytics,
-                    title: context.tr('my_analytics'),
-                    onTap: () {
-                      Navigator.pushNamed(context, '/analytics-dashboard');
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            const SizedBox(height: 16),
+            // Location Indicator
+            if (_isLocationEnabled && _currentLocation != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: primaryColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: primaryColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Near: $_currentLocation',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: primaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             
             Text(
               context.tr('available_jobs'),
@@ -153,6 +198,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     title: 'Kumuhamisha Mtu',
                     location: 'Dar es Salaam',
                     pay: 'TZS 20,000',
+                    distance: _isLocationEnabled ? '2.5 km' : null,
                     onPressed: () {
                       // Navigate to job details
                       final job = {
@@ -169,6 +215,8 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                         'schedule': 'Flexible',
                         'start_date': 'Immediate',
                         'payment_method': 'M-Pesa',
+                        'latitude': -6.8235,
+                        'longitude': 39.2695,
                       };
                       Navigator.push(
                         context,
@@ -183,6 +231,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     title: 'Kusafisha Compound',
                     location: 'Dar es Salaam',
                     pay: 'TZS 15,000',
+                    distance: _isLocationEnabled ? '1.2 km' : null,
                     onPressed: () {
                       // Navigate to job details
                       final job = {
@@ -199,6 +248,8 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                         'schedule': 'Morning',
                         'start_date': 'Tomorrow',
                         'payment_method': 'M-Pesa',
+                        'latitude': -6.7924,
+                        'longitude': 39.2083,
                       };
                       Navigator.push(
                         context,
@@ -263,12 +314,14 @@ class _JobCard extends StatelessWidget {
   final String title;
   final String location;
   final String pay;
+  final String? distance;
   final VoidCallback onPressed;
 
   const _JobCard({
     required this.title,
     required this.location,
     required this.pay,
+    this.distance,
     required this.onPressed,
   });
 
@@ -298,12 +351,36 @@ class _JobCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
                 Text(
                   location,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
                   ),
+                    ),
+                    if (distance != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          distance!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
                   pay,

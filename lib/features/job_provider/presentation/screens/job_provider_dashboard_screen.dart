@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
-import '../../../../core/services/analytics_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
-import '../../../analytics/presentation/widgets/analytics_summary_widget.dart';
 import 'company_profile_screen.dart';
+import 'post_job_screen.dart';
 
 class JobProviderDashboardScreen extends StatefulWidget {
   const JobProviderDashboardScreen({super.key});
@@ -14,32 +13,37 @@ class JobProviderDashboardScreen extends StatefulWidget {
   State<JobProviderDashboardScreen> createState() => _JobProviderDashboardScreenState();
 }
 
-class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen> {
   int _selectedIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        
+        // Prevent going back to login/register pages
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          // If no previous pages, go to role selection
+          Navigator.pushReplacementNamed(context, '/role_selection');
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(context.tr('job_provider_dashboard')),
+          title: Text(_selectedIndex == 2 ? context.tr('applications') : context.tr('job_provider_dashboard')),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+          leading: _selectedIndex == 2 
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() => _selectedIndex = 0),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.chat_outlined),
@@ -61,72 +65,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Stats Cards
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: context.tr('active_jobs'),
-                    value: '5',
-                    icon: Icons.work_outline,
-                    color: ThemeConstants.primaryColor,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: context.tr('total_applications'),
-                    value: '23',
-                    icon: Icons.people_outline,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: context.tr('completed_jobs'),
-                    value: '12',
-                    icon: Icons.check_circle_outline,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Tab Bar
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: ThemeConstants.primaryColor,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: ThemeConstants.primaryColor,
-              tabs: [
-                Tab(text: context.tr('post_job')),
-                Tab(text: context.tr('applications')),
-                Tab(text: context.tr('analytics')),
-              ],
-            ),
-          ),
-          
-          // Tab Views
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _PostJobTab(),
-                _ApplicationsTab(),
-                _AnalyticsTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
+        body: _selectedIndex == 2 ? _AllApplicationsScreen() : _DashboardContent(),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -148,7 +87,13 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   icon: Icons.add_circle_outline,
                   label: context.tr('post_job'),
                   selected: _selectedIndex == 1,
-                  onTap: () => setState(() => _selectedIndex = 1),
+                    onTap: () {
+                      setState(() => _selectedIndex = 1);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PostJobScreen()),
+                      );
+                    },
                 ),
                 _BottomNavItem(
                   icon: Icons.people_outline,
@@ -161,6 +106,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   label: context.tr('profile'),
                   selected: _selectedIndex == 3,
                   onTap: () {
+                      setState(() => _selectedIndex = 3);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -170,10 +116,899 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   },
                 ),
               ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DashboardContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Stats Cards
+          Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  title: context.tr('active_jobs'),
+                  value: '5',
+                  icon: Icons.work_outline,
+                  color: ThemeConstants.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  title: context.tr('total_applications'),
+                  value: '23',
+                  icon: Icons.people_outline,
+                  color: Colors.orange,
+            ),
+          ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  title: context.tr('completed_jobs'),
+                  value: '12',
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+          const SizedBox(height: 24),
+          
+          // Post Job Button
+                      ElevatedButton.icon(
+              onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PostJobScreen()),
+              );
+              },
+            icon: const Icon(Icons.add),
+            label: Text(context.tr('post_new_job')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeConstants.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // My Posted Jobs
+          Text(
+            'Kazi Zangu Zilizopostwa',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // My Posted Job Cards
+                _JobCard(
+                  title: 'Kusafisha Office',
+                  location: 'Dar es Salaam',
+                  pay: 'TZS 25,000',
+                  status: 'active',
+                  applications: 8,
+            onTap: () => _showSimpleJobDialog(context, 'Kusafisha Office'),
+                ),
+                const SizedBox(height: 12),
+                _JobCard(
+                  title: 'Kusafisha Compound',
+                  location: 'Dar es Salaam',
+                  pay: 'TZS 15,000',
+                  status: 'completed',
+                  applications: 5,
+            onTap: () => _showSimpleJobDialog(context, 'Kusafisha Compound'),
+                ),
+                const SizedBox(height: 12),
+                _JobCard(
+                  title: 'Kumuhamisha Mtu',
+                  location: 'Dar es Salaam',
+                  pay: 'TZS 20,000',
+                  status: 'active',
+                  applications: 12,
+            onTap: () => _showSimpleJobDialog(context, 'Kumuhamisha Mtu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSimpleJobDialog(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(jobTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: Text(context.tr('view_applications')),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => JobApplicationsScreen(jobTitle: jobTitle),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(context.tr('edit_job')),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${context.tr('edit_job')} - $jobTitle')),
+                  );
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('close')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class JobApplicationsScreen extends StatelessWidget {
+  final String jobTitle;
+
+  const JobApplicationsScreen({
+    super.key,
+    required this.jobTitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Waombaji - $jobTitle'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Job Info Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    jobTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text('Dar es Salaam', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(width: 16),
+                      Icon(Icons.attach_money, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text('TZS 25,000', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Filter Chips
+            Row(
+              children: [
+                Expanded(
+                  child: _FilterChip(
+                    label: context.tr('all'),
+                    selected: true,
+                    onSelected: (value) {},
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _FilterChip(
+                    label: context.tr('pending'),
+                    selected: false,
+                    onSelected: (value) {},
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _FilterChip(
+                    label: context.tr('accepted'),
+                    selected: false,
+                    onSelected: (value) {},
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Applications List for this specific job
+            _ApplicationCard(
+              name: 'John Doe',
+              job: jobTitle,
+              status: 'pending',
+              rating: 4.5,
+              onAccept: () => _showAcceptDialog(context, 'John Doe'),
+              onReject: () => _showRejectDialog(context, 'John Doe'),
+            ),
+            const SizedBox(height: 12),
+            _ApplicationCard(
+              name: 'Jane Smith',
+              job: jobTitle,
+              status: 'accepted',
+              rating: 4.8,
+              onAccept: () => _showAcceptDialog(context, 'Jane Smith'),
+              onReject: () => _showRejectDialog(context, 'Jane Smith'),
+            ),
+            const SizedBox(height: 12),
+            _ApplicationCard(
+              name: 'Mike Johnson',
+              job: jobTitle,
+              status: 'pending',
+              rating: 4.2,
+              onAccept: () => _showAcceptDialog(context, 'Mike Johnson'),
+              onReject: () => _showRejectDialog(context, 'Mike Johnson'),
+            ),
+            const SizedBox(height: 12),
+            _ApplicationCard(
+              name: 'Sarah Wilson',
+              job: jobTitle,
+              status: 'pending',
+              rating: 4.7,
+              onAccept: () => _showAcceptDialog(context, 'Sarah Wilson'),
+              onReject: () => _showRejectDialog(context, 'Sarah Wilson'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAcceptDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('accept_application')),
+          content: Text('${context.tr('accept_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_accepted')} - $applicantName'),
+                    backgroundColor: Colors.green,
+                  ),
+                  );
+                },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: Text(context.tr('accept')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRejectDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('reject_application')),
+          content: Text('${context.tr('reject_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+                ),
+            ElevatedButton(
+              onPressed: () {
+                  Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_rejected')} - $applicantName'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.tr('reject')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class JobSeekerProfileScreen extends StatelessWidget {
+  final String name;
+  final String jobTitle;
+  final double rating;
+  final String status;
+
+  const JobSeekerProfileScreen({
+    super.key,
+    required this.name,
+    required this.jobTitle,
+    required this.rating,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Profile - $name'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Profile Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Profile Picture
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: ThemeConstants.primaryColor,
+                    child: Text(
+                      name[0],
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Name
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  // Job Title
+                  Text(
+                    'Applicant for: $jobTitle',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Rating
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: Colors.orange, size: 20),
+                      const SizedBox(width: 4),
+                      Text(
+                        rating.toString(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${rating.toInt()}/5)',
+                        style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+                  
+                  // Status Badge
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: status == 'accepted' ? Colors.green : Colors.orange,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Personal Information
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Personal Information',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  _ProfileInfoRow(
+                    icon: Icons.phone,
+                    title: 'Phone',
+                    value: '+255 123 456 789',
+                  ),
+                  const SizedBox(height: 8),
+                  _ProfileInfoRow(
+                    icon: Icons.email,
+                    title: 'Email',
+                    value: '${name.toLowerCase().replaceAll(' ', '.')}@email.com',
+                  ),
+                  const SizedBox(height: 8),
+                  _ProfileInfoRow(
+                    icon: Icons.location_on,
+                    title: 'Location',
+                    value: 'Dar es Salaam',
+                  ),
+                  const SizedBox(height: 8),
+                  _ProfileInfoRow(
+                    icon: Icons.work,
+                    title: 'Experience',
+                    value: '3 years',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Skills
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Skills',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _SkillChip('Cleaning'),
+                      _SkillChip('Organization'),
+                      _SkillChip('Time Management'),
+                      _SkillChip('Communication'),
+                      _SkillChip('Reliability'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showAcceptDialog(context, name),
+                    icon: const Icon(Icons.check),
+                    label: Text(context.tr('accept')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showRejectDialog(context, name),
+                    icon: const Icon(Icons.close),
+                    label: Text(context.tr('reject')),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAcceptDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('accept_application')),
+          content: Text('${context.tr('accept_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context); // Close profile screen too
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_accepted')} - $applicantName'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: Text(context.tr('accept')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRejectDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('reject_application')),
+          content: Text('${context.tr('reject_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context); // Close profile screen too
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_rejected')} - $applicantName'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.tr('reject')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProfileInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+
+  const _ProfileInfoRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SkillChip extends StatelessWidget {
+  final String skill;
+
+  const _SkillChip(this.skill);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: ThemeConstants.primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: ThemeConstants.primaryColor.withOpacity(0.3),
+        ),
+      ),
+      child: Text(
+        skill,
+        style: TextStyle(
+          color: ThemeConstants.primaryColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _AllApplicationsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Filter Chips
+          Row(
+            children: [
+              Expanded(
+                child: _FilterChip(
+                  label: context.tr('all'),
+                  selected: true,
+                  onSelected: (value) {},
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterChip(
+                  label: context.tr('pending'),
+                  selected: false,
+                  onSelected: (value) {},
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FilterChip(
+                  label: context.tr('accepted'),
+                  selected: false,
+                  onSelected: (value) {},
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Applications List
+                _ApplicationCard(
+                  name: 'John Doe',
+                  job: 'Kusafisha Office',
+                  status: 'pending',
+                  rating: 4.5,
+            onAccept: () => _showAcceptDialog(context, 'John Doe'),
+            onReject: () => _showRejectDialog(context, 'John Doe'),
+                ),
+                const SizedBox(height: 12),
+                _ApplicationCard(
+                  name: 'Jane Smith',
+                  job: 'Kusafisha Office',
+                  status: 'accepted',
+                  rating: 4.8,
+            onAccept: () => _showAcceptDialog(context, 'Jane Smith'),
+            onReject: () => _showRejectDialog(context, 'Jane Smith'),
+                ),
+                const SizedBox(height: 12),
+                _ApplicationCard(
+                  name: 'Mike Johnson',
+                  job: 'Kumuhamisha Mtu',
+                  status: 'pending',
+                  rating: 4.2,
+            onAccept: () => _showAcceptDialog(context, 'Mike Johnson'),
+            onReject: () => _showRejectDialog(context, 'Mike Johnson'),
+          ),
+          const SizedBox(height: 12),
+          _ApplicationCard(
+            name: 'Sarah Wilson',
+            job: 'Kusafisha Compound',
+            status: 'pending',
+            rating: 4.7,
+            onAccept: () => _showAcceptDialog(context, 'Sarah Wilson'),
+            onReject: () => _showRejectDialog(context, 'Sarah Wilson'),
+                ),
+              ],
+            ),
+    );
+  }
+
+  void _showAcceptDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('accept_application')),
+          content: Text('${context.tr('accept_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_accepted')} - $applicantName'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: Text(context.tr('accept')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRejectDialog(BuildContext context, String applicantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('reject_application')),
+          content: Text('${context.tr('reject_application_message')} $applicantName?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${context.tr('application_rejected')} - $applicantName'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.tr('reject')),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -225,389 +1060,8 @@ class _StatCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               color: Colors.grey,
-            ),
+                ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PostJobTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-                      ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, '/post_job');
-              },
-            icon: const Icon(Icons.add),
-            label: Text(context.tr('post_new_job')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            context.tr('recent_jobs'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView(
-              children: [
-                _JobCard(
-                  title: 'Kusafisha Office',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 25,000',
-                  status: 'active',
-                  applications: 8,
-                  onTap: () => _showJobManagementDialog(context, 'Kusafisha Office'),
-                ),
-                const SizedBox(height: 12),
-                _JobCard(
-                  title: 'Kusafisha Compound',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 15,000',
-                  status: 'completed',
-                  applications: 5,
-                  onTap: () => _showJobManagementDialog(context, 'Kusafisha Compound'),
-                ),
-                const SizedBox(height: 12),
-                _JobCard(
-                  title: 'Kumuhamisha Mtu',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 20,000',
-                  status: 'active',
-                  applications: 12,
-                  onTap: () => _showJobManagementDialog(context, 'Kumuhamisha Mtu'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showJobManagementDialog(BuildContext context, String jobTitle) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(jobTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.people_outline),
-                title: Text(context.tr('view_applications')),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Navigate to applications
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: Text(context.tr('edit_job')),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Navigate to edit job
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.pause_circle_outline),
-                title: Text(context.tr('pause_job')),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('job_paused'))),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: Text(
-                  context.tr('delete_job'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(context, jobTitle);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.tr('cancel')),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, String jobTitle) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(context.tr('delete_job')),
-          content: Text(context.tr('delete_job_confirmation')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.tr('cancel')),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.tr('job_deleted'))),
-                );
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: Text(context.tr('delete')),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ApplicationsTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _FilterChip(
-                  label: context.tr('all'),
-                  selected: true,
-                  onSelected: (value) {},
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _FilterChip(
-                  label: context.tr('pending'),
-                  selected: false,
-                  onSelected: (value) {},
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _FilterChip(
-                  label: context.tr('accepted'),
-                  selected: false,
-                  onSelected: (value) {},
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              children: [
-                _ApplicationCard(
-                  name: 'John Doe',
-                  job: 'Kusafisha Office',
-                  status: 'pending',
-                  rating: 4.5,
-                ),
-                const SizedBox(height: 12),
-                _ApplicationCard(
-                  name: 'Jane Smith',
-                  job: 'Kusafisha Office',
-                  status: 'accepted',
-                  rating: 4.8,
-                ),
-                const SizedBox(height: 12),
-                _ApplicationCard(
-                  name: 'Mike Johnson',
-                  job: 'Kumuhamisha Mtu',
-                  status: 'pending',
-                  rating: 4.2,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnalyticsTab extends StatefulWidget {
-  @override
-  State<_AnalyticsTab> createState() => _AnalyticsTabState();
-}
-
-class _AnalyticsTabState extends State<_AnalyticsTab> {
-  final AnalyticsService _analyticsService = AnalyticsService();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Quick Stats
-          Row(
-            children: [
-              Expanded(
-                child: _AnalyticsCard(
-                  title: context.tr('total_earnings'),
-                  value: 'TZS 450,000',
-                  icon: Icons.attach_money,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AnalyticsCard(
-                  title: context.tr('avg_rating'),
-                  value: '4.6',
-                  icon: Icons.star,
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _AnalyticsCard(
-                  title: context.tr('active_jobs'),
-                  value: '5',
-                  icon: Icons.work_outline,
-                  color: ThemeConstants.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AnalyticsCard(
-                  title: context.tr('total_applications'),
-                  value: '23',
-                  icon: Icons.people_outline,
-                  color: Colors.purple,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          
-          // Analytics Summary Widget
-          FutureBuilder(
-            future: _analyticsService.getRealAnalytics('job_provider', 
-              DateTime.now().subtract(const Duration(days: 7)), 
-              DateTime.now()),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              
-              if (snapshot.hasError || !snapshot.hasData) {
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(context.tr('analytics_not_available')),
-                );
-              }
-
-              final analytics = snapshot.data!;
-              return AnalyticsSummaryWidget(
-                analytics: analytics,
-                title: context.tr('business_analytics'),
-                onTap: () {
-                  Navigator.pushNamed(context, '/analytics-dashboard');
-                },
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          
-          // Detailed Analytics Button
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, '/analytics-dashboard');
-            },
-            icon: const Icon(Icons.analytics),
-            label: Text(context.tr('view_detailed_analytics')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Recent Activity
-          Text(
-            context.tr('recent_activity'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _ActivityItem(
-                title: 'Job completed: Kusafisha Office',
-                time: '2 hours ago',
-                type: 'completed',
-              ),
-              _ActivityItem(
-                title: 'New application: Kusafisha Compound',
-                time: '4 hours ago',
-                type: 'application',
-              ),
-              _ActivityItem(
-                title: 'Payment received: TZS 25,000',
-                time: '1 day ago',
-                type: 'payment',
-              ),
-            ],
           ),
         ],
       ),
@@ -634,7 +1088,9 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -709,6 +1165,7 @@ class _JobCard extends StatelessWidget {
             ],
           ),
         ],
+        ),
       ),
     );
   }
@@ -719,12 +1176,16 @@ class _ApplicationCard extends StatelessWidget {
   final String job;
   final String status;
   final double rating;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
 
   const _ApplicationCard({
     required this.name,
     required this.job,
     required this.status,
     required this.rating,
+    required this.onAccept,
+    required this.onReject,
   });
 
   @override
@@ -743,13 +1204,19 @@ class _ApplicationCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _showJobSeekerProfile(context),
+                child: CircleAvatar(
             backgroundColor: ThemeConstants.primaryColor,
             child: Text(
               name[0],
               style: const TextStyle(color: Colors.white),
+                  ),
             ),
           ),
           const SizedBox(width: 12),
@@ -757,11 +1224,16 @@ class _ApplicationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                    GestureDetector(
+                      onTap: () => _showJobSeekerProfile(context),
+                      child: Text(
                   name,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          color: ThemeConstants.primaryColor,
+                        ),
                   ),
                 ),
                 Text(
@@ -796,7 +1268,53 @@ class _ApplicationCard extends StatelessWidget {
               ),
             ),
           ),
+            ],
+          ),
+          if (status == 'pending') ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onAccept,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: Text(context.tr('accept')),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onReject,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: Text(context.tr('reject')),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  void _showJobSeekerProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JobSeekerProfileScreen(
+          name: name,
+          jobTitle: job,
+          rating: rating,
+          status: status,
+        ),
       ),
     );
   }
@@ -821,135 +1339,6 @@ class _FilterChip extends StatelessWidget {
       onSelected: onSelected,
       selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
       checkmarkColor: ThemeConstants.primaryColor,
-    );
-  }
-}
-
-class _AnalyticsCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _AnalyticsCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String time;
-  final String type;
-
-  const _ActivityItem({
-    required this.title,
-    required this.time,
-    required this.type,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    IconData icon;
-    Color color;
-    
-    switch (type) {
-      case 'completed':
-        icon = Icons.check_circle;
-        color = Colors.green;
-        break;
-      case 'application':
-        icon = Icons.person_add;
-        color = Colors.blue;
-        break;
-      case 'payment':
-        icon = Icons.payment;
-        color = Colors.orange;
-        break;
-      default:
-        icon = Icons.info;
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -39,6 +39,12 @@ dependencies:
     sdk: flutter
   intl: ^0.19.0
   
+  # Location Services
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+  google_maps_flutter: ^2.6.0
+  permission_handler: ^11.3.1
+
   # Firebase dependencies (commented out for now - will be enabled later)
   # firebase_core: ^3.6.0
   # firebase_auth: ^5.3.3

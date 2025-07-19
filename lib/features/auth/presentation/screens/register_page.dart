@@ -150,58 +150,58 @@ class _RegisterPageState extends State<RegisterPage> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('full_name'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.person_outline),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_name');
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('phone'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.phone_android),
-                        hintText: '07XXXXXXXX',
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_phone');
-                        }
-                        if (!RegExp(r'^(\+255|0)7[0-9]{8}$').hasMatch(value.trim())) {
-                          return context.tr('enter_valid_tanzania_phone');
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('password'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.lock_outline),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_password');
-                        }
-                        if (value.length < 6) {
-                          return context.tr('password_min_length');
-                        }
-                        return null;
-                      },
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: context.tr('full_name'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person_outline),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return context.tr('please_enter_name');
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: InputDecoration(
+                  labelText: context.tr('phone'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.phone_android),
+                  hintText: '07XXXXXXXX',
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return context.tr('please_enter_phone');
+                  }
+                  if (!RegExp(r'^(\+255|0)7[0-9]{8}$').hasMatch(value.trim())) {
+                    return context.tr('enter_valid_tanzania_phone');
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: context.tr('password'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return context.tr('please_enter_password');
+                  }
+                  if (value.length < 6) {
+                    return context.tr('password_min_length');
+                  }
+                  return null;
+                },
                     ),
                   ],
                 ),
@@ -223,53 +223,53 @@ class _RegisterPageState extends State<RegisterPage> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _register,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ThemeConstants.primaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _register,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ThemeConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              context.tr('continue'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: ThemeConstants.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        context.tr('already_have_account'),
+                      )
+                    : Text(
+                        context.tr('continue'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: ThemeConstants.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  context.tr('already_have_account'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                       ),
                     ),
                   ],

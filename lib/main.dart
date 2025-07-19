@@ -13,7 +13,8 @@ import 'features/auth/presentation/screens/user_profile_screen.dart';
 import 'features/job_seeker/presentation/screens/job_search_screen.dart';
 import 'features/job_provider/presentation/screens/company_profile_screen.dart';
 import 'features/wallet/presentation/screens/wallet_screen.dart';
-import 'features/analytics/presentation/screens/analytics_dashboard_screen.dart';
+import 'features/auth/presentation/screens/role_selection_screen.dart';
+
 import 'core/services/localization_service.dart';
 
 void main() async {
@@ -73,13 +74,18 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
         '/job_seeker_dashboard': (context) => const JobSeekerDashboardScreen(),
         '/job_provider_dashboard': (context) => const JobProviderDashboardScreen(), // Job provider dashboard
         '/post_job': (context) => const PostJobScreen(), // Post job screen
+        '/role_selection': (context) => const RoleSelectionScreen(
+          phoneNumber: 'demo@example.com',
+          password: 'password',
+          name: 'Demo User',
+        ), // Role selection screen
         '/notifications': (context) => const NotificationsScreen(), // Notifications
         '/chat': (context) => const ChatListScreen(), // Chat
         '/profile': (context) => const UserProfileScreen(userRole: 'job_seeker'), // User profile
         '/job_search': (context) => const JobSearchScreen(), // Job search
-        '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
-        '/wallet': (context) => const WalletScreen(), // Wallet screen
-        '/analytics-dashboard': (context) => const AnalyticsDashboardScreen(), // Analytics dashboard
+                          '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
+                  '/wallet': (context) => const WalletScreen(), // Wallet screen
+
       },
     );
   }

@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Kazi Huru needs access to your location to find nearby jobs and provide better service.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Kazi Huru needs access to your location to find nearby jobs and provide better service.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Kazi Huru needs access to your location to find nearby jobs and provide better service.</string>
 </dict>
 </plist>

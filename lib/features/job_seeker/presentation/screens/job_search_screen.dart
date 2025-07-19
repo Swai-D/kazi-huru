@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/location_service.dart';
+import '../../../../core/models/location_model.dart';
 import 'job_details_screen.dart';
+import 'location_permission_screen.dart';
 
 class JobSearchScreen extends StatefulWidget {
   const JobSearchScreen({super.key});
@@ -15,9 +18,12 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   String _selectedCategory = 'all';
   String _selectedLocation = 'all';
   String _selectedSortBy = 'recent';
-  final bool _isLoading = false;
+  bool _isLoading = false;
+  bool _isLocationEnabled = false;
+  String? _currentLocation;
+  final LocationService _locationService = LocationService();
 
-  // Mock job data
+  // Mock job data with location coordinates
   final List<Map<String, dynamic>> _jobs = [
     {
       'id': '1',
@@ -33,6 +39,9 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'schedule': 'Flexible',
       'start_date': 'Immediate',
       'payment_method': 'M-Pesa',
+      'latitude': -6.8235,
+      'longitude': 39.2695,
+      'distance': null,
     },
     {
       'id': '2',
@@ -48,6 +57,9 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'schedule': 'Morning',
       'start_date': 'Tomorrow',
       'payment_method': 'M-Pesa',
+      'latitude': -6.7924,
+      'longitude': 39.2083,
+      'distance': null,
     },
     {
       'id': '3',
@@ -63,6 +75,9 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'schedule': 'Weekend',
       'start_date': 'Next Saturday',
       'payment_method': 'M-Pesa',
+      'latitude': -3.3731,
+      'longitude': 36.6827,
+      'distance': null,
     },
   ];
 
@@ -72,6 +87,166 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   void initState() {
     super.initState();
     _filteredJobs = _jobs;
+    _initializeLocation();
+  }
+
+  Future<void> _initializeLocation() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Check if location services are enabled
+      bool isEnabled = await _locationService.isLocationServiceEnabled();
+      if (isEnabled) {
+        // Request location permission
+        bool hasPermission = await _locationService.requestLocationPermission();
+        if (hasPermission) {
+          // Get current location
+          var locationData = await _locationService.getCurrentLocationWithAddress();
+          if (locationData != null) {
+            setState(() {
+              _currentLocation = locationData['address'];
+              _isLocationEnabled = true;
+            });
+            // Calculate distances after getting location
+            await _calculateDistances();
+          } else {
+            print('Could not get location data');
+            // For demo purposes, use fallback location
+            setState(() {
+              _currentLocation = 'Dar es Salaam, Tanzania';
+              _isLocationEnabled = true;
+            });
+            await _calculateDistances();
+          }
+        } else {
+          // Show location permission screen
+          _showLocationPermissionScreen();
+        }
+      } else {
+        // Show location services disabled dialog
+        _showLocationServiceDialog();
+      }
+    } catch (e) {
+      print('Error initializing location: $e');
+      // For demo purposes, use fallback location
+      setState(() {
+        _currentLocation = 'Dar es Salaam, Tanzania';
+        _isLocationEnabled = true;
+      });
+      await _calculateDistances();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showLocationPermissionScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPermissionScreen(
+          onPermissionGranted: () async {
+            await _initializeLocation();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showLocationServiceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('location_services_disabled')),
+        content: Text(context.tr('enable_location_services_message')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _initializeLocation();
+            },
+            child: Text(context.tr('enable')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLocationErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('error')),
+        content: Text(context.tr('location_error_message')),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.tr('ok')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _calculateDistances() async {
+    if (!_isLocationEnabled) return;
+
+    for (int i = 0; i < _jobs.length; i++) {
+      try {
+        String? distance = await _locationService.getDistanceToJob(
+          _jobs[i]['latitude'],
+          _jobs[i]['longitude'],
+        );
+        if (distance != null) {
+          setState(() {
+            _jobs[i]['distance'] = distance;
+          });
+        }
+      } catch (e) {
+        print('Error calculating distance for job ${_jobs[i]['id']}: $e');
+      }
+    }
+  }
+
+  void _sortJobsByDistance() {
+    _filteredJobs.sort((a, b) {
+      String? distanceA = a['distance'];
+      String? distanceB = b['distance'];
+      
+      if (distanceA == null && distanceB == null) return 0;
+      if (distanceA == null) return 1;
+      if (distanceB == null) return -1;
+      
+      // Extract numeric value from distance string (e.g., "2.5 km" -> 2.5)
+      double? valueA = _extractDistanceValue(distanceA);
+      double? valueB = _extractDistanceValue(distanceB);
+      
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return 1;
+      if (valueB == null) return -1;
+      
+      return valueA.compareTo(valueB);
+    });
+  }
+
+  double? _extractDistanceValue(String distance) {
+    try {
+      if (distance.contains('km')) {
+        return double.parse(distance.replaceAll(' km', ''));
+      } else if (distance.contains('m')) {
+        return double.parse(distance.replaceAll(' m', '')) / 1000;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -82,6 +257,16 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.location_on),
+            onPressed: () {
+              if (_isLocationEnabled) {
+                _initializeLocation();
+              } else {
+                _showLocationPermissionScreen();
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: () {
@@ -114,7 +299,9 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: TextField(
+      child: Column(
+        children: [
+          TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: context.tr('search_jobs_placeholder'),
@@ -135,6 +322,39 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         onChanged: (value) {
           _performSearch();
         },
+          ),
+          if (_isLocationEnabled && _currentLocation != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Near: $_currentLocation',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ThemeConstants.primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await _initializeLocation();
+                  },
+                  child: Text(
+                    'Refresh',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -152,6 +372,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
           _buildFilterChip('events', 'Events'),
           _buildFilterChip('construction', 'Construction'),
           _buildFilterChip('delivery', 'Delivery'),
+          if (_isLocationEnabled) _buildFilterChip('nearby', 'Nearby'),
         ],
       ),
     );
@@ -267,9 +488,22 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
 
     // Apply category filter
     if (_selectedCategory != 'all') {
+      if (_selectedCategory == 'nearby' && _isLocationEnabled) {
+        // Filter jobs within 10km
+        filtered = filtered.where((job) {
+          String? distance = job['distance'];
+          if (distance == null) return false;
+          
+          double? distanceValue = _extractDistanceValue(distance);
+          return distanceValue != null && distanceValue <= 10.0;
+        }).toList();
+        // Sort by distance
+        _sortJobsByDistance();
+      } else {
       filtered = filtered.where((job) {
         return job['category'].toString().toLowerCase() == _selectedCategory;
       }).toList();
+      }
     }
 
     // Apply location filter
@@ -382,6 +616,24 @@ class _JobCard extends StatelessWidget {
                                 color: Colors.grey[600],
                               ),
                             ),
+                            if (job['distance'] != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  job['distance'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: ThemeConstants.primaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],

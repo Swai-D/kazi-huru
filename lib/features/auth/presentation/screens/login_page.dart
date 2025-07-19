@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import 'register_page.dart';
+import 'role_selection_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,10 +37,19 @@ class _LoginPageState extends State<LoginPage> {
       // Simulate authentication delay
       await Future.delayed(const Duration(seconds: 1));
       
-      // Mock successful login
+      // Mock successful login - navigate to role selection first
       if (mounted) {
-        // Navigate to dashboard (you can change this later)
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        // For demo purposes, show role selection
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RoleSelectionScreen(
+              phoneNumber: 'demo@example.com',
+              password: 'password',
+              name: 'Demo User',
+            ),
+          ),
+        );
       }
     } catch (e) {
       setState(() {
@@ -138,37 +148,37 @@ class _LoginPageState extends State<LoginPage> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: _identifierController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: context.tr('phone_or_email'),
-                        hintText: context.tr('phone_or_email_hint'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.phone_android),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_phone_or_email');
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('password'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.lock_outline),
-                      ),
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_password');
-                        }
-                        return null;
-                      },
+              TextFormField(
+                controller: _identifierController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: context.tr('phone_or_email'),
+                  hintText: context.tr('phone_or_email_hint'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.phone_android),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return context.tr('please_enter_phone_or_email');
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: context.tr('password'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                ),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return context.tr('please_enter_password');
+                  }
+                  return null;
+                },
                     ),
                   ],
                 ),
@@ -190,58 +200,58 @@ class _LoginPageState extends State<LoginPage> {
                 constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   children: [
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ThemeConstants.primaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ThemeConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              context.tr('login'),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: ThemeConstants.primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        context.tr('dont_have_account'),
+                      )
+                    : Text(
+                        context.tr('login'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterPage(),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: ThemeConstants.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text(
+                  context.tr('dont_have_account'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                       ),
                     ),
                   ],

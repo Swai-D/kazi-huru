@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
-import '../../../../core/services/analytics_service.dart';
+
 import '../../../../core/models/wallet_model.dart';
-import '../../../analytics/presentation/widgets/analytics_summary_widget.dart';
+
 import 'top_up_screen.dart';
 
 class WalletScreen extends StatefulWidget {
@@ -16,7 +16,7 @@ class WalletScreen extends StatefulWidget {
 
 class _WalletScreenState extends State<WalletScreen> {
   final WalletService _walletService = WalletService();
-  final AnalyticsService _analyticsService = AnalyticsService();
+
 
   @override
   Widget build(BuildContext context) {
@@ -49,29 +49,7 @@ class _WalletScreenState extends State<WalletScreen> {
             _buildTransactionHistory(),
             const SizedBox(height: 24),
             
-            // Analytics Summary
-            _buildAnalyticsSummary(),
-            const SizedBox(height: 16),
-            
-            // Direct Analytics Access Button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/analytics-dashboard');
-                },
-                icon: const Icon(Icons.analytics),
-                label: Text(context.tr('view_detailed_analytics')),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
+
           ],
         ),
       ),
@@ -280,11 +258,14 @@ class _WalletScreenState extends State<WalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              Expanded(
+                child: Text(
                 context.tr('recent_transactions'),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               TextButton(
@@ -380,44 +361,7 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildAnalyticsSummary() {
-    return FutureBuilder(
-      future: _analyticsService.getWalletAnalytics(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Text('Analytics not available'),
-          );
-        }
 
-        final walletAnalytics = snapshot.data!;
-        return WalletAnalyticsWidget(
-          walletAnalytics: walletAnalytics,
-          onTap: () {
-            // Navigate to analytics dashboard
-            Navigator.pushNamed(context, '/analytics-dashboard');
-          },
-        );
-      },
-    );
-  }
 }
 
 class _ActionCard extends StatelessWidget {
@@ -522,11 +466,14 @@ class _TransactionItem extends StatelessWidget {
               ],
             ),
           ),
-          Text(
+          Flexible(
+            child: Text(
             '${isCredit ? '+' : ''}TZS ${transaction.amount.abs().toStringAsFixed(0)}',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
