@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
+import '../../../../core/services/maps_service.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -323,11 +324,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildInfoRow(
-                  Icons.location_on_outlined,
-                  context.tr('location'),
-                  widget.job['location'] ?? 'Not specified',
-                ),
+                _buildLocationRow(),
                 const Divider(),
                 _buildInfoRow(
                   Icons.schedule_outlined,
@@ -346,6 +343,75 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildLocationRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('location'),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  widget.job['location'] ?? 'Not specified',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Navigation Button
+          Container(
+            decoration: BoxDecoration(
+              color: ThemeConstants.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.directions_outlined,
+                color: ThemeConstants.primaryColor,
+              ),
+              onPressed: () => _openNavigation(),
+              tooltip: context.tr('get_directions'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openNavigation() async {
+    // Mock coordinates for demo - in real app, get from job data
+    const double jobLat = -6.8235; // Dar es Salaam coordinates
+    const double jobLng = 39.2695;
+    
+    final success = await MapsService.openNavigation(
+      jobLat, 
+      jobLng, 
+      destinationName: widget.job['title'],
+    );
+    
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('navigation_failed')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {

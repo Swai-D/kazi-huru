@@ -333,6 +333,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const Divider(height: 1),
               ListTile(
+                leading: const Icon(Icons.verified_user_outlined),
+                title: Text(context.tr('verification_status')),
+                subtitle: Text(context.tr('check_verification_status')),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.pushNamed(context, '/verification-status');
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
                 leading: const Icon(Icons.security_outlined),
                 title: Text(context.tr('privacy')),
                 subtitle: Text(context.tr('privacy_settings')),

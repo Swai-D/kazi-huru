@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/maps_service.dart';
 import '../../../../core/models/location_model.dart';
 import 'job_details_screen.dart';
 import 'location_permission_screen.dart';
@@ -198,17 +199,26 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   Future<void> _calculateDistances() async {
     if (!_isLocationEnabled) return;
 
+    // Get current location for distance calculation
+    final currentPosition = await MapsService.getCurrentLocation();
+    if (currentPosition == null) return;
+
     for (int i = 0; i < _jobs.length; i++) {
       try {
-        String? distance = await _locationService.getDistanceToJob(
+        double distance = MapsService.calculateDistance(
+          currentPosition.latitude,
+          currentPosition.longitude,
           _jobs[i]['latitude'],
           _jobs[i]['longitude'],
         );
-        if (distance != null) {
-          setState(() {
-            _jobs[i]['distance'] = distance;
-          });
-        }
+        
+        String formattedDistance = MapsService.formatDistance(distance);
+        String estimatedTime = MapsService.getEstimatedTravelTime(distance);
+        
+        setState(() {
+          _jobs[i]['distance'] = formattedDistance;
+          _jobs[i]['estimated_time'] = estimatedTime;
+        });
       } catch (e) {
         print('Error calculating distance for job ${_jobs[i]['id']}: $e');
       }
@@ -566,7 +576,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   }
 }
 
-class _JobCard extends StatelessWidget {
+class _JobCard extends StatefulWidget {
   final Map<String, dynamic> job;
   final VoidCallback onTap;
 
@@ -576,11 +586,40 @@ class _JobCard extends StatelessWidget {
   });
 
   @override
+  State<_JobCard> createState() => _JobCardState();
+}
+
+class _JobCardState extends State<_JobCard> {
+  Future<void> _openNavigation() async {
+    if (widget.job['latitude'] == null || widget.job['longitude'] == null) {
+      return;
+    }
+
+    final success = await MapsService.openNavigation(
+      widget.job['latitude'] as double,
+      widget.job['longitude'] as double,
+      destinationName: widget.job['title'],
+    );
+
+    if (!success) {
+      // Show error message using the correct context
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('navigation_failed')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -594,7 +633,7 @@ class _JobCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          job['title'],
+                          widget.job['title'],
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -610,13 +649,13 @@ class _JobCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              job['location'],
+                              widget.job['location'],
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
                               ),
                             ),
-                            if (job['distance'] != null) ...[
+                            if (widget.job['distance'] != null) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -625,7 +664,7 @@ class _JobCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  job['distance'],
+                                  widget.job['distance'],
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: ThemeConstants.primaryColor,
@@ -633,6 +672,24 @@ class _JobCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              if (widget.job['estimated_time'] != null) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    widget.job['estimated_time'],
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ],
                         ),
@@ -643,7 +700,7 @@ class _JobCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        job['payment'],
+                        widget.job['payment'],
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -658,7 +715,7 @@ class _JobCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          job['type'],
+                          widget.job['type'],
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.green,
@@ -672,13 +729,45 @@ class _JobCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                job['description'],
+                widget.job['description'],
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (widget.job['distance'] != null)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.job['estimated_time'] ?? '~5 min',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.directions_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                    onPressed: _openNavigation,
+                    tooltip: context.tr('get_directions'),
+                  ),
+                ],
               ),
             ],
           ),

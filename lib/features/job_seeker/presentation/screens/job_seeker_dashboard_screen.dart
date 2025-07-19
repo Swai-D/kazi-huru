@@ -3,6 +3,7 @@ import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/verification_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
@@ -20,13 +21,16 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final WalletService _walletService = WalletService();
   final AnalyticsService _analyticsService = AnalyticsService();
   final LocationService _locationService = LocationService();
+  final VerificationService _verificationService = VerificationService();
   bool _isLocationEnabled = false;
   String? _currentLocation;
+  bool _isVerified = false;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
+    _checkVerificationStatus();
   }
 
   Future<void> _initializeLocation() async {
@@ -52,6 +56,14 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     }
   }
 
+  Future<void> _checkVerificationStatus() async {
+    const userId = 'user_123'; // Mock user ID
+    final isVerified = _verificationService.isUserVerified(userId);
+    setState(() {
+      _isVerified = isVerified;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Color palette
@@ -69,6 +81,18 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          // Verification Badge
+          if (!_isVerified)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.verified_user_outlined, color: Colors.orange),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/verification-status');
+                },
+                tooltip: context.tr('verify_identity'),
+              ),
+            ),
           IconButton(
             icon: Icon(
               _isLocationEnabled ? Icons.location_on : Icons.location_off,

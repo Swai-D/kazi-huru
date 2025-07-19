@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/verification_service.dart';
 
 class PostJobScreen extends StatefulWidget {
   const PostJobScreen({super.key});
@@ -16,6 +17,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _locationController = TextEditingController();
   final _paymentController = TextEditingController();
   final _requirementsController = TextEditingController();
+  final VerificationService _verificationService = VerificationService();
+  bool _isVerified = false;
   
   String _selectedCategory = 'usafi';
   String _selectedPaymentType = 'per_job';
@@ -55,6 +58,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
     {'value': '2_days', 'label': 'Siku 2'},
     {'value': '1_week', 'label': 'Wiki 1'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkVerificationStatus();
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    const userId = 'provider_123'; // Mock user ID
+    final isVerified = _verificationService.isUserVerified(userId);
+    setState(() {
+      _isVerified = isVerified;
+    });
+  }
 
   @override
   void dispose() {
@@ -149,6 +166,63 @@ class _PostJobScreenState extends State<PostJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Verification Warning
+              if (!_isVerified)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.tr('verification_required'),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              context.tr('verification_required_desc'),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/id-verification');
+                        },
+                        child: Text(
+                          context.tr('verify_now'),
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (!_isVerified) const SizedBox(height: 16),
+
               // Header
               Container(
                 padding: const EdgeInsets.all(16),

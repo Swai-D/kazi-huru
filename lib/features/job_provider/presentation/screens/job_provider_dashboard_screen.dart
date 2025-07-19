@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/verification_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import 'company_profile_screen.dart';
@@ -15,6 +16,22 @@ class JobProviderDashboardScreen extends StatefulWidget {
 
 class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen> {
   int _selectedIndex = 0;
+  final VerificationService _verificationService = VerificationService();
+  bool _isVerified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkVerificationStatus();
+  }
+
+  Future<void> _checkVerificationStatus() async {
+    const userId = 'provider_123'; // Mock user ID
+    final isVerified = _verificationService.isUserVerified(userId);
+    setState(() {
+      _isVerified = isVerified;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +62,18 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
               )
             : null,
         actions: [
+          // Verification Badge
+          if (!_isVerified)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.verified_user_outlined, color: Colors.orange),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/verification-status');
+                },
+                tooltip: context.tr('verify_identity'),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.chat_outlined),
             onPressed: () {

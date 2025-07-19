@@ -14,6 +14,9 @@ import 'features/job_seeker/presentation/screens/job_search_screen.dart';
 import 'features/job_provider/presentation/screens/company_profile_screen.dart';
 import 'features/wallet/presentation/screens/wallet_screen.dart';
 import 'features/auth/presentation/screens/role_selection_screen.dart';
+import 'features/verification/presentation/screens/id_verification_screen.dart';
+import 'features/verification/presentation/screens/verification_status_screen.dart';
+import 'features/verification/presentation/screens/admin_verification_screen.dart';
 
 import 'core/services/localization_service.dart';
 
@@ -85,6 +88,9 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
         '/job_search': (context) => const JobSearchScreen(), // Job search
                           '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
                   '/wallet': (context) => const WalletScreen(), // Wallet screen
+        '/id-verification': (context) => const IdVerificationScreen(), // ID verification
+        '/verification-status': (context) => const VerificationStatusScreen(), // Verification status
+        '/admin-verification': (context) => const AdminVerificationScreen(), // Admin verification
 
       },
     );
