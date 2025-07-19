@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/wallet_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../wallet/presentation/screens/wallet_screen.dart';
 import 'job_details_screen.dart';
 
-class JobSeekerDashboardScreen extends StatelessWidget {
+class JobSeekerDashboardScreen extends StatefulWidget {
   const JobSeekerDashboardScreen({super.key});
+
+  @override
+  State<JobSeekerDashboardScreen> createState() => _JobSeekerDashboardScreenState();
+}
+
+class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
+  final WalletService _walletService = WalletService();
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +70,7 @@ class JobSeekerDashboardScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    '${context.tr('balance')}: TZS 5,000',
+                    '${context.tr('balance')}: TZS ${_walletService.currentBalance.toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -77,7 +86,14 @@ class JobSeekerDashboardScreen extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WalletScreen(),
+                        ),
+                      );
+                    },
                     child: Text(
                       context.tr('add_balance'),
                       style: const TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/wallet_service.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -16,6 +17,7 @@ class JobDetailsScreen extends StatefulWidget {
 
 class _JobDetailsScreenState extends State<JobDetailsScreen> {
   bool _isApplying = false;
+  final WalletService _walletService = WalletService();
   bool _isSaved = false;
 
   @override
@@ -575,9 +577,73 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Future<void> _applyForJob() async {
+    // Check if user has enough balance
+    if (!_walletService.hasEnoughBalanceForApplication()) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(context.tr('insufficient_balance')),
+            content: Text(context.tr('insufficient_balance_message')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('cancel')),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navigate to wallet screen
+                  Navigator.pushNamed(context, '/wallet');
+                },
+                child: Text(context.tr('top_up')),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // Confirm application fee
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('application_fee')),
+          content: Text(context.tr('application_fee_confirmation')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.tr('cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(context.tr('apply')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
     setState(() {
       _isApplying = true;
     });
+
+    // Deduct application fee
+    final success = _walletService.deductApplicationFee(
+      widget.job['title'],
+      widget.job['id'],
+    );
+
+    if (!success) {
+      setState(() {
+        _isApplying = false;
+      });
+      return;
+    }
 
     // Simulate application process
     await Future.delayed(const Duration(seconds: 2));
