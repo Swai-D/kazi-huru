@@ -3,6 +3,7 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import 'company_profile_screen.dart';
 
 class JobProviderDashboardScreen extends StatefulWidget {
   const JobProviderDashboardScreen({super.key});
@@ -157,7 +158,14 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   icon: Icons.person_outline,
                   label: context.tr('profile'),
                   selected: _selectedIndex == 3,
-                  onTap: () => setState(() => _selectedIndex = 3),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CompanyProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -232,10 +240,10 @@ class _PostJobTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-                      ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, '/post_job');
-              },
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, '/post_job');
+            },
             icon: const Icon(Icons.add),
             label: Text(context.tr('post_new_job')),
             style: ElevatedButton.styleFrom(
@@ -265,6 +273,7 @@ class _PostJobTab extends StatelessWidget {
                   pay: 'TZS 25,000',
                   status: 'active',
                   applications: 8,
+                  onTap: () => _showJobManagementDialog(context, 'Kusafisha Office'),
                 ),
                 const SizedBox(height: 12),
                 _JobCard(
@@ -273,6 +282,7 @@ class _PostJobTab extends StatelessWidget {
                   pay: 'TZS 15,000',
                   status: 'completed',
                   applications: 5,
+                  onTap: () => _showJobManagementDialog(context, 'Kusafisha Compound'),
                 ),
                 const SizedBox(height: 12),
                 _JobCard(
@@ -281,12 +291,100 @@ class _PostJobTab extends StatelessWidget {
                   pay: 'TZS 20,000',
                   status: 'active',
                   applications: 12,
+                  onTap: () => _showJobManagementDialog(context, 'Kumuhamisha Mtu'),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showJobManagementDialog(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(jobTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: Text(context.tr('view_applications')),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to applications
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(context.tr('edit_job')),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Navigate to edit job
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.pause_circle_outline),
+                title: Text(context.tr('pause_job')),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('job_paused'))),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: Text(
+                  context.tr('delete_job'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(context, jobTitle);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('delete_job')),
+          content: Text(context.tr('delete_job_confirmation')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(context.tr('cancel')),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('job_deleted'))),
+                );
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(context.tr('delete')),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -438,6 +536,7 @@ class _JobCard extends StatelessWidget {
   final String pay;
   final String status;
   final int applications;
+  final VoidCallback? onTap;
 
   const _JobCard({
     required this.title,
@@ -445,6 +544,7 @@ class _JobCard extends StatelessWidget {
     required this.pay,
     required this.status,
     required this.applications,
+    this.onTap,
   });
 
   @override
