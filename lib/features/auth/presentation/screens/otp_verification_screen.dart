@@ -14,7 +14,7 @@ class OTPVerificationScreen extends StatefulWidget {
   final String? role;
 
   const OTPVerificationScreen({
-    Key? key,
+    super.key,
     required this.phoneNumber,
     required this.otp,
     required this.email,
@@ -22,7 +22,7 @@ class OTPVerificationScreen extends StatefulWidget {
     this.isNewUser = false,
     this.name,
     this.role,
-  }) : super(key: key);
+  });
 
   @override
   _OTPVerificationScreenState createState() => _OTPVerificationScreenState();

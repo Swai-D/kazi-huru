@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../analytics/presentation/widgets/analytics_summary_widget.dart';
 import 'company_profile_screen.dart';
 
 class JobProviderDashboardScreen extends StatefulWidget {
@@ -240,10 +242,10 @@ class _PostJobTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, '/post_job');
-            },
+                      ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/post_job');
+              },
             icon: const Icon(Icons.add),
             label: Text(context.tr('post_new_job')),
             style: ElevatedButton.styleFrom(
@@ -457,22 +459,22 @@ class _ApplicationsTab extends StatelessWidget {
   }
 }
 
-class _AnalyticsTab extends StatelessWidget {
+class _AnalyticsTab extends StatefulWidget {
+  @override
+  State<_AnalyticsTab> createState() => _AnalyticsTabState();
+}
+
+class _AnalyticsTabState extends State<_AnalyticsTab> {
+  final AnalyticsService _analyticsService = AnalyticsService();
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            context.tr('analytics_overview'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
+          // Quick Stats
           Row(
             children: [
               Expanded(
@@ -494,7 +496,90 @@ class _AnalyticsTab extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _AnalyticsCard(
+                  title: context.tr('active_jobs'),
+                  value: '5',
+                  icon: Icons.work_outline,
+                  color: ThemeConstants.primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _AnalyticsCard(
+                  title: context.tr('total_applications'),
+                  value: '23',
+                  icon: Icons.people_outline,
+                  color: Colors.purple,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
+          
+          // Analytics Summary Widget
+          FutureBuilder(
+            future: _analyticsService.getRealAnalytics('job_provider', 
+              DateTime.now().subtract(const Duration(days: 7)), 
+              DateTime.now()),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(context.tr('analytics_not_available')),
+                );
+              }
+
+              final analytics = snapshot.data!;
+              return AnalyticsSummaryWidget(
+                analytics: analytics,
+                title: context.tr('business_analytics'),
+                onTap: () {
+                  Navigator.pushNamed(context, '/analytics-dashboard');
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          
+          // Detailed Analytics Button
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pushNamed(context, '/analytics-dashboard');
+            },
+            icon: const Icon(Icons.analytics),
+            label: Text(context.tr('view_detailed_analytics')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeConstants.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Recent Activity
           Text(
             context.tr('recent_activity'),
             style: const TextStyle(
@@ -503,26 +588,26 @@ class _AnalyticsTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: ListView(
-              children: [
-                _ActivityItem(
-                  title: 'Job completed: Kusafisha Office',
-                  time: '2 hours ago',
-                  type: 'completed',
-                ),
-                _ActivityItem(
-                  title: 'New application: Kusafisha Compound',
-                  time: '4 hours ago',
-                  type: 'application',
-                ),
-                _ActivityItem(
-                  title: 'Payment received: TZS 25,000',
-                  time: '1 day ago',
-                  type: 'payment',
-                ),
-              ],
-            ),
+          ListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _ActivityItem(
+                title: 'Job completed: Kusafisha Office',
+                time: '2 hours ago',
+                type: 'completed',
+              ),
+              _ActivityItem(
+                title: 'New application: Kusafisha Compound',
+                time: '4 hours ago',
+                type: 'application',
+              ),
+              _ActivityItem(
+                title: 'Payment received: TZS 25,000',
+                time: '1 day ago',
+                type: 'payment',
+              ),
+            ],
           ),
         ],
       ),

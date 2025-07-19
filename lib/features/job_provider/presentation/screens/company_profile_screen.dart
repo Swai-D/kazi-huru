@@ -264,7 +264,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       title: Text(context.tr('change_language')),
                       trailing: const Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        // Navigate to language settings
+                        LocalizationService.showLanguageDialog(context);
                       },
                     ),
                     ListTile(

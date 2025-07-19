@@ -8,11 +8,11 @@ class RoleSelectionScreen extends StatefulWidget {
   final String name;
 
   const RoleSelectionScreen({
-    Key? key,
+    super.key,
     required this.phoneNumber,
     required this.password,
     required this.name,
-  }) : super(key: key);
+  });
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();

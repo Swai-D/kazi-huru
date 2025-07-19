@@ -24,7 +24,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _contactPreference = 'in_app';
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
-  DateTime _deadline = DateTime.now().add(const Duration(days: 1));
+  final DateTime _deadline = DateTime.now().add(const Duration(days: 1));
   
   bool _isLoading = false;
 

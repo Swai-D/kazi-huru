@@ -3,7 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'features/job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
 import 'features/auth/presentation/screens/login_page.dart';
 import 'features/auth/presentation/screens/register_page.dart';
-
+import 'features/splash/presentation/screens/splash_screen.dart';
 
 import 'features/job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 import 'features/job_provider/presentation/screens/post_job_screen.dart';
@@ -13,6 +13,7 @@ import 'features/auth/presentation/screens/user_profile_screen.dart';
 import 'features/job_seeker/presentation/screens/job_search_screen.dart';
 import 'features/job_provider/presentation/screens/company_profile_screen.dart';
 import 'features/wallet/presentation/screens/wallet_screen.dart';
+import 'features/analytics/presentation/screens/analytics_dashboard_screen.dart';
 import 'core/services/localization_service.dart';
 
 void main() async {
@@ -24,8 +25,24 @@ void main() async {
   runApp(const KaziHuruApp());
 }
 
-class KaziHuruApp extends StatelessWidget {
+class KaziHuruApp extends StatefulWidget {
   const KaziHuruApp({super.key});
+
+  @override
+  State<KaziHuruApp> createState() => _KaziHuruAppState();
+}
+
+class _KaziHuruAppState extends State<KaziHuruApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Set up language change callback
+    LocalizationService().setLanguageChangedCallback(() {
+      setState(() {
+        // Rebuild the app when language changes
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +52,7 @@ class KaziHuruApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const LoginPage(), // Start with login page for testing
+      home: const SplashScreen(), // Start with splash screen
       debugShowCheckedModeBanner: false,
       
       // Localization support
@@ -49,6 +66,7 @@ class KaziHuruApp extends StatelessWidget {
       
       // Routes
       routes: {
+        '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/dashboard': (context) => const JobSeekerDashboardScreen(),
@@ -59,8 +77,9 @@ class KaziHuruApp extends StatelessWidget {
         '/chat': (context) => const ChatListScreen(), // Chat
         '/profile': (context) => const UserProfileScreen(userRole: 'job_seeker'), // User profile
         '/job_search': (context) => const JobSearchScreen(), // Job search
-                          '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
-                  '/wallet': (context) => const WalletScreen(), // Wallet screen
+        '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
+        '/wallet': (context) => const WalletScreen(), // Wallet screen
+        '/analytics-dashboard': (context) => const AnalyticsDashboardScreen(), // Analytics dashboard
       },
     );
   }

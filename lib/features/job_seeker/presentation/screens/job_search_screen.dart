@@ -15,7 +15,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   String _selectedCategory = 'all';
   String _selectedLocation = 'all';
   String _selectedSortBy = 'recent';
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   // Mock job data
   final List<Map<String, dynamic>> _jobs = [

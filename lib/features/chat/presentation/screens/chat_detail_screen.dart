@@ -23,7 +23,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late List<MessageModel> messages;
-  bool _isMe = true; // For demo purposes
+  final bool _isMe = true; // For demo purposes
 
   @override
   void initState() {

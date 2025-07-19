@@ -328,7 +328,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 subtitle: Text(context.tr('change_language')),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
-                  // Language selection dialog
+                  LocalizationService.showLanguageDialog(context);
                 },
               ),
               const Divider(height: 1),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
+import '../../../analytics/presentation/widgets/analytics_summary_widget.dart';
 import 'job_details_screen.dart';
 
 class JobSeekerDashboardScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class JobSeekerDashboardScreen extends StatefulWidget {
 
 class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final WalletService _walletService = WalletService();
+  final AnalyticsService _analyticsService = AnalyticsService();
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +110,32 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
               ),
             ),
             const SizedBox(height: 28),
+            
+            // Analytics Summary
+            FutureBuilder(
+              future: _analyticsService.getRealAnalytics('job_seeker', 
+                DateTime.now().subtract(const Duration(days: 7)), 
+                DateTime.now()),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                if (snapshot.hasData && !snapshot.hasError) {
+                  final analytics = snapshot.data!;
+                  return AnalyticsSummaryWidget(
+                    analytics: analytics,
+                    title: context.tr('my_analytics'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/analytics-dashboard');
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(height: 16),
+            
             Text(
               context.tr('available_jobs'),
               style: const TextStyle(
