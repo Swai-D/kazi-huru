@@ -67,11 +67,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               _buildBasicInformation(),
               const SizedBox(height: 24),
               
-              // Job Statistics (for job seekers)
-              if (widget.userRole == 'job_seeker') ...[
-                _buildJobStatistics(),
-                const SizedBox(height: 24),
-              ],
+
               
               // Applied Jobs
               if (widget.userRole == 'job_seeker') ...[
@@ -85,9 +81,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 const SizedBox(height: 24),
               ],
               
-              // Ratings & Reviews
-              _buildRatingsAndReviews(),
-              const SizedBox(height: 24),
+
               
               // Action Buttons
               _buildActionButtons(),
@@ -99,11 +93,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
-    return Center(
-      child: Column(
-        children: [
-          // Profile Picture
-          Stack(
+    return Column(
+      children: [
+        // Profile Picture
+        Center(
+          child: Stack(
             children: [
               CircleAvatar(
                 radius: 50,
@@ -133,26 +127,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            _nameController.text,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: ThemeConstants.textColor,
-            ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Name and Role
+        Center(
+          child: Column(
+            children: [
+              Text(
+                _nameController.text,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeConstants.textColor,
+                ),
+              ),
+              Text(
+                widget.userRole == 'job_seeker' 
+                    ? context.tr('job_seeker')
+                    : context.tr('job_provider'),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
           ),
-          Text(
-            widget.userRole == 'job_seeker' 
-                ? context.tr('job_seeker')
-                : context.tr('job_provider'),
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
+        ),
+        
+        // Job Statistics (Instagram style)
+        if (widget.userRole == 'job_seeker') ...[
+          const SizedBox(height: 24),
+          _buildJobStatistics(),
         ],
-      ),
+      ],
     );
   }
 
@@ -254,52 +262,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildJobStatistics() {
-    return Card(
-      color: ThemeConstants.cardBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.tr('job_statistics'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: ThemeConstants.textColor,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatItem(
+              icon: Icons.work_outline,
+              title: context.tr('applied_jobs'),
+              value: '12',
+              color: ThemeConstants.primaryColor,
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.work_outline,
-                    title: context.tr('applied_jobs'),
-                    value: '12',
-                    color: ThemeConstants.primaryColor,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.check_circle_outline,
-                    title: context.tr('completed_jobs'),
-                    value: '8',
-                    color: Colors.green,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    icon: Icons.star_outline,
-                    title: context.tr('rating'),
-                    value: '4.5',
-                    color: Colors.orange,
-                  ),
-                ),
-              ],
+          ),
+          Expanded(
+            child: _buildStatItem(
+              icon: Icons.check_circle_outline,
+              title: context.tr('completed_jobs'),
+              value: '8',
+              color: Colors.green,
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: _buildStatItem(
+              icon: Icons.star_outline,
+              title: context.tr('rating'),
+              value: '4.5',
+              color: Colors.orange,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -355,7 +346,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to applied jobs list
+                    Navigator.pushNamed(context, '/applied_jobs');
                   },
                   child: Text(
                     context.tr('view_all'),
@@ -405,7 +396,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to completed jobs list
+                    Navigator.pushNamed(context, '/completed_jobs');
                   },
                   child: Text(
                     context.tr('view_all'),
@@ -607,6 +598,51 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget _buildActionButtons() {
     return Column(
       children: [
+        // Language Settings
+        Card(
+          color: ThemeConstants.cardBackgroundColor,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('language_settings'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildLanguageOption(
+                        'English',
+                        'en',
+                        Icons.language,
+                        Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildLanguageOption(
+                        'Kiswahili',
+                        'sw',
+                        Icons.language,
+                        Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Account Actions
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -642,6 +678,51 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLanguageOption(String language, String code, IconData icon, Color color) {
+    final isSelected = LocalizationService().currentLocale.languageCode == code;
+    
+    return GestureDetector(
+      onTap: () {
+        // Change language
+        LocalizationService().setLocale(Locale(code));
+        setState(() {
+          // Refresh UI
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${context.tr('language_changed')} $language')),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? ThemeConstants.primaryColor.withOpacity(0.1) : Colors.white,
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon, 
+              color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade600, 
+              size: 24
+            ),
+            const SizedBox(height: 8),
+            Text(
+              language,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
