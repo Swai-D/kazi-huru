@@ -133,10 +133,14 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
           return NotificationDetailScreen(notificationId: notificationId);
         }, // Notification detail
         '/chat': (context) => const ChatListScreen(), // Chat
-        '/profile': (context) => const UserProfileScreen(userRole: 'job_seeker'), // User profile
+        '/profile': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final userRole = args?['userRole'] ?? 'job_seeker';
+          return UserProfileScreen(userRole: userRole);
+        }, // User profile
         '/job_search': (context) => const JobSearchScreen(), // Job search
-        '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
-        '/wallet': (context) => const WalletScreen(), // Wallet screen
+                          '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
+                  '/wallet': (context) => const WalletScreen(), // Wallet screen
         '/id-verification': (context) => const IdVerificationScreen(), // ID verification
         '/verification-status': (context) => const VerificationStatusScreen(), // Verification status
         '/admin-verification': (context) => const AdminVerificationScreen(), // Admin verification

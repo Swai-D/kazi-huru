@@ -137,6 +137,12 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {
+              Navigator.pushNamed(context, '/company_profile');
+            },
+          ),
           ListenableBuilder(
             listenable: _notificationService,
             builder: (context, child) {
