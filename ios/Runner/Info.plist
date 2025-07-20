@@ -53,5 +53,11 @@
 	<string>Kazi Huru needs access to your location to find nearby jobs and provide better service.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Kazi Huru needs access to your location to find nearby jobs and provide better service.</string>
+	
+	<!-- Notification Permissions -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

@@ -3,7 +3,6 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/maps_service.dart';
-import '../../../../core/models/location_model.dart';
 import 'job_details_screen.dart';
 import 'location_permission_screen.dart';
 

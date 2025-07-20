@@ -8,6 +8,10 @@ import 'features/splash/presentation/screens/splash_screen.dart';
 import 'features/job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 import 'features/job_provider/presentation/screens/post_job_screen.dart';
 import 'features/notifications/presentation/screens/notifications_screen.dart';
+import 'features/notifications/presentation/screens/notification_settings_screen.dart';
+import 'features/notifications/presentation/screens/notification_permission_screen.dart';
+import 'features/notifications/presentation/screens/notification_test_screen.dart';
+import 'features/notifications/presentation/screens/notification_detail_screen.dart';
 import 'features/chat/presentation/screens/chat_list_screen.dart';
 import 'features/auth/presentation/screens/user_profile_screen.dart';
 import 'features/job_seeker/presentation/screens/job_search_screen.dart';
@@ -19,12 +23,20 @@ import 'features/verification/presentation/screens/verification_status_screen.da
 import 'features/verification/presentation/screens/admin_verification_screen.dart';
 
 import 'core/services/localization_service.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/push_notification_service.dart';
+import 'core/constants/theme_constants.dart';
+
+// Global navigation key for notification navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize localization service
+  // Initialize services
   await LocalizationService().loadTranslations();
+  await NotificationService().initialize();
+  await PushNotificationService().initialize();
   
   runApp(const KaziHuruApp());
 }
@@ -52,9 +64,36 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kazi Huru',
+      navigatorKey: navigatorKey, // Add global navigation key
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
+        primaryColor: ThemeConstants.primaryColor,
+        scaffoldBackgroundColor: ThemeConstants.scaffoldBackgroundColor,
+        cardColor: ThemeConstants.cardBackgroundColor,
         useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ThemeConstants.primaryColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: ThemeConstants.primaryColor,
+            side: const BorderSide(color: ThemeConstants.primaryColor),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+            ),
+          ),
+        ),
       ),
       home: const SplashScreen(), // Start with splash screen
       debugShowCheckedModeBanner: false,
@@ -83,15 +122,24 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
           name: 'Demo User',
         ), // Role selection screen
         '/notifications': (context) => const NotificationsScreen(), // Notifications
+        '/notification-settings': (context) => const NotificationSettingsScreen(), // Notification settings
+        '/notification-permission': (context) => const NotificationPermissionScreen(), // Notification permission
+        '/notification-test': (context) => const NotificationTestScreen(), // Notification test
+        '/notification-detail': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final notificationId = args?['notificationId'] ?? '';
+          return NotificationDetailScreen(notificationId: notificationId);
+        }, // Notification detail
         '/chat': (context) => const ChatListScreen(), // Chat
         '/profile': (context) => const UserProfileScreen(userRole: 'job_seeker'), // User profile
         '/job_search': (context) => const JobSearchScreen(), // Job search
-                          '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
-                  '/wallet': (context) => const WalletScreen(), // Wallet screen
+        '/company_profile': (context) => const CompanyProfileScreen(), // Company profile
+        '/wallet': (context) => const WalletScreen(), // Wallet screen
         '/id-verification': (context) => const IdVerificationScreen(), // ID verification
         '/verification-status': (context) => const VerificationStatusScreen(), // Verification status
         '/admin-verification': (context) => const AdminVerificationScreen(), // Admin verification
-
+        '/payment_details': (context) => const WalletScreen(), // Payment details (redirect to wallet)
+        '/job_application_details': (context) => const JobSeekerDashboardScreen(), // Job application details (redirect to dashboard)
       },
     );
   }

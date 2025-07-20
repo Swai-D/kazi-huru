@@ -4,6 +4,8 @@ import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/verification_service.dart';
+import '../../../../core/services/notification_service.dart';
+import '../../../../core/constants/theme_constants.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
@@ -22,6 +24,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final AnalyticsService _analyticsService = AnalyticsService();
   final LocationService _locationService = LocationService();
   final VerificationService _verificationService = VerificationService();
+  final NotificationService _notificationService = NotificationService();
   bool _isLocationEnabled = false;
   String? _currentLocation;
   bool _isVerified = false;
@@ -64,59 +67,170 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     });
   }
 
+  void _showTestNotificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Notifications'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.work),
+              title: const Text('Job Application'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateJobApplication('Usafi', 'John Doe');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.payment),
+              title: const Text('Payment'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulatePaymentReceived(25000);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.verified_user),
+              title: const Text('Verification'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateVerificationUpdate(true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat),
+              title: const Text('Chat Message'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateChatMessage('John', 'Habari! Una kazi?');
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Color palette
-    const primaryColor = Color(0xFF2196F3); // Blue
-    const accentColor = Color(0xFFFF9800); // Orange
-    const backgroundColor = Color(0xFFF5F7FA); // Light
-    const cardColor = Colors.white;
-    const textColor = Color(0xFF222B45); // Dark blue/gray
-
     return Scaffold(
-      backgroundColor: backgroundColor,
+              backgroundColor: const Color(0xFFF5F7FA), // Light grey/off-white like wallet screen
       appBar: AppBar(
-        title: Text(context.tr('job_seeker_dashboard')),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          // Verification Badge
-          if (!_isVerified)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(Icons.verified_user_outlined, color: Colors.orange),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/verification-status');
-                },
-                tooltip: context.tr('verify_identity'),
+        title: Column(
+          children: [
+            const Text(
+              'John Doe',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF222B45),
               ),
             ),
-          IconButton(
-            icon: Icon(
-              _isLocationEnabled ? Icons.location_on : Icons.location_off,
-              color: _isLocationEnabled ? primaryColor : Colors.grey,
+            Text(
+              'Karibu tena!',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+              ),
             ),
-            onPressed: () {
-              _initializeLocation();
-            },
+          ],
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 32,
+            height: 32,
           ),
-          IconButton(
-            icon: const Icon(Icons.chat_outlined),
+        ),
+        actions: [
+          // Chat Button
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: ThemeConstants.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ChatListScreen()),
               );
             },
+              tooltip: 'Messages',
+            ),
           ),
+          
+          // Notifications Button
+          ListenableBuilder(
+            listenable: _notificationService,
+            builder: (context, child) {
+              final unreadCount = _notificationService.unreadCount;
+              return Container(
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Stack(
+                  children: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+                      icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              );
+            },
+                      tooltip: 'Notifications',
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               );
             },
           ),
@@ -132,9 +246,9 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.08),
+                color: ThemeConstants.primaryColor.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: primaryColor.withOpacity(0.15)),
+                border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
               ),
               child: Column(
                 children: [
@@ -143,13 +257,13 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: textColor,
+                      color: ThemeConstants.textColor,
                     ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: primaryColor, width: 2),
+                      side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(32),
                       ),
@@ -166,7 +280,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     child: Text(
                       context.tr('add_balance'),
                       style: const TextStyle(
-                        color: primaryColor,
+                        color: ThemeConstants.primaryColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -182,20 +296,20 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: primaryColor.withOpacity(0.3)),
+                  border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.location_on, size: 16, color: primaryColor),
+                    Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
                     const SizedBox(width: 8),
                     Text(
                       'Near: $_currentLocation',
                       style: TextStyle(
                         fontSize: 14,
-                        color: primaryColor,
+                        color: ThemeConstants.primaryColor,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -210,7 +324,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: textColor,
+                color: ThemeConstants.textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -291,7 +405,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: cardColor,
+          color: ThemeConstants.cardBackgroundColor,
           border: Border(top: BorderSide(color: Colors.grey.shade200)),
         ),
         child: SafeArea(
@@ -304,14 +418,14 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                   icon: Icons.home,
                   label: context.tr('home'),
                   selected: true,
-                  color: primaryColor,
+                  color: ThemeConstants.primaryColor,
                   onTap: () {},
                 ),
                 _BottomNavItem(
                   icon: Icons.work,
                   label: context.tr('search_jobs'),
                   selected: false,
-                  color: textColor,
+                  color: ThemeConstants.textColor,
                   onTap: () {
                     Navigator.pushNamed(context, '/job_search');
                   },
@@ -320,7 +434,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                   icon: Icons.person,
                   label: context.tr('profile'),
                   selected: false,
-                  color: textColor,
+                  color: ThemeConstants.textColor,
                   onTap: () {
                     Navigator.pushNamed(context, '/profile');
                   },
@@ -351,14 +465,12 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF2196F3);
-    const textColor = Color(0xFF222B45);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ThemeConstants.cardBackgroundColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: primaryColor.withOpacity(0.12)),
+        border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.12)),
       ),
       child: Row(
         children: [
@@ -371,7 +483,7 @@ class _JobCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: textColor,
+                    color: ThemeConstants.textColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -391,14 +503,14 @@ class _JobCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.1),
+                          color: ThemeConstants.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           distance!,
                           style: TextStyle(
                             fontSize: 12,
-                            color: primaryColor,
+                            color: ThemeConstants.primaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -410,7 +522,7 @@ class _JobCard extends StatelessWidget {
                   pay,
                   style: const TextStyle(
                     fontSize: 15,
-                    color: primaryColor,
+                    color: ThemeConstants.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -420,7 +532,7 @@ class _JobCard extends StatelessWidget {
           const SizedBox(width: 12),
           OutlinedButton(
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: primaryColor, width: 2),
+              side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
@@ -430,7 +542,7 @@ class _JobCard extends StatelessWidget {
             child: Text(
               context.tr('apply'),
               style: const TextStyle(
-                color: primaryColor,
+                color: ThemeConstants.primaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import 'company_profile_screen.dart';
@@ -17,6 +18,7 @@ class JobProviderDashboardScreen extends StatefulWidget {
 class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen> {
   int _selectedIndex = 0;
   final VerificationService _verificationService = VerificationService();
+  final NotificationService _notificationService = NotificationService();
   bool _isVerified = false;
 
   @override
@@ -31,6 +33,58 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
     setState(() {
       _isVerified = isVerified;
     });
+  }
+
+  void _showTestNotificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Notifications'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.work),
+              title: const Text('Job Application'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateJobApplication('Usafi', 'John Doe');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.payment),
+              title: const Text('Payment'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulatePaymentReceived(25000);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.verified_user),
+              title: const Text('Verification'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateVerificationUpdate(true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat),
+              title: const Text('Chat Message'),
+              onTap: () {
+                Navigator.pop(context);
+                _notificationService.simulateChatMessage('John', 'Habari! Una kazi?');
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -83,6 +137,12 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
               );
             },
           ),
+          ListenableBuilder(
+            listenable: _notificationService,
+            builder: (context, child) {
+              final unreadCount = _notificationService.unreadCount;
+              return Stack(
+                children: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
@@ -92,6 +152,36 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
               );
             },
           ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                  ),
+                ),
+              ],
+              );
+            },
+          ),
+
         ],
       ),
         body: _selectedIndex == 2 ? _AllApplicationsScreen() : _DashboardContent(),

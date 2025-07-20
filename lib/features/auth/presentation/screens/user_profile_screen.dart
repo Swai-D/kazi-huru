@@ -23,20 +23,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _phoneController = TextEditingController(text: '+255767265780');
   final _emailController = TextEditingController(text: 'john.doe@example.com');
   final _locationController = TextEditingController(text: 'Dar es Salaam');
-  final _bioController = TextEditingController(text: 'Experienced professional looking for opportunities');
-  final _companyController = TextEditingController(text: 'Tech Solutions Ltd');
-  final _websiteController = TextEditingController(text: 'www.techsolutions.co.tz');
+  final _bioController = TextEditingController(text: 'Mtaalamu wa IT na uzoefu wa miaka 3');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ThemeConstants.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(context.tr('profile')),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
+            icon: Icon(_isEditing ? Icons.save : Icons.edit, color: ThemeConstants.primaryColor),
             onPressed: () {
               setState(() {
                 if (_isEditing) {
@@ -64,18 +63,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               _buildProfileHeader(),
               const SizedBox(height: 24),
               
-              // Profile Information
-              _buildProfileInformation(),
+              // Basic Information
+              _buildBasicInformation(),
               const SizedBox(height: 24),
               
-              // Role-specific sections
-              if (widget.userRole == 'job_provider') ...[
-                _buildCompanyInformation(),
+              // Job Statistics (for job seekers)
+              if (widget.userRole == 'job_seeker') ...[
+                _buildJobStatistics(),
                 const SizedBox(height: 24),
               ],
               
-              // Settings Section
-              _buildSettingsSection(),
+              // Applied Jobs
+              if (widget.userRole == 'job_seeker') ...[
+                _buildAppliedJobs(),
+                const SizedBox(height: 24),
+              ],
+              
+              // Completed Jobs
+              if (widget.userRole == 'job_seeker') ...[
+                _buildCompletedJobs(),
+                const SizedBox(height: 24),
+              ],
+              
+              // Ratings & Reviews
+              _buildRatingsAndReviews(),
               const SizedBox(height: 24),
               
               // Action Buttons
@@ -128,6 +139,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
+              color: ThemeConstants.textColor,
             ),
           ),
           Text(
@@ -144,217 +156,451 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildProfileInformation() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.tr('personal_information'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildBasicInformation() {
+    return Card(
+      color: ThemeConstants.cardBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr('personal_information'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ThemeConstants.textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Name Field
+            TextFormField(
+              controller: _nameController,
+              enabled: _isEditing,
+              decoration: InputDecoration(
+                labelText: context.tr('full_name'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.person_outline),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return context.tr('please_enter_name');
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Phone Field
+            TextFormField(
+              controller: _phoneController,
+              enabled: _isEditing,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: context.tr('phone'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.phone_outlined),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return context.tr('please_enter_phone');
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // Email Field
+            TextFormField(
+              controller: _emailController,
+              enabled: _isEditing,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: context.tr('email'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.email_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Location Field
+            TextFormField(
+              controller: _locationController,
+              enabled: _isEditing,
+              decoration: InputDecoration(
+                labelText: context.tr('location'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.location_on_outlined),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Bio Field
+            TextFormField(
+              controller: _bioController,
+              enabled: _isEditing,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: context.tr('bio'),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.description_outlined),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        
-        // Name Field
-        TextFormField(
-          controller: _nameController,
-          enabled: _isEditing,
-          decoration: InputDecoration(
-            labelText: context.tr('full_name'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.person_outline),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_name');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Phone Field
-        TextFormField(
-          controller: _phoneController,
-          enabled: _isEditing,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            labelText: context.tr('phone'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.phone_outlined),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_phone');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Email Field
-        TextFormField(
-          controller: _emailController,
-          enabled: _isEditing,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: context.tr('email'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.email_outlined),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_email');
-            }
-            if (!value.contains('@')) {
-              return context.tr('please_enter_valid_email');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Location Field
-        TextFormField(
-          controller: _locationController,
-          enabled: _isEditing,
-          decoration: InputDecoration(
-            labelText: context.tr('location'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.location_on_outlined),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_location');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Bio Field
-        TextFormField(
-          controller: _bioController,
-          enabled: _isEditing,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: context.tr('bio'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.description_outlined),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildCompanyInformation() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.tr('company_information'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Company Name
-        TextFormField(
-          controller: _companyController,
-          enabled: _isEditing,
-          decoration: InputDecoration(
-            labelText: context.tr('company_name'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.business_outlined),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_company_name');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Website
-        TextFormField(
-          controller: _websiteController,
-          enabled: _isEditing,
-          keyboardType: TextInputType.url,
-          decoration: InputDecoration(
-            labelText: context.tr('website'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.language_outlined),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSettingsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.tr('settings'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Settings List
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.notifications_outlined),
-                title: Text(context.tr('notifications')),
-                subtitle: Text(context.tr('manage_notifications')),
-                trailing: Switch(
-                  value: true,
-                  onChanged: (value) {},
+  Widget _buildJobStatistics() {
+    return Card(
+      color: ThemeConstants.cardBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr('job_statistics'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ThemeConstants.textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.work_outline,
+                    title: context.tr('applied_jobs'),
+                    value: '12',
+                    color: ThemeConstants.primaryColor,
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.language_outlined),
-                title: Text(context.tr('language')),
-                subtitle: Text(context.tr('change_language')),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  LocalizationService.showLanguageDialog(context);
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.verified_user_outlined),
-                title: Text(context.tr('verification_status')),
-                subtitle: Text(context.tr('check_verification_status')),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.pushNamed(context, '/verification-status');
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.security_outlined),
-                title: Text(context.tr('privacy')),
-                subtitle: Text(context.tr('privacy_settings')),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  // Privacy settings
-                },
-              ),
-            ],
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.check_circle_outline,
+                    title: context.tr('completed_jobs'),
+                    value: '8',
+                    color: Colors.green,
+                  ),
+                ),
+                Expanded(
+                  child: _buildStatItem(
+                    icon: Icons.star_outline,
+                    title: context.tr('rating'),
+                    value: '4.5',
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 32),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
+    );
+  }
+
+  Widget _buildAppliedJobs() {
+    return Card(
+      color: ThemeConstants.cardBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.tr('applied_jobs'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to applied jobs list
+                  },
+                  child: Text(
+                    context.tr('view_all'),
+                    style: TextStyle(color: ThemeConstants.primaryColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildJobItem(
+              title: 'Software Developer',
+              company: 'Tech Solutions Ltd',
+              status: 'Pending',
+              statusColor: Colors.orange,
+            ),
+            const SizedBox(height: 8),
+            _buildJobItem(
+              title: 'Data Entry Clerk',
+              company: 'Office Solutions',
+              status: 'Under Review',
+              statusColor: Colors.blue,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedJobs() {
+    return Card(
+      color: ThemeConstants.cardBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.tr('completed_jobs'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to completed jobs list
+                  },
+                  child: Text(
+                    context.tr('view_all'),
+                    style: TextStyle(color: ThemeConstants.primaryColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildJobItem(
+              title: 'Website Development',
+              company: 'Digital Agency',
+              status: 'Completed',
+              statusColor: Colors.green,
+              showRating: true,
+              rating: 4.8,
+            ),
+            const SizedBox(height: 8),
+            _buildJobItem(
+              title: 'Mobile App Testing',
+              company: 'Tech Startup',
+              status: 'Completed',
+              statusColor: Colors.green,
+              showRating: true,
+              rating: 4.5,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobItem({
+    required String title,
+    required String company,
+    required String status,
+    required Color statusColor,
+    bool showRating = false,
+    double? rating,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
+                ),
+                Text(
+                  company,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                if (showRating && rating != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.orange, size: 16),
+                      Text(
+                        rating.toString(),
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingsAndReviews() {
+    return Card(
+      color: ThemeConstants.cardBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.tr('ratings_reviews'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ThemeConstants.textColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Column(
+                  children: [
+                    Text(
+                      '4.5',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConstants.primaryColor,
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(5, (index) {
+                        return Icon(
+                          index < 4 ? Icons.star : Icons.star_border,
+                          color: Colors.orange,
+                          size: 20,
+                        );
+                      }),
+                    ),
+                    Text(
+                      '${context.tr('based_on')} 15 ${context.tr('reviews')}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _buildRatingBar(5, 8),
+                      _buildRatingBar(4, 4),
+                      _buildRatingBar(3, 2),
+                      _buildRatingBar(2, 1),
+                      _buildRatingBar(1, 0),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingBar(int stars, int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            '$stars',
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: count / 15,
+              backgroundColor: Colors.grey.shade300,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 
@@ -365,48 +611,33 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // Logout functionality
-              Navigator.pushReplacementNamed(context, '/login');
+              // Navigate to change password screen
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: ThemeConstants.primaryColor,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
             ),
             child: Text(
-              context.tr('logout'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              context.tr('change_password'),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
             onPressed: () {
-              // Delete account functionality
-              _showDeleteAccountDialog();
+              // Show logout confirmation dialog
+              _showLogoutDialog();
             },
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
-              side: const BorderSide(color: Colors.red),
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              side: BorderSide(color: Colors.red),
             ),
             child: Text(
-              context.tr('delete_account'),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              context.tr('logout'),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ),
@@ -414,13 +645,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  void _showDeleteAccountDialog() {
+  void _showLogoutDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(context.tr('delete_account')),
-          content: Text(context.tr('delete_account_confirmation')),
+          title: Text(context.tr('logout')),
+          content: Text(context.tr('logout_confirmation')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -429,27 +660,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Delete account logic
-                Navigator.pushReplacementNamed(context, '/login');
+                // Perform logout
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('logged_out'))),
+                );
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: Text(context.tr('delete')),
+              child: Text(
+                context.tr('logout'),
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _locationController.dispose();
-    _bioController.dispose();
-    _companyController.dispose();
-    _websiteController.dispose();
-    super.dispose();
   }
 } 
