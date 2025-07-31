@@ -731,7 +731,7 @@ class _JobCardState extends State<_JobCard> {
           ),
           
           // Main image
-          Container(
+          SizedBox(
             width: double.infinity,
             height: 200,
             child: ClipRRect(
@@ -864,7 +864,7 @@ class _JobCardState extends State<_JobCard> {
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: ThemeConstants.primaryColor),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(32),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -887,7 +887,7 @@ class _JobCardState extends State<_JobCard> {
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: ThemeConstants.primaryColor),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(32),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -911,7 +911,7 @@ class _JobCardState extends State<_JobCard> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeConstants.primaryColor,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(32),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),

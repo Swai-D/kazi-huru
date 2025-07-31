@@ -116,7 +116,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Avg Rating',
-                    '${_calculateAverageRating()}',
+                    _calculateAverageRating(),
                     Icons.star,
                     Colors.orange,
                   ),

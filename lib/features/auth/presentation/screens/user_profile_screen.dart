@@ -30,6 +30,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _companyWebsiteController = TextEditingController(text: 'www.techsolutions.co.tz');
   final _companyDescriptionController = TextEditingController(text: 'Leading technology company in Tanzania');
 
+  String _selectedLanguage = LocalizationService().currentLocale.languageCode;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,176 +118,153 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
           // Profile Picture
-        Center(
-          child: Stack(
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
-                child: Icon(
-                  Icons.person,
-                  size: 50,
-                  color: ThemeConstants.primaryColor,
-                ),
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: ThemeConstants.primaryColor,
+            child: Text(
+              _nameController.text.isNotEmpty ? _nameController.text[0] : '',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-              if (_isEditing)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: ThemeConstants.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
           ),
           const SizedBox(height: 16),
-        
-        // Name and Role
-        Center(
-          child: Column(
-            children: [
+          // Name
           Text(
             _nameController.text,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-                  color: ThemeConstants.textColor,
+              color: ThemeConstants.textColor,
             ),
           ),
+          const SizedBox(height: 8),
+          // Role
           Text(
-            widget.userRole == 'job_seeker' 
+            widget.userRole == 'job_seeker'
                 ? context.tr('job_seeker')
                 : context.tr('job_provider'),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: Colors.grey,
             ),
           ),
+          if (widget.userRole == 'job_seeker') ...[
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _StatItem(
+                  title: context.tr('applied_jobs'),
+                  value: '12',
+                ),
+                _StatItem(
+                  title: context.tr('completed_jobs'),
+                  value: '8',
+                ),
+                _StatItem(
+                  title: context.tr('rating'),
+                  value: '4.5',
+                ),
+              ],
+            ),
+          ],
         ],
       ),
-        ),
-        
-        // Job Statistics (Instagram style)
-        if (widget.userRole == 'job_seeker') ...[
-          const SizedBox(height: 24),
-          _buildJobStatistics(),
-        ],
-        
-        // Company Statistics (for job providers)
-        if (widget.userRole == 'job_provider') ...[
-          const SizedBox(height: 24),
-          _buildCompanyStatistics(),
-        ],
-      ],
     );
   }
 
   Widget _buildBasicInformation() {
-    return Card(
-      color: ThemeConstants.cardBackgroundColor,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.tr('personal_information'),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-                color: ThemeConstants.textColor,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Name Field
-        TextFormField(
-          controller: _nameController,
-          enabled: _isEditing,
-          decoration: InputDecoration(
-            labelText: context.tr('full_name'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.person_outline),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  context.tr('personal_information'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                onPressed: () {
+                  setState(() {
+                    _isEditing = !_isEditing;
+                  });
+                },
+              ),
+            ],
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_name');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Phone Field
-        TextFormField(
-          controller: _phoneController,
-          enabled: _isEditing,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            labelText: context.tr('phone'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.phone_outlined),
+          const SizedBox(height: 16),
+          _InfoRow(
+            icon: Icons.person,
+            label: context.tr('full_name'),
+            value: _nameController.text,
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return context.tr('please_enter_phone');
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Email Field
-        TextFormField(
-          controller: _emailController,
-          enabled: _isEditing,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: context.tr('email'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.email_outlined),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.phone,
+            label: context.tr('phone'),
+            value: _phoneController.text,
           ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Location Field
-        TextFormField(
-          controller: _locationController,
-          enabled: _isEditing,
-          decoration: InputDecoration(
-            labelText: context.tr('location'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.location_on_outlined),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.email,
+            label: context.tr('email'),
+            value: _emailController.text,
           ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Bio Field
-        TextFormField(
-          controller: _bioController,
-          enabled: _isEditing,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: context.tr('bio'),
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.description_outlined),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.location_on,
+            label: context.tr('location'),
+            value: _locationController.text,
           ),
-        ),
-      ],
-        ),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.description,
+            label: context.tr('bio'),
+            value: _bioController.text,
+          ),
+        ],
       ),
     );
   }
@@ -296,27 +275,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.work_outline,
+            child: _StatItem(
               title: context.tr('applied_jobs'),
               value: '12',
-              color: ThemeConstants.primaryColor,
             ),
           ),
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.check_circle_outline,
+            child: _StatItem(
               title: context.tr('completed_jobs'),
               value: '8',
-              color: Colors.green,
             ),
           ),
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.star_outline,
+            child: _StatItem(
               title: context.tr('rating'),
               value: '4.5',
-              color: Colors.orange,
             ),
           ),
         ],
@@ -330,61 +303,25 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Row(
         children: [
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.post_add,
+            child: _StatItem(
               title: context.tr('posted_jobs'),
               value: '8',
-              color: ThemeConstants.primaryColor,
             ),
           ),
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.work,
+            child: _StatItem(
               title: context.tr('active_jobs'),
               value: '5',
-              color: Colors.green,
             ),
           ),
           Expanded(
-            child: _buildStatItem(
-              icon: Icons.people,
+            child: _StatItem(
               title: context.tr('applications'),
               value: '24',
-              color: Colors.blue,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 32),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 
@@ -950,130 +887,127 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Column(
       children: [
         // Language Settings
-        Card(
-          color: ThemeConstants.cardBackgroundColor,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('language_settings'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textColor,
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.tr('language'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeConstants.textColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilterChip(
+                      label: const Text('Swahili'),
+                      selected: _selectedLanguage == 'sw',
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedLanguage = 'sw';
+                          LocalizationService().setLocale(const Locale('sw'));
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${context.tr('language_changed')} Swahili')),
+                        );
+                      },
+                      selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+                      checkmarkColor: ThemeConstants.primaryColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildLanguageOption(
-                        'English',
-                        'en',
-                        Icons.language,
-                        Colors.blue,
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilterChip(
+                      label: const Text('English'),
+                      selected: _selectedLanguage == 'en',
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedLanguage = 'en';
+                          LocalizationService().setLocale(const Locale('en'));
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${context.tr('language_changed')} English')),
+                        );
+                      },
+                      selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+                      checkmarkColor: ThemeConstants.primaryColor,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildLanguageOption(
-                        'Kiswahili',
-                        'sw',
-                        Icons.language,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
         
         // Account Actions
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              // Navigate to change password screen
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.primaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: Text(
-              context.tr('change_password'),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {
-              // Show logout confirmation dialog
-              _showLogoutDialog();
-            },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: Colors.red),
-            ),
-            child: Text(
-              context.tr('logout'),
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLanguageOption(String language, String code, IconData icon, Color color) {
-    final isSelected = LocalizationService().currentLocale.languageCode == code;
-    
-    return GestureDetector(
-      onTap: () {
-        // Change language
-        LocalizationService().setLocale(Locale(code));
-        setState(() {
-          // Refresh UI
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.tr('language_changed')} $language')),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          color: isSelected ? ThemeConstants.primaryColor.withOpacity(0.1) : Colors.white,
-        ),
-        child: Column(
+        Row(
           children: [
-            Icon(
-              icon, 
-              color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade600, 
-              size: 24
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  // Navigate to change password screen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ThemeConstants.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  context.tr('change_password'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              language,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? ThemeConstants.primaryColor : Colors.grey.shade700,
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  // Show logout confirmation dialog
+                  _showLogoutDialog();
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  context.tr('logout'),
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -1105,6 +1039,89 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _StatItem({
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: ThemeConstants.primaryColor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+} 
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: ThemeConstants.primaryColor,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: ThemeConstants.textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 } 

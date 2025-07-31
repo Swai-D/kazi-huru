@@ -105,101 +105,155 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Widget _buildJobHeader() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            ThemeConstants.primaryColor.withOpacity(0.1),
-            Colors.white,
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      height: 300,
+      child: Stack(
         children: [
-          // Job Image
-          Center(
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: ThemeConstants.primaryColor.withOpacity(0.1),
+          // Full width background image
+          SizedBox(
+            width: double.infinity,
+            height: 300,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: JobImagePlaceholders.getLargeJobImage(
-                  widget.job['image'],
-                  widget.job['category'],
-                ),
+              child: Image.asset(
+                widget.job['image'] ?? 'assets/images/image_1.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    child: Center(
+                      child: Icon(
+                        Icons.work,
+                        color: ThemeConstants.primaryColor,
+                        size: 64,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            widget.job['title'] ?? 'Job Title',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+          
+          // Gradient overlay for better text readability
+          Container(
+            width: double.infinity,
+            height: 300,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.3),
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                color: Colors.grey[600],
-                size: 20,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  widget.job['location'] ?? 'Location',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
+          
+          // Content overlay
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Job title
+                  Text(
+                    widget.job['title'] ?? 'Job Title',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  widget.job['category'] ?? 'General',
-                  style: TextStyle(
-                    color: ThemeConstants.primaryColor,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 8),
+                  
+                  // Location and job type
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          widget.job['location'] ?? 'Location',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  widget.job['type'] ?? 'Full-time',
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 12),
+                  
+                  // Category and type badges
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: ThemeConstants.primaryColor.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.job['category'] ?? 'General',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.job['type'] ?? 'Full-time',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // Payment amount
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.job['payment'] ?? 'TZS 0',
+                          style: const TextStyle(
+                            color: ThemeConstants.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -268,7 +322,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
-  Widget _buildProviderInfo() {
+    Widget _buildProviderInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -289,7 +343,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   radius: 25,
                   backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
                   child: Icon(
-                    Icons.business,
+                    Icons.person,
                     color: ThemeConstants.primaryColor,
                   ),
                 ),
@@ -299,18 +353,50 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.job['provider_name'] ?? 'Company Name',
+                        widget.job['provider_name'] ?? 'John Doe',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        widget.job['provider_location'] ?? 'Location',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.job['provider_location'] ?? 'Dar es Salaam',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Rating stars
+                      Row(
+                        children: [
+                          ...List.generate(5, (index) {
+                            return Icon(
+                              index < 4 ? Icons.star : Icons.star_border,
+                              size: 16,
+                              color: index < 4 ? Colors.amber : Colors.grey[400],
+                            );
+                          }),
+                          const SizedBox(width: 4),
+                          Text(
+                            '4.2',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -319,6 +405,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   icon: const Icon(Icons.arrow_forward_ios),
                   onPressed: () {
                     // Navigate to provider profile
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Opening ${widget.job['provider_name'] ?? 'Provider'}\'s profile...'),
+                      ),
+                    );
                   },
                 ),
               ],
