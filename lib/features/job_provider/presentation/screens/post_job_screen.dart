@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
+import '../../../../core/utils/image_placeholders.dart';
 
 class PostJobScreen extends StatefulWidget {
   const PostJobScreen({super.key});
@@ -30,6 +32,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final DateTime _deadline = DateTime.now().add(const Duration(days: 1));
   
   bool _isLoading = false;
+  File? _selectedImage;
+  bool _hasImage = false;
 
   // Simplified categories for non-professional jobs
   final List<Map<String, String>> _categories = [
@@ -106,6 +110,62 @@ class _PostJobScreenState extends State<PostJobScreen> {
       setState(() {
         _startTime = picked;
       });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    // For now, we'll simulate image picking
+    // In a real app, you'd use image_picker package
+    setState(() {
+      _hasImage = true;
+      // Simulate selected image
+    });
+    
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr('image_selected')),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _hasImage = false;
+    });
+  }
+
+  String _getCategoryDisplayName(String categoryValue) {
+    final category = _categories.firstWhere(
+      (cat) => cat['value'] == categoryValue,
+      orElse: () => {'value': 'nyingine', 'label': 'Nyingine'},
+    );
+    return category['label'] ?? 'Nyingine';
+  }
+
+  String _getCategoryImage(String categoryValue) {
+    // Map categories to sample images
+    switch (categoryValue) {
+      case 'usafi':
+        return 'assets/images/image_2.jpg'; // Cleaning image
+      case 'kufua':
+        return 'assets/images/image_1.jpg'; // Transport image
+      case 'kubeba':
+        return 'assets/images/image_1.jpg'; // Transport image
+      case 'kusafisha_gari':
+        return 'assets/images/image_2.jpg'; // Cleaning image
+      case 'kupika':
+        return 'assets/images/image_3.jpg'; // Events image
+      case 'kutunza_watoto':
+        return 'assets/images/image_3.jpg'; // Events image
+      case 'kujenga':
+        return 'assets/images/image_1.jpg'; // Construction image
+      case 'kilimo':
+        return 'assets/images/image_2.jpg'; // Farming image
+      default:
+        return 'assets/images/image_1.jpg'; // Default image
     }
   }
 
@@ -297,6 +357,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     onTap: () {
                       setState(() {
                         _selectedCategory = category['value']!;
+                        // Update template image when category changes
+                        if (!_hasImage) {
+                          // Template will update automatically through _getCategoryImage
+                        }
                       });
                     },
                     child: Container(
@@ -334,6 +398,150 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                   );
                 },
+              ),
+              const SizedBox(height: 16),
+
+              // Job Image (Optional)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.image_outlined, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.tr('job_image'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            context.tr('optional'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Image Preview or Placeholder
+                    Container(
+                      width: double.infinity,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: _hasImage
+                          ? Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.asset(
+                                    _getCategoryImage(_selectedCategory),
+                                    width: double.infinity,
+                                    height: 200,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: _removeImage,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Template preview based on category
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                                  ),
+                                  child: JobImagePlaceholders.getJobImage(
+                                    null,
+                                    _getCategoryDisplayName(_selectedCategory),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  context.tr('add_job_image'),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  context.tr('image_optional_desc'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[500],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Add Image Button
+                    if (!_hasImage)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.add_photo_alternate_outlined),
+                          label: Text(context.tr('add_image')),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: ThemeConstants.primaryColor),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 

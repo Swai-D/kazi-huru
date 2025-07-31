@@ -3,6 +3,7 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/maps_service.dart';
+import '../../../../core/utils/image_placeholders.dart';
 import 'job_details_screen.dart';
 import 'location_permission_screen.dart';
 
@@ -28,7 +29,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     {
       'id': '1',
       'title': 'Kumuhamisha Mtu',
-      'location': 'Dar es Salaam',
+      'location': 'Dar es Salaam, Sala Sala',
       'payment': 'TZS 20,000',
       'category': 'Transport',
       'type': 'Part-time',
@@ -42,11 +43,12 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'latitude': -6.8235,
       'longitude': 39.2695,
       'distance': null,
+      'image': 'assets/images/image_1.jpg',
     },
     {
       'id': '2',
       'title': 'Kusafisha Compound',
-      'location': 'Dar es Salaam',
+      'location': 'Dar es Salaam, Mbezi Beach',
       'payment': 'TZS 15,000',
       'category': 'Cleaning',
       'type': 'One-time',
@@ -60,24 +62,64 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'latitude': -6.7924,
       'longitude': 39.2083,
       'distance': null,
+      'image': 'assets/images/image_2.jpg',
     },
     {
       'id': '3',
       'title': 'Kusaidia Kwenye Event',
-      'location': 'Arusha',
+      'location': 'Dar es Salaam, Masaki',
       'payment': 'TZS 25,000',
       'category': 'Events',
       'type': 'Part-time',
       'description': 'Event assistance needed for a wedding ceremony.',
       'requirements': ['Event experience', 'Good communication', 'Team player'],
       'provider_name': 'Event Masters',
-      'provider_location': 'Arusha',
+      'provider_location': 'Dar es Salaam',
       'schedule': 'Weekend',
       'start_date': 'Next Saturday',
       'payment_method': 'M-Pesa',
-      'latitude': -3.3731,
-      'longitude': 36.6827,
+      'latitude': -6.8235,
+      'longitude': 39.2695,
       'distance': null,
+      'image': 'assets/images/image_3.jpg',
+    },
+    {
+      'id': '4',
+      'title': 'Kusaidia Kwenye Construction',
+      'location': 'Dar es Salaam, Oyster Bay',
+      'payment': 'TZS 30,000',
+      'category': 'Construction',
+      'type': 'Full-time',
+      'description': 'Construction assistance needed for building project.',
+      'requirements': ['Construction experience', 'Safety awareness', 'Physical fitness'],
+      'provider_name': 'Build Pro Ltd',
+      'provider_location': 'Dar es Salaam',
+      'schedule': 'Daily',
+      'start_date': 'Next Monday',
+      'payment_method': 'M-Pesa',
+      'latitude': -6.8235,
+      'longitude': 39.2695,
+      'distance': null,
+      'image': 'assets/images/image_1.jpg',
+    },
+    {
+      'id': '5',
+      'title': 'Kusambaza Vitu',
+      'location': 'Dar es Salaam, City Centre',
+      'payment': 'TZS 18,000',
+      'category': 'Delivery',
+      'type': 'Part-time',
+      'description': 'Delivery services needed for packages and documents.',
+      'requirements': ['Motorcycle license', 'Good navigation', 'Reliable'],
+      'provider_name': 'Quick Delivery',
+      'provider_location': 'Dar es Salaam',
+      'schedule': 'Flexible',
+      'start_date': 'Immediate',
+      'payment_method': 'M-Pesa',
+      'latitude': -6.8235,
+      'longitude': 39.2695,
+      'distance': null,
+      'image': 'assets/images/image_2.jpg',
     },
   ];
 
@@ -615,162 +657,281 @@ class _JobCardState extends State<_JobCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: widget.onTap,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.job['title'],
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 16,
-                              color: Colors.grey[600],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.job['location'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            if (widget.job['distance'] != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  widget.job['distance'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: ThemeConstants.primaryColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              if (widget.job['estimated_time'] != null) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    widget.job['estimated_time'],
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with user info and category
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.business,
+                    color: ThemeConstants.primaryColor,
+                    size: 20,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.job['payment'],
-                        style: TextStyle(
+                        'Kazi Huru',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: ThemeConstants.primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          widget.job['type'],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.green,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      Text(
+                        widget.job['location'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                widget.job['description'],
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
+                ),
+                if (widget.job['category'] != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ThemeConstants.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      widget.job['category'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ThemeConstants.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          
+          // Main image
+          Container(
+            width: double.infinity,
+            height: 200,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: InkWell(
+                onTap: widget.onTap,
+                child: Image.asset(
+                  widget.job['image'] ?? 'assets/images/image_1.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: ThemeConstants.primaryColor.withOpacity(0.1),
+                      child: Icon(
+                        Icons.work,
+                        color: ThemeConstants.primaryColor,
+                        size: 48,
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (widget.job['distance'] != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 16,
+            ),
+          ),
+          
+          // Content section
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Job title and payment
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.job['title'],
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      widget.job['payment'],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConstants.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Location and distance
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.job['location'],
+                        style: TextStyle(
+                          fontSize: 14,
                           color: Colors.grey[600],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.job['estimated_time'] ?? '~5 min',
+                      ),
+                    ),
+                    if (widget.job['distance'] != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: ThemeConstants.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.job['distance'],
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: ThemeConstants.primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (widget.job['estimated_time'] != null) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            widget.job['estimated_time'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Description
+                Text(
+                  widget.job['description'],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Action buttons
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: ThemeConstants.primaryColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: () {
+                              // Save/bookmark functionality
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.bookmark_border, size: 18),
+                                const SizedBox(width: 4),
+                                Text('Save', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: ThemeConstants.primaryColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: _openNavigation,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.directions_outlined, size: 18),
+                                const SizedBox(width: 4),
+                                Text('Directions', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.directions_outlined,
-                      color: ThemeConstants.primaryColor,
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ThemeConstants.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: widget.onTap,
+                        child: Text(
+                          context.tr('apply'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ),
-                    onPressed: _openNavigation,
-                    tooltip: context.tr('get_directions'),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

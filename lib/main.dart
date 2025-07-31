@@ -23,6 +23,8 @@ import 'features/verification/presentation/screens/verification_status_screen.da
 import 'features/verification/presentation/screens/admin_verification_screen.dart';
 import 'features/job_seeker/presentation/screens/applied_jobs_screen.dart';
 import 'features/job_seeker/presentation/screens/completed_jobs_screen.dart';
+import 'features/job_provider/presentation/screens/posted_jobs_screen.dart';
+import 'features/job_provider/presentation/screens/applications_received_screen.dart';
 
 import 'core/services/localization_service.dart';
 import 'core/services/notification_service.dart';
@@ -146,6 +148,8 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
         '/admin-verification': (context) => const AdminVerificationScreen(), // Admin verification
         '/applied_jobs': (context) => const AppliedJobsScreen(), // Applied jobs list
         '/completed_jobs': (context) => const CompletedJobsScreen(), // Completed jobs list
+        '/posted_jobs': (context) => const PostedJobsScreen(), // Posted jobs list
+        '/applications_received': (context) => const ApplicationsReceivedScreen(), // Applications received list
         '/payment_details': (context) => const WalletScreen(), // Payment details (redirect to wallet)
         '/job_application_details': (context) => const JobSeekerDashboardScreen(), // Job application details (redirect to dashboard)
       },

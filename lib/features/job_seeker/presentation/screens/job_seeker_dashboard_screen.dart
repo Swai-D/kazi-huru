@@ -6,6 +6,7 @@ import '../../../../core/services/location_service.dart';
 import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/utils/image_placeholders.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
@@ -320,7 +321,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
             ],
             
             Text(
-              context.tr('available_jobs'),
+              'Kazi za Karibu Yako',
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -334,15 +335,17 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                 children: [
                   _JobCard(
                     title: 'Kumuhamisha Mtu',
-                    location: 'Dar es Salaam',
+                    location: 'Dar es Salaam, Sala Sala',
                     pay: 'TZS 20,000',
                     distance: _isLocationEnabled ? '2.5 km' : null,
+                    image: 'assets/images/image_1.jpg',
+                    category: 'Transport',
                     onPressed: () {
                       // Navigate to job details
                       final job = {
                         'id': '1',
                         'title': 'Kumuhamisha Mtu',
-                        'location': 'Dar es Salaam',
+                        'location': 'Dar es Salaam, Sala Sala',
                         'payment': 'TZS 20,000',
                         'category': 'Transport',
                         'type': 'Part-time',
@@ -355,6 +358,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                         'payment_method': 'M-Pesa',
                         'latitude': -6.8235,
                         'longitude': 39.2695,
+                        'image': 'assets/images/image_1.jpg',
                       };
                       Navigator.push(
                         context,
@@ -367,15 +371,17 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                   const SizedBox(height: 12),
                   _JobCard(
                     title: 'Kusafisha Compound',
-                    location: 'Dar es Salaam',
+                    location: 'Dar es Salaam, Mbezi Beach',
                     pay: 'TZS 15,000',
                     distance: _isLocationEnabled ? '1.2 km' : null,
+                    image: 'assets/images/image_2.jpg',
+                    category: 'Cleaning',
                     onPressed: () {
                       // Navigate to job details
                       final job = {
                         'id': '2',
                         'title': 'Kusafisha Compound',
-                        'location': 'Dar es Salaam',
+                        'location': 'Dar es Salaam, Mbezi Beach',
                         'payment': 'TZS 15,000',
                         'category': 'Cleaning',
                         'type': 'One-time',
@@ -388,6 +394,43 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                         'payment_method': 'M-Pesa',
                         'latitude': -6.7924,
                         'longitude': 39.2083,
+                        'image': 'assets/images/image_2.jpg',
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => JobDetailsScreen(job: job),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _JobCard(
+                    title: 'Kusaidia Kwenye Event',
+                    location: 'Dar es Salaam, Masaki',
+                    pay: 'TZS 25,000',
+                    distance: _isLocationEnabled ? '3.8 km' : null,
+                    image: 'assets/images/image_3.jpg',
+                    category: 'Events',
+                    onPressed: () {
+                      // Navigate to job details
+                      final job = {
+                        'id': '3',
+                        'title': 'Kusaidia Kwenye Event',
+                        'location': 'Dar es Salaam, Masaki',
+                        'payment': 'TZS 25,000',
+                        'category': 'Events',
+                        'type': 'Part-time',
+                        'description': 'Event assistance needed for a wedding ceremony.',
+                        'requirements': ['Event experience', 'Good communication', 'Team player'],
+                        'provider_name': 'Event Masters',
+                        'provider_location': 'Dar es Salaam',
+                        'schedule': 'Weekend',
+                        'start_date': 'Next Saturday',
+                        'payment_method': 'M-Pesa',
+                        'latitude': -6.8235,
+                        'longitude': 39.2695,
+                        'image': 'assets/images/image_3.jpg',
                       };
                       Navigator.push(
                         context,
@@ -453,6 +496,8 @@ class _JobCard extends StatelessWidget {
   final String location;
   final String pay;
   final String? distance;
+  final String? image;
+  final String? category;
   final VoidCallback onPressed;
 
   const _JobCard({
@@ -460,46 +505,155 @@ class _JobCard extends StatelessWidget {
     required this.location,
     required this.pay,
     this.distance,
+    this.image,
+    this.category,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: ThemeConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.12)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          // Header with user info and category
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
+                  child: Icon(
+                    Icons.business,
+                    color: ThemeConstants.primaryColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Kazi Huru',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        location,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (category != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ThemeConstants.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      category!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ThemeConstants.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          
+          // Main image
+          Container(
+            width: double.infinity,
+            height: 200,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Image.asset(
+                image ?? 'assets/images/image_1.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    child: Icon(
+                      Icons.work,
+                      color: ThemeConstants.primaryColor,
+                      size: 48,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          
+          // Content section
+          Padding(
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
+                // Job title and payment
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      pay,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConstants.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Location and distance
+                Row(
+                  children: [
+                    Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                Text(
-                  location,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
                     ),
                     if (distance != null) ...[
-                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -518,34 +672,62 @@ class _JobCard extends StatelessWidget {
                     ],
                   ],
                 ),
-                Text(
-                  pay,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: ThemeConstants.primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+                
+                const SizedBox(height: 12),
+                
+                // Action buttons
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: ThemeConstants.primaryColor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: () {
+                              // Save/bookmark functionality
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.bookmark_border, size: 18),
+                                const SizedBox(width: 4),
+                                Text('Save', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ThemeConstants.primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: onPressed,
+                            child: Text(
+                              context.tr('apply'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            ),
-            onPressed: onPressed,
-            child: Text(
-              context.tr('apply'),
-              style: const TextStyle(
-                color: ThemeConstants.primaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
             ),
           ),
         ],

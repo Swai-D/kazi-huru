@@ -3,6 +3,7 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/maps_service.dart';
+import '../../../../core/utils/image_placeholders.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -120,6 +121,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Job Image
+          Center(
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: ThemeConstants.primaryColor.withOpacity(0.1),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: JobImagePlaceholders.getLargeJobImage(
+                  widget.job['image'],
+                  widget.job['category'],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
             widget.job['title'] ?? 'Job Title',
             style: const TextStyle(
@@ -136,11 +156,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 size: 20,
               ),
               const SizedBox(width: 4),
-              Text(
-                widget.job['location'] ?? 'Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
+              Expanded(
+                child: Text(
+                  widget.job['location'] ?? 'Location',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ),
             ],
@@ -490,7 +512,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     Text(
-                      widget.job['payment_method'] ?? 'M-Pesa',
+                      widget.job['payment_method'] ?? 'Cash',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],

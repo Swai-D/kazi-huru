@@ -73,7 +73,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       color: ThemeConstants.textColor,
-                    ),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -129,7 +129,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          context.tr('personal_information'),
+                      context.tr('personal_information'),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -201,7 +201,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // Navigate to all posted jobs
+                          Navigator.pushNamed(context, '/posted_jobs');
                         },
                         child: Text(
                           context.tr('view_all'),
@@ -269,7 +269,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // Navigate to all applications
+                          Navigator.pushNamed(context, '/applications_received');
                         },
                         child: Text(
                           context.tr('view_all'),
@@ -326,7 +326,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       color: ThemeConstants.textColor,
-                    ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   Row(
