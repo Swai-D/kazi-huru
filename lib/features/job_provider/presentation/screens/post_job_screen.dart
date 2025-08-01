@@ -145,6 +145,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
     return category['label'] ?? 'Nyingine';
   }
 
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: ThemeConstants.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: ThemeConstants.primaryColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF222B45),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _getCategoryImage(String categoryValue) {
     // Map categories to sample images
     switch (categoryValue) {
@@ -210,19 +238,28 @@ class _PostJobScreenState extends State<PostJobScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(context.tr('post_job')),
+        title: Text(
+          context.tr('post_job'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF222B45),
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF222B45)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -232,15 +269,22 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.orange.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 24,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.verified_user_outlined,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -248,63 +292,100 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.tr('verification_required'),
-                              style: const TextStyle(
+                              'Verification Required',
+                              style: TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[700],
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              context.tr('verification_required_desc'),
-                              style: const TextStyle(
+                              'Verify your account to post jobs and attract more workers',
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.orange,
+                                color: Colors.orange[600],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      TextButton(
+                      ElevatedButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/id-verification');
                         },
-                        child: Text(
-                          context.tr('verify_now'),
-                          style: const TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.w600,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        child: const Text(
+                          'Verify Now',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
                   ),
                 ),
-              if (!_isVerified) const SizedBox(height: 16),
+              if (!_isVerified) const SizedBox(height: 24),
 
-              // Header
+              // Welcome Header
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      ThemeConstants.primaryColor.withOpacity(0.1),
+                      ThemeConstants.primaryColor.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: ThemeConstants.primaryColor.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.work_outline,
-                      color: ThemeConstants.primaryColor,
-                      size: 24,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ThemeConstants.primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.add_circle_outline,
+                        color: ThemeConstants.primaryColor,
+                        size: 24,
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: Text(
-                        context.tr('post_job_header'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Post a New Job',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeConstants.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Fill in the details below to find the perfect worker',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -312,101 +393,210 @@ class _PostJobScreenState extends State<PostJobScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Job Title
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_title'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.work_outline),
-                  hintText: context.tr('job_title_hint'),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_job_title');
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Job Category (Grid)
-              Text(
-                context.tr('job_category'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              // Job Title Section
+              _buildSectionHeader('Job Title', Icons.work_outline),
               const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1.2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final isSelected = _selectedCategory == category['value'];
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = category['value']!;
-                        // Update template image when category changes
-                        if (!_hasImage) {
-                          // Template will update automatically through _getCategoryImage
-                        }
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected 
-                            ? ThemeConstants.primaryColor.withOpacity(0.2)
-                            : Colors.white,
-                        border: Border.all(
-                          color: isSelected 
-                              ? ThemeConstants.primaryColor
-                              : Colors.grey.shade300,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            category['icon']!,
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                          const SizedBox(height: 4),
-                                                     Text(
-                             context.tr(category['value'] ?? ''),
-                             style: TextStyle(
-                               fontSize: 12,
-                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                               color: isSelected ? ThemeConstants.primaryColor : Colors.black87,
-                             ),
-                             textAlign: TextAlign.center,
-                           ),
-                        ],
-                      ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  );
-                },
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g., Kusafisha Office, Kubeba Mizigo',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.work_outline,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a job title';
+                    }
+                    return null;
+                  },
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Job Image (Optional)
+              // Job Category Section
+              _buildSectionHeader('Job Category', Icons.category_outlined),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select the type of work you need',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        childAspectRatio: 1.1,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final category = _categories[index];
+                        final isSelected = _selectedCategory == category['value'];
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = category['value']!;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                  ? ThemeConstants.primaryColor.withOpacity(0.15)
+                                  : Colors.grey[50],
+                              border: Border.all(
+                                color: isSelected 
+                                    ? ThemeConstants.primaryColor
+                                    : Colors.grey[200]!,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected 
+                                        ? ThemeConstants.primaryColor.withOpacity(0.2)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    category['icon']!,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  category['label']!,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    color: isSelected ? ThemeConstants.primaryColor : Colors.grey[700],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Job Description Section
+              _buildSectionHeader('Job Description', Icons.description_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(
+                    hintText: 'Describe the work in detail...\n\n• What needs to be done?\n• Any specific requirements?\n• Location details?\n• Working conditions?',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.description_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                  ),
+                  maxLines: 6,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a job description';
+                    }
+                    if (value.length < 20) {
+                      return 'Description should be at least 20 characters';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Job Image (Optional)
+              _buildSectionHeader('Job Image', Icons.image_outlined),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,268 +733,403 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Location
-              TextFormField(
-                controller: _locationController,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_location'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.location_on_outlined),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.my_location),
-                    onPressed: () {
-                      // TODO: Get current location
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(context.tr('location_updated'))),
-                      );
-                    },
-                  ),
-                  hintText: context.tr('location_hint'),
+              _buildSectionHeader('Location', Icons.location_on_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_location');
-                  }
-                  return null;
-                },
+                child: TextFormField(
+                  controller: _locationController,
+                  decoration: InputDecoration(
+                    labelText: context.tr('job_location'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.location_on_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.my_location),
+                      onPressed: () {
+                        // TODO: Get current location
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(context.tr('location_updated'))),
+                        );
+                      },
+                    ),
+                    hintText: context.tr('location_hint'),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return context.tr('please_enter_location');
+                    }
+                    return null;
+                  },
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Date and Time Row
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.tr('start_date'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+              _buildSectionHeader('Date & Time', Icons.calendar_today_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectDate(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('start_date'),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_startDate.day}/${_startDate.month}/${_startDate.year}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_startDate.day}/${_startDate.month}/${_startDate.year}',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.tr('start_time'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectTime(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('start_time'),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _startTime.format(context),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                _startTime.format(context),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Duration
-              DropdownButtonFormField<String>(
-                value: _selectedDuration,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_duration'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.schedule_outlined),
+              _buildSectionHeader('Duration', Icons.schedule_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                items: _durations.map((duration) {
-                  return DropdownMenuItem(
-                    value: duration['value'],
-                    child: Text(context.tr(duration['value'] ?? '')),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDuration = value!;
-                  });
-                },
+                child: DropdownButtonFormField<String>(
+                  value: _selectedDuration,
+                  decoration: InputDecoration(
+                    labelText: context.tr('job_duration'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.schedule_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                  ),
+                  items: _durations.map((duration) {
+                    return DropdownMenuItem(
+                      value: duration['value'],
+                      child: Text(context.tr(duration['value'] ?? '')),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDuration = value!;
+                    });
+                  },
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Payment Row
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _paymentController,
-                      decoration: InputDecoration(
-                        labelText: context.tr('payment_amount'),
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.payment_outlined),
-                        suffixText: 'TZS',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.tr('please_enter_payment');
-                        }
-                        if (int.tryParse(value) == null) {
-                          return context.tr('please_enter_valid_amount');
-                        }
-                        return null;
-                      },
+              _buildSectionHeader('Payment', Icons.payment_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedPaymentType,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _paymentController,
+                        decoration: InputDecoration(
+                          labelText: context.tr('payment_amount'),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(16),
+                          prefixIcon: Icon(
+                            Icons.payment_outlined,
+                            color: ThemeConstants.primaryColor,
+                          ),
+                          suffixText: 'TZS',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return context.tr('please_enter_payment');
+                          }
+                          if (int.tryParse(value) == null) {
+                            return context.tr('please_enter_valid_amount');
+                          }
+                          return null;
+                        },
                       ),
-                      items: _paymentTypes.map((type) {
-                        return DropdownMenuItem(
-                          value: type['value'],
-                                                   child: Text(
-                           context.tr(type['value'] ?? ''),
-                           style: const TextStyle(fontSize: 12),
-                         ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPaymentType = value!;
-                        });
-                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedPaymentType,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.all(16),
+                        ),
+                        items: _paymentTypes.map((type) {
+                          return DropdownMenuItem(
+                            value: type['value'],
+                            child: Text(
+                              context.tr(type['value'] ?? ''),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedPaymentType = value!;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Number of Workers
-              DropdownButtonFormField<String>(
-                value: _selectedWorkers,
-                decoration: InputDecoration(
-                  labelText: context.tr('workers_needed'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.people_outlined),
+              _buildSectionHeader('Workers', Icons.people_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                items: ['1', '2', '3', '4', '5+'].map((workers) {
-                  return DropdownMenuItem(
-                    value: workers,
-                    child: Text('$workers ${context.tr('person')}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedWorkers = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_description'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.description_outlined),
-                  hintText: context.tr('description_hint'),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedWorkers,
+                  decoration: InputDecoration(
+                    labelText: context.tr('workers_needed'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.people_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                  ),
+                  items: ['1', '2', '3', '4', '5+'].map((workers) {
+                    return DropdownMenuItem(
+                      value: workers,
+                      child: Text('$workers ${context.tr('person')}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedWorkers = value!;
+                    });
+                  },
                 ),
-                maxLines: 4,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_description');
-                  }
-                  if (value.length < 10) {
-                    return context.tr('description_too_short');
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Special Requirements (Optional)
-              TextFormField(
-                controller: _requirementsController,
-                decoration: InputDecoration(
-                  labelText: context.tr('special_requirements'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.checklist_outlined),
-                  hintText: context.tr('requirements_hint'),
+              _buildSectionHeader('Special Requirements', Icons.checklist_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                maxLines: 2,
+                child: TextFormField(
+                  controller: _requirementsController,
+                  decoration: InputDecoration(
+                    labelText: context.tr('special_requirements'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.checklist_outlined,
+                      color: ThemeConstants.primaryColor,
+                    ),
+                    hintText: context.tr('requirements_hint'),
+                  ),
+                  maxLines: 2,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Contact Preference
-              Text(
-                context.tr('contact_preference'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              _buildSectionHeader('Contact Preference', Icons.chat_bubble_outline),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text(context.tr('in_app_chat')),
-                      value: 'in_app',
-                      groupValue: _contactPreference,
-                      onChanged: (value) {
-                        setState(() {
-                          _contactPreference = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: Text(context.tr('phone_call')),
-                      value: 'phone',
-                      groupValue: _contactPreference,
-                      onChanged: (value) {
-                        setState(() {
-                          _contactPreference = value!;
-                        });
-                      },
-                    ),
-                  ),
-                ],
+                child: Row(
+                  children: [
+                                         Expanded(
+                       child: RadioListTile<String>(
+                         title: const Text('Chat'),
+                         subtitle: const Text('In-app messaging'),
+                         value: 'in_app',
+                         groupValue: _contactPreference,
+                         onChanged: (value) {
+                           setState(() {
+                             _contactPreference = value!;
+                           });
+                         },
+                       ),
+                     ),
+                     Expanded(
+                       child: RadioListTile<String>(
+                         title: const Text('Call'),
+                         subtitle: const Text('Phone call'),
+                         value: 'phone',
+                         groupValue: _contactPreference,
+                         onChanged: (value) {
+                           setState(() {
+                             _contactPreference = value!;
+                           });
+                         },
+                       ),
+                     ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 

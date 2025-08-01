@@ -369,9 +369,9 @@ class _DashboardContent extends StatelessWidget {
             ),
           const SizedBox(height: 24),
           
-          // Recent Activity Section
+          // Quick Stats Section
           Text(
-            'Shughuli za Hivi Karibuni',
+            'Takwimu za Hivi Karibuni',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -380,51 +380,61 @@ class _DashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           
-          // Recent Activity Cards
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+          // Quick Stats Grid
+          Row(
+            children: [
+              Expanded(
+                child: _QuickStatCard(
+                  title: 'Maombi Mapya',
+                  value: '3',
+                  icon: Icons.people_outline,
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/applications_received');
+                  },
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.notifications_outlined,
-                      color: ThemeConstants.primaryColor,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Hakuna shughuli mpya',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickStatCard(
+                  title: 'Kazi Zilizokamilika',
+                  value: '2',
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/posted_jobs');
+                  },
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Utapata taarifa hapa unapopata maombi mapya au malipo.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickStatCard(
+                  title: 'Malipo Yaliyopokelewa',
+                  value: 'TZS 45,000',
+                  icon: Icons.payment_outlined,
+                  color: Colors.orange,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/wallet');
+                  },
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickStatCard(
+                  title: 'Kazi Zilizopostwa',
+                  value: '5',
+                  icon: Icons.work_outline,
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/posted_jobs');
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1513,6 +1523,88 @@ class _ApplicationCard extends StatelessWidget {
           jobTitle: job,
           rating: rating,
           status: status,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickStatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickStatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 20,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey[400],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
       ),
     );
