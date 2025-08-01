@@ -3,7 +3,6 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/maps_service.dart';
-import '../../../../core/utils/image_placeholders.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;

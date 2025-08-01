@@ -3,8 +3,10 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/wallet_service.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../wallet/presentation/screens/wallet_screen.dart';
 import 'company_profile_screen.dart';
 import 'post_job_screen.dart';
 
@@ -19,6 +21,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
   int _selectedIndex = 0;
   final VerificationService _verificationService = VerificationService();
   final NotificationService _notificationService = NotificationService();
+  final WalletService _walletService = WalletService();
   bool _isVerified = false;
 
   @override
@@ -105,92 +108,119 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
       child: Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-          title: Text(_selectedIndex == 2 ? context.tr('applications') : context.tr('job_provider_dashboard')),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-          leading: _selectedIndex == 2 
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _selectedIndex = 0),
-              )
-            : null,
-        actions: [
-          // Verification Badge
-          if (!_isVerified)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(Icons.verified_user_outlined, color: Colors.orange),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/verification-status');
-                },
-                tooltip: context.tr('verify_identity'),
+        title: Column(
+          children: [
+            const Text(
+              'John Doe',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF222B45),
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.chat_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatListScreen()),
-              );
-            },
+            Text(
+              'Karibu tena!',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 32,
+            height: 32,
           ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.pushNamed(context, '/company_profile');
-            },
+        ),
+        actions: [
+          // Chat Button
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: ThemeConstants.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ChatListScreen()),
+                );
+              },
+              tooltip: 'Messages',
+            ),
           ),
+          
+          // Notifications Button
           ListenableBuilder(
             listenable: _notificationService,
             builder: (context, child) {
               final unreadCount = _notificationService.unreadCount;
-              return Stack(
-                children: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-              );
-            },
-          ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          unreadCount > 99 ? '99+' : unreadCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                  ),
+              return Container(
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                        );
+                      },
+                      tooltip: 'Notifications',
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               );
             },
           ),
-
         ],
       ),
-        body: _selectedIndex == 2 ? _AllApplicationsScreen() : _DashboardContent(),
+        body: _selectedIndex == 2 ? _AllApplicationsScreen() : _DashboardContent(walletService: _walletService),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -251,103 +281,150 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
 }
 
 class _DashboardContent extends StatelessWidget {
+  final WalletService walletService;
+
+  const _DashboardContent({
+    required this.walletService,
+  });
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Stats Cards
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  title: context.tr('active_jobs'),
-                  value: '5',
-                  icon: Icons.work_outline,
-                  color: ThemeConstants.primaryColor,
-                ),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Wallet Balance Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: ThemeConstants.primaryColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  title: context.tr('total_applications'),
-                  value: '23',
-                  icon: Icons.people_outline,
-                  color: Colors.orange,
+              child: Column(
+                children: [
+                  Text(
+                    '${context.tr('balance')}: TZS ${walletService.currentBalance.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeConstants.textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WalletScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      context.tr('add_balance'),
+                      style: const TextStyle(
+                        color: ThemeConstants.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  title: context.tr('completed_jobs'),
-                  value: '12',
-                  icon: Icons.check_circle_outline,
-                  color: Colors.green,
-            ),
-          ),
-        ],
-      ),
-          const SizedBox(height: 24),
-          
-          // Post Job Button
-                      ElevatedButton.icon(
+            const SizedBox(height: 24),
+            
+            // Post Job Button
+            ElevatedButton.icon(
               onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PostJobScreen()),
-              );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PostJobScreen()),
+                );
               },
-            icon: const Icon(Icons.add),
-            label: Text(context.tr('post_new_job')),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+              icon: const Icon(Icons.add),
+              label: Text(
+                context.tr('post_new_job'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ThemeConstants.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
               ),
             ),
-          ),
           const SizedBox(height: 24),
           
-          // My Posted Jobs
+          // Recent Activity Section
           Text(
-            'Kazi Zangu Zilizopostwa',
-            style: const TextStyle(
+            'Shughuli za Hivi Karibuni',
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
-          // My Posted Job Cards
-                _JobCard(
-                  title: 'Kusafisha Office',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 25,000',
-                  status: 'active',
-                  applications: 8,
-            onTap: () => _showSimpleJobDialog(context, 'Kusafisha Office'),
+          // Recent Activity Cards
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-                const SizedBox(height: 12),
-                _JobCard(
-                  title: 'Kusafisha Compound',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 15,000',
-                  status: 'completed',
-                  applications: 5,
-            onTap: () => _showSimpleJobDialog(context, 'Kusafisha Compound'),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_outlined,
+                      color: ThemeConstants.primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Hakuna shughuli mpya',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _JobCard(
-                  title: 'Kumuhamisha Mtu',
-                  location: 'Dar es Salaam',
-                  pay: 'TZS 20,000',
-                  status: 'active',
-                  applications: 12,
-            onTap: () => _showSimpleJobDialog(context, 'Kumuhamisha Mtu'),
+                const SizedBox(height: 8),
+                Text(
+                  'Utapata taarifa hapa unapopata maombi mapya au malipo.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1200,7 +1277,6 @@ class _JobCard extends StatelessWidget {
   final String pay;
   final String status;
   final int applications;
-  final VoidCallback? onTap;
 
   const _JobCard({
     required this.title,
@@ -1208,13 +1284,11 @@ class _JobCard extends StatelessWidget {
     required this.pay,
     required this.status,
     required this.applications,
-    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return Container(
       child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1439,6 +1513,77 @@ class _ApplicationCard extends StatelessWidget {
           jobTitle: job,
           rating: rating,
           status: status,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
       ),
     );

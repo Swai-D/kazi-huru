@@ -6,7 +6,6 @@ import '../../../../core/services/location_service.dart';
 import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/utils/image_placeholders.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
