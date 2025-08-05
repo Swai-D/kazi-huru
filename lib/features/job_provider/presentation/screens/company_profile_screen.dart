@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
@@ -31,14 +33,33 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           icon: const Icon(Icons.arrow_back, color: ThemeConstants.textColor),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // Debug button for profile refresh
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.blue),
+            onPressed: () async {
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              await authProvider.refreshUserProfile();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile refreshed. Please restart the app.'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            tooltip: 'Refresh Profile (Debug)',
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            // Profile Header with Stats
-              Container(
+      body: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile Header with Stats
+                Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -67,9 +88,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                  const Text(
-                    'John Mwamba',
-                    style: TextStyle(
+                  Text(
+                    authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
+                    style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       color: ThemeConstants.textColor,
@@ -149,7 +170,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   _InfoRow(
                     icon: Icons.person,
                     label: context.tr('full_name'),
-                    value: 'John Mwamba',
+                    value: authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
                   ),
                   const SizedBox(height: 12),
                   _InfoRow(
@@ -161,7 +182,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   _InfoRow(
                     icon: Icons.phone,
                     label: context.tr('phone'),
-                    value: '+255 712 345 678',
+                    value: authProvider.userProfile?['phoneNumber'] ?? 'No phone',
                   ),
                 ],
               ),
@@ -216,7 +237,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                     const SizedBox(height: 16),
                   _JobCard(
                     title: 'Usafi wa Nyumba',
-                    company: 'John Mwamba',
+                    company: authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
                     location: 'Dar es Salaam',
                     salary: 'TSh 50,000',
                     status: 'Active',
@@ -225,7 +246,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   const SizedBox(height: 12),
                   _JobCard(
                     title: 'Kubeba Mizigo',
-                    company: 'John Mwamba',
+                    company: authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
                     location: 'Mwanza',
                     salary: 'TSh 30,000',
                     status: 'Active',
@@ -394,8 +415,35 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      // Logout
+                    onPressed: () async {
+                      // Show confirmation dialog
+                      final shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Thibitisha'),
+                          content: const Text('Unahitaji kutoka kwenye app?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Hapana'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Ndiyo'),
+                            ),
+                          ],
+                        ),
+                      );
+                      
+                      if (shouldLogout == true) {
+                        // Sign out user
+                        await authProvider.signOut();
+                        
+                        // Navigate to login
+                        if (mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                        }
+                      }
                     },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -416,8 +464,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             ],
           ),
             const SizedBox(height: 24),
-          ],
-        ),
+            ],
+          ),
+        );
+        },
       ),
     );
   }

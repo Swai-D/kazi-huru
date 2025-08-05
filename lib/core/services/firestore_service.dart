@@ -229,6 +229,19 @@ class FirestoreService {
         .snapshots();
   }
 
+  // Get jobs with simple query (no composite index required)
+  Stream<QuerySnapshot> getJobsSimple({String? status}) {
+    Query query = _firestore.collection(jobsCollection);
+    
+    if (status != null) {
+      query = query.where('status', isEqualTo: status);
+    }
+    
+    // Don't use orderBy to avoid composite index requirement
+    // We'll sort on the client side instead
+    return query.snapshots();
+  }
+
   // Job Applications
   Future<String> applyForJob({
     required String jobId,

@@ -7,9 +7,12 @@ class SMSService {
   // API Configuration
   static const String _apiUrl = 'https://messaging-service.co.tz/api/sms/v1/text/single';
   static const String _authHeader = 'Basic ZGF2eXN3YWk6ZGF2eXN3YWkxOTk1';
-  static const String _senderId = 'OTP'; // Changed from OTP to KAZIHURU
+  static const String _senderId = 'KAZIHURU'; // Changed from OTP to KAZIHURU
   static const String _clientId = 'KAZI-HURU';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Development mode flag - set to true for testing
+  static const bool _isDevelopmentMode = true;
 
   // Generate a 6-digit OTP
   String _generateOTP() {
@@ -34,6 +37,7 @@ class SMSService {
       }
       
       print('📱 Storing OTP for formatted phone: $formattedPhone');
+      print('🔢 Generated OTP: $otp');
       
       // Store OTP in Firestore with 5-minute expiry
       final otpDoc = await _firestore.collection('otps').add({
@@ -44,18 +48,30 @@ class SMSService {
         'isUsed': false,
       });
 
+      print('✅ OTP stored in Firestore with ID: ${otpDoc.id}');
+
+      // In development mode, just return the OTP without sending SMS
+      if (_isDevelopmentMode) {
+        print('🛠️ DEVELOPMENT MODE: SMS not sent, but OTP is available');
+        print('📱 For testing, use this OTP: $otp');
+        print('📋 Check Firebase console for OTP details');
+        return otp;
+      }
+
       // Send OTP via SMS
       final success = await sendOTP(phoneNumber, otp);
       
       if (success) {
+        print('✅ SMS sent successfully!');
         return otp;
       } else {
-        // If SMS sending fails, delete the OTP document
-        await otpDoc.delete();
-        return null;
+        print('❌ SMS sending failed, but OTP is stored in Firestore');
+        print('📱 For testing, use this OTP: $otp');
+        // Don't delete the OTP document - keep it for manual testing
+        return otp;
       }
     } catch (e) {
-      print('Error generating and sending OTP: $e');
+      print('❌ Error generating and sending OTP: $e');
       return null;
     }
   }
@@ -81,6 +97,8 @@ class SMSService {
           .where('otp', isEqualTo: otp)
           .where('isUsed', isEqualTo: false)
           .get();
+
+      print('📋 Found ${otpQuery.docs.length} OTP documents');
 
       if (otpQuery.docs.isEmpty) {
         print('❌ No OTP found for phone number: $formattedPhone');
@@ -115,12 +133,19 @@ class SMSService {
       print('✅ OTP verified successfully!');
       return true;
     } catch (e) {
-      print('Error verifying OTP: $e');
+      print('❌ Error verifying OTP: $e');
       return false;
     }
   }
 
   static Future<bool> sendOTP(String phoneNumber, String otp) async {
+    // In development mode, don't actually send SMS
+    if (_isDevelopmentMode) {
+      print('🛠️ DEVELOPMENT MODE: Skipping actual SMS sending');
+      print('📱 Would send SMS to: $phoneNumber with OTP: $otp');
+      return true; // Return true to simulate success
+    }
+
     int maxRetries = 3;
     int currentRetry = 0;
     
@@ -138,12 +163,12 @@ class SMSService {
           formattedNumber = '255$formattedNumber';
         }
 
-        print('Attempt ${currentRetry + 1} of $maxRetries');
-        print('Original phone number: $phoneNumber');
-        print('Formatted phone number: $formattedNumber');
-        print('Generated OTP: $otp');
-        print('Sender ID: $_senderId');
-        print('Client ID: $_clientId');
+        print('📤 Attempt ${currentRetry + 1} of $maxRetries');
+        print('📱 Original phone number: $phoneNumber');
+        print('📱 Formatted phone number: $formattedNumber');
+        print('🔢 Generated OTP: $otp');
+        print('📤 Sender ID: $_senderId');
+        print('🏢 Client ID: $_clientId');
 
         // Create request
         var request = http.Request('POST', Uri.parse(_apiUrl));
@@ -170,23 +195,22 @@ class SMSService {
         };
         request.body = jsonEncode(body);
         
-        print('Request URL: $_apiUrl');
-        print('Request headers: ${request.headers}');
-        print('Request body: ${request.body}');
+        print('🌐 Request URL: $_apiUrl');
+        print('📋 Request body: ${request.body}');
 
         // Send request
         http.StreamedResponse response = await request.send();
         final responseBody = await response.stream.bytesToString();
         
-        print('SMS Response Status: ${response.statusCode}');
-        print('SMS Response: $responseBody');
+        print('📡 SMS Response Status: ${response.statusCode}');
+        print('📡 SMS Response: $responseBody');
 
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(responseBody);
           if (jsonResponse['messages'] != null && jsonResponse['messages'].isNotEmpty) {
             final messageStatus = jsonResponse['messages'][0]['status'];
-            print('Message Status: ${messageStatus['name']}');
-            print('Status Description: ${messageStatus['description']}');
+            print('📊 Message Status: ${messageStatus['name']}');
+            print('📝 Status Description: ${messageStatus['description']}');
             
             // Check if message is in a valid state
             if (messageStatus['groupId'] == 18 && messageStatus['name'] == 'PENDING_ENROUTE') {
@@ -197,7 +221,7 @@ class SMSService {
               // If we get an unexpected status, retry
               currentRetry++;
               if (currentRetry < maxRetries) {
-                print('Retrying in 2 seconds...');
+                print('🔄 Retrying in 2 seconds...');
                 await Future.delayed(const Duration(seconds: 2));
                 continue;
               }
@@ -211,7 +235,7 @@ class SMSService {
           // If we get an error status, retry
           currentRetry++;
           if (currentRetry < maxRetries) {
-            print('Retrying in 2 seconds...');
+            print('🔄 Retrying in 2 seconds...');
             await Future.delayed(const Duration(seconds: 2));
             continue;
           }
@@ -219,11 +243,11 @@ class SMSService {
         }
       } catch (e, stackTrace) {
         print('❌ Error sending SMS: $e');
-        print('Stack trace: $stackTrace');
+        print('📚 Stack trace: $stackTrace');
         // If we get an exception, retry
         currentRetry++;
         if (currentRetry < maxRetries) {
-          print('Retrying in 2 seconds...');
+          print('🔄 Retrying in 2 seconds...');
           await Future.delayed(const Duration(seconds: 2));
           continue;
         }

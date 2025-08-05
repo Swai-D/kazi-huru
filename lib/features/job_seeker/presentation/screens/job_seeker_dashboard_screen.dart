@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
@@ -7,6 +8,8 @@ import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/job_service.dart';
+import '../../../../core/models/job_model.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
@@ -31,15 +34,53 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final LocationService _locationService = LocationService();
   final VerificationService _verificationService = VerificationService();
   final NotificationService _notificationService = NotificationService();
+  final JobService _jobService = JobService();
   bool _isLocationEnabled = false;
   String? _currentLocation;
   bool _isVerified = false;
+  List<JobModel> _recentJobs = [];
+  StreamSubscription<List<JobModel>>? _jobsSubscription;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
     _checkVerificationStatus();
+    _listenToJobs();
+  }
+
+  @override
+  void dispose() {
+    _jobsSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenToJobs() {
+    _jobsSubscription = _jobService.getActiveJobs().listen((jobs) {
+      if (mounted) {
+        setState(() {
+          _recentJobs = jobs.take(5).toList(); // Show latest 5 jobs
+        });
+        
+        // Show notification for new jobs
+        if (jobs.isNotEmpty && _recentJobs.length < jobs.length) {
+          final newJobs = jobs.where((job) => 
+            !_recentJobs.any((existingJob) => existingJob.id == job.id)
+          ).toList();
+          
+          for (final job in newJobs) {
+            _notificationService.addNotification(
+              _notificationService.createNotification(
+                title: 'Kazi Mpya',
+                body: '${job.title} - ${job.formattedPayment}',
+                type: NotificationType.jobApplication,
+                data: {'jobId': job.id, 'jobTitle': job.title},
+              ),
+            );
+          }
+        }
+      }
+    });
   }
 
   Future<void> _initializeLocation() async {
@@ -73,448 +114,436 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     });
   }
 
-  void _showTestNotificationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Test Notifications'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.work),
-              title: const Text('Job Application'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulateJobApplication('Usafi', 'John Doe');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.payment),
-              title: const Text('Payment'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulatePaymentReceived(25000);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.verified_user),
-              title: const Text('Verification'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulateVerificationUpdate(true);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.chat),
-              title: const Text('Chat Message'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulateChatMessage('John', 'Habari! Una kazi?');
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         final userName = authProvider.userName ?? 'User';
         
-    return Scaffold(
-              backgroundColor: const Color(0xFFF5F7FA), // Light grey/off-white like wallet screen
-      appBar: AppBar(
-        title: Column(
-          children: [
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F7FA),
+          appBar: AppBar(
+            title: Column(
+              children: [
                 Text(
                   userName,
                   style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF222B45),
-              ),
-            ),
-            Text(
-              'Karibu tena!',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          child: Image.asset(
-            'assets/images/logo.png',
-            width: 32,
-            height: 32,
-          ),
-        ),
-        actions: [
-          // Chat Button
-          Container(
-            margin: const EdgeInsets.only(right: 4),
-            decoration: BoxDecoration(
-              color: ThemeConstants.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatListScreen()),
-              );
-            },
-              tooltip: 'Messages',
-            ),
-          ),
-          
-          // Notifications Button
-          ListenableBuilder(
-            listenable: _notificationService,
-            builder: (context, child) {
-              final unreadCount = _notificationService.unreadCount;
-              return Container(
-                margin: const EdgeInsets.only(right: 4),
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF222B45),
+                  ),
                 ),
-                child: Stack(
-                  children: [
-          IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-              );
-            },
-                      tooltip: 'Notifications',
-                    ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                Text(
+                  'Karibu tena!',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Image.asset(
+                'assets/images/logo.png',
+                width: 32,
+                height: 32,
+              ),
+            ),
+            actions: [
+              // Chat Button
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatListScreen()),
+                      );
+                    },
+                    tooltip: 'Messages',
+                  ),
+                ),
+              ),
+              
+              // Notifications Button
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                          );
+                        },
+                        tooltip: 'Notifications',
+                      ),
+                      if (_notificationService.unreadCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              _notificationService.unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Profile Button
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: PopupMenuButton<String>(
+                    icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
+                    onSelected: (value) async {
+                      if (value == 'profile') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
+                        );
+                      } else if (value == 'debug_refresh') {
+                        // Debug: Refresh user profile
+                        await authProvider.refreshUserProfile();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Profile refreshed. Please restart the app.'),
+                            backgroundColor: Colors.blue,
+                          ),
+                        );
+                      } else if (value == 'logout') {
+                        // Show confirmation dialog
+                        final shouldLogout = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Thibitisha'),
+                            content: const Text('Unahitaji kutoka kwenye app?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text('Hapana'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text('Ndiyo'),
                               ),
                             ],
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                                unreadCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-              
-              // Profile Button
-              Container(
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
-                    );
-                  },
-                  tooltip: 'Profile',
-                ),
-              ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Balance Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: ThemeConstants.primaryColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    '${context.tr('balance')}: TZS ${_walletService.currentBalance.toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ThemeConstants.textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WalletScreen(),
-                        ),
-                      );
+                        );
+                        
+                        if (shouldLogout == true) {
+                          // Sign out user
+                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                          await authProvider.signOut();
+                          
+                          // Navigate to login
+                          if (mounted) {
+                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                          }
+                        }
+                      }
                     },
-                    child: Text(
-                      context.tr('add_balance'),
-                      style: const TextStyle(
-                        color: ThemeConstants.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'profile',
+                        child: Row(
+                          children: [
+                            Icon(Icons.person, color: ThemeConstants.primaryColor),
+                            SizedBox(width: 8),
+                            Text('Wasifu'),
+                          ],
+                        ),
                       ),
-                    ),
+                      const PopupMenuItem(
+                        value: 'debug_refresh',
+                        child: Row(
+                          children: [
+                            Icon(Icons.refresh),
+                            SizedBox(width: 8),
+                            Text('Refresh Profile (Debug)'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Toka', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            
-            // Location Indicator
-            if (_isLocationEnabled && _currentLocation != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Near: $_currentLocation',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ThemeConstants.primaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 16),
             ],
-            
-            Text(
-              'Kazi za Karibu Yako',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: ThemeConstants.textColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Job List
-            Expanded(
-              child: ListView(
-                children: [
-                  _JobCard(
-                    title: 'Kumuhamisha Mtu',
-                    location: 'Dar es Salaam, Sala Sala',
-                    pay: 'TZS 20,000',
-                    distance: _isLocationEnabled ? '2.5 km' : null,
-                    image: 'assets/images/image_1.jpg',
-                    category: 'Transport',
-                    onPressed: () {
-                      // Navigate to job details
-                      final job = {
-                        'id': '1',
-                        'title': 'Kumuhamisha Mtu',
-                        'location': 'Dar es Salaam, Sala Sala',
-                        'payment': 'TZS 20,000',
-                        'category': 'Transport',
-                        'type': 'Part-time',
-                        'description': 'Need someone to help move furniture from one house to another.',
-                        'requirements': ['Physical strength', 'Reliable transportation', 'Good communication'],
-                        'provider_name': 'Moving Services Ltd',
-                        'provider_location': 'Dar es Salaam',
-                        'schedule': 'Flexible',
-                        'start_date': 'Immediate',
-                        'payment_method': 'M-Pesa',
-                        'latitude': -6.8235,
-                        'longitude': 39.2695,
-                        'image': 'assets/images/image_1.jpg',
-                      };
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JobDetailsScreen(job: job),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _JobCard(
-                    title: 'Kusafisha Compound',
-                    location: 'Dar es Salaam, Mbezi Beach',
-                    pay: 'TZS 15,000',
-                    distance: _isLocationEnabled ? '1.2 km' : null,
-                    image: 'assets/images/image_2.jpg',
-                    category: 'Cleaning',
-                    onPressed: () {
-                      // Navigate to job details
-                      final job = {
-                        'id': '2',
-                        'title': 'Kusafisha Compound',
-                        'location': 'Dar es Salaam, Mbezi Beach',
-                        'payment': 'TZS 15,000',
-                        'category': 'Cleaning',
-                        'type': 'One-time',
-                        'description': 'Cleaning services needed for a residential compound.',
-                        'requirements': ['Cleaning experience', 'Attention to detail', 'Reliable'],
-                        'provider_name': 'Clean Pro Services',
-                        'provider_location': 'Dar es Salaam',
-                        'schedule': 'Morning',
-                        'start_date': 'Tomorrow',
-                        'payment_method': 'M-Pesa',
-                        'latitude': -6.7924,
-                        'longitude': 39.2083,
-                        'image': 'assets/images/image_2.jpg',
-                      };
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JobDetailsScreen(job: job),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _JobCard(
-                    title: 'Kusaidia Kwenye Event',
-                    location: 'Dar es Salaam, Masaki',
-                    pay: 'TZS 25,000',
-                    distance: _isLocationEnabled ? '3.8 km' : null,
-                    image: 'assets/images/image_3.jpg',
-                    category: 'Events',
-                    onPressed: () {
-                      // Navigate to job details
-                      final job = {
-                        'id': '3',
-                        'title': 'Kusaidia Kwenye Event',
-                        'location': 'Dar es Salaam, Masaki',
-                        'payment': 'TZS 25,000',
-                        'category': 'Events',
-                        'type': 'Part-time',
-                        'description': 'Event assistance needed for a wedding ceremony.',
-                        'requirements': ['Event experience', 'Good communication', 'Team player'],
-                        'provider_name': 'Event Masters',
-                        'provider_location': 'Dar es Salaam',
-                        'schedule': 'Weekend',
-                        'start_date': 'Next Saturday',
-                        'payment_method': 'M-Pesa',
-                        'latitude': -6.8235,
-                        'longitude': 39.2695,
-                        'image': 'assets/images/image_3.jpg',
-                      };
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => JobDetailsScreen(job: job),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: ThemeConstants.cardBackgroundColor,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _BottomNavItem(
-                  icon: Icons.home,
-                  label: context.tr('home'),
-                  selected: true,
-                  color: ThemeConstants.primaryColor,
-                  onTap: () {},
+                // Balance Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${context.tr('balance')}: TZS ${_walletService.currentBalance.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeConstants.textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(32),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WalletScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          context.tr('add_balance'),
+                          style: const TextStyle(
+                            color: ThemeConstants.primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                _BottomNavItem(
-                  icon: Icons.work,
-                  label: context.tr('search_jobs'),
-                  selected: false,
-                  color: ThemeConstants.textColor,
-                  onTap: () {
-                    Navigator.pushNamed(context, '/job_search');
-                  },
+                const SizedBox(height: 28),
+                
+                // Location Indicator
+                if (_isLocationEnabled && _currentLocation != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: ThemeConstants.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Near: $_currentLocation',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: ThemeConstants.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                Text(
+                  'Kazi za Karibu Yako',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
                 ),
-                _BottomNavItem(
-                  icon: Icons.person,
-                  label: context.tr('profile'),
-                  selected: false,
-                  color: ThemeConstants.textColor,
-                  onTap: () {
-                    Navigator.pushNamed(context, '/profile');
-                  },
+                const SizedBox(height: 12),
+                // Job List
+                Expanded(
+                  child: _recentJobs.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.work_outline,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Hakuna kazi za karibu',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Kazi mpya zitaonekana hapa',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _recentJobs.length,
+                        itemBuilder: (context, index) {
+                          final job = _recentJobs[index];
+                          return Column(
+                            children: [
+                              _JobCard(
+                                title: job.title,
+                                location: job.location,
+                                pay: job.formattedPayment,
+                                distance: _isLocationEnabled ? '2.5 km' : null,
+                                image: job.imageUrl ?? 'assets/images/image_1.jpg',
+                                category: job.categoryDisplayName,
+                                onPressed: () {
+                                  // Convert JobModel to Map for JobDetailsScreen
+                                  final jobData = {
+                                    'id': job.id,
+                                    'title': job.title,
+                                    'location': job.location,
+                                    'payment': job.formattedPayment,
+                                    'category': job.categoryDisplayName,
+                                    'type': 'Temporary',
+                                    'description': job.description,
+                                    'requirements': job.requirements.split(',').map((e) => e.trim()).toList(),
+                                    'provider_name': 'Job Provider',
+                                    'provider_location': job.location,
+                                    'schedule': 'Flexible',
+                                    'start_date': job.formattedDate,
+                                    'payment_method': 'Cash',
+                                    'latitude': 0.0,
+                                    'longitude': 0.0,
+                                    'image': job.imageUrl ?? 'assets/images/image_1.jpg',
+                                  };
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => JobDetailsScreen(job: jobData),
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (index < _recentJobs.length - 1) const SizedBox(height: 12),
+                            ],
+                          );
+                        },
+                      ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: ThemeConstants.cardBackgroundColor,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _BottomNavItem(
+                      icon: Icons.home,
+                      label: context.tr('home'),
+                      selected: true,
+                      color: ThemeConstants.primaryColor,
+                      onTap: () {},
+                    ),
+                    _BottomNavItem(
+                      icon: Icons.work,
+                      label: context.tr('search_jobs'),
+                      selected: false,
+                      color: ThemeConstants.textColor,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/job_search');
+                      },
+                    ),
+                    _BottomNavItem(
+                      icon: Icons.person,
+                      label: context.tr('profile'),
+                      selected: false,
+                      color: ThemeConstants.textColor,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/profile');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

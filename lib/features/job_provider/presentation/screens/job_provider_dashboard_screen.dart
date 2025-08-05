@@ -97,7 +97,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        final userName = authProvider.userName ?? 'User';
+        final userName = authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider';
         
         return PopScope(
           canPop: false,
@@ -704,6 +704,7 @@ class JobSeekerProfileScreen extends StatelessWidget {
   final String jobTitle;
   final double rating;
   final String status;
+  final AuthProvider authProvider;
 
   const JobSeekerProfileScreen({
     super.key,
@@ -711,6 +712,7 @@ class JobSeekerProfileScreen extends StatelessWidget {
     required this.jobTitle,
     required this.rating,
     required this.status,
+    required this.authProvider,
   });
 
   @override
@@ -856,13 +858,13 @@ class JobSeekerProfileScreen extends StatelessWidget {
                   _ProfileInfoRow(
                     icon: Icons.phone,
                     title: 'Phone',
-                    value: '+255 123 456 789',
+                    value: this.authProvider.userProfile?['phoneNumber'] ?? 'No phone',
                   ),
                   const SizedBox(height: 8),
                   _ProfileInfoRow(
                     icon: Icons.email,
                     title: 'Email',
-                    value: '${name.toLowerCase().replaceAll(' ', '.')}@email.com',
+                    value: this.authProvider.currentUser?.email ?? 'No email',
                   ),
                   const SizedBox(height: 8),
                   _ProfileInfoRow(
@@ -1524,6 +1526,7 @@ class _ApplicationCard extends StatelessWidget {
   }
 
   void _showJobSeekerProfile(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1532,6 +1535,7 @@ class _ApplicationCard extends StatelessWidget {
           jobTitle: job,
           rating: rating,
           status: status,
+          authProvider: authProvider,
         ),
       ),
     );

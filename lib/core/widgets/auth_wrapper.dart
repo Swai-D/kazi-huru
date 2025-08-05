@@ -118,14 +118,41 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // User is authenticated and has complete profile - navigate to appropriate dashboard
         final userRole = authProvider.userRole;
         print('🔐 User authenticated with role: $userRole');
+        print('🔐 User profile: ${authProvider.userProfile != null ? 'Found' : 'Not found'}');
+        print('🔐 Has complete profile: ${authProvider.hasCompleteProfile}');
+        print('🔐 Raw user profile data: ${authProvider.userProfile}');
+        print('🔐 Role from profile: ${authProvider.userProfile?['role']}');
+        print('🔐 Role from getter: ${authProvider.userRole}');
+        
+        // Debug user profile if role is unknown
+        if (userRole == null || userRole.isEmpty) {
+          print('🔐 Debugging user profile...');
+          // Call debug method without await
+          authProvider.debugUserProfile();
+        }
         
         if (userRole == 'job_seeker') {
+          print('🔐 Redirecting to Job Seeker Dashboard');
           return const JobSeekerDashboardScreen();
         } else if (userRole == 'job_provider') {
+          print('🔐 Redirecting to Job Provider Dashboard');
           return const JobProviderDashboardScreen();
         } else {
+          // Try case-insensitive comparison
+          final normalizedRole = userRole?.toLowerCase().trim();
+          print('🔐 Normalized role: $normalizedRole');
+          
+          if (normalizedRole == 'job_seeker') {
+            print('🔐 Redirecting to Job Seeker Dashboard (normalized)');
+            return const JobSeekerDashboardScreen();
+          } else if (normalizedRole == 'job_provider') {
+            print('🔐 Redirecting to Job Provider Dashboard (normalized)');
+            return const JobProviderDashboardScreen();
+          }
+          
           // Unknown role - go to role selection
           print('🔐 Unknown user role: $userRole - redirecting to role selection');
+          print('🔐 User profile data: ${authProvider.userProfile}');
           
           // Get user info from Firebase Auth
           final currentUser = authProvider.currentUser;

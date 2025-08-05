@@ -23,19 +23,23 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _minPaymentController = TextEditingController();
   final _maxPaymentController = TextEditingController();
   final _requirementsController = TextEditingController();
+  final _salaryController = TextEditingController();
   final VerificationService _verificationService = VerificationService();
   final JobService _jobService = JobService();
   final LocationService _locationService = LocationService();
   bool _isVerified = false;
   
   String _selectedCategory = 'usafi';
-  String _selectedPaymentType = 'per_job';
-  String _selectedDuration = '2_hours';
+  String _selectedSalaryType = 'per_job';
+  String _selectedDuration = '1_hour';
   String _selectedWorkers = '1';
   String _contactPreference = 'in_app';
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   final DateTime _deadline = DateTime.now().add(const Duration(days: 1));
+  
+  // Requirements list
+  List<String> _requirements = [];
   
   bool _isLoading = false;
   File? _selectedImage;
@@ -43,7 +47,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
   // Get categories, payment types, and durations from service
   late final List<Map<String, String>> _categories = _jobService.getJobCategories();
-  late final List<Map<String, String>> _paymentTypes = _jobService.getPaymentTypes();
+  late final List<Map<String, String>> _salaryTypes = _jobService.getPaymentTypes();
   late final List<Map<String, String>> _durations = _jobService.getDurationOptions();
 
   @override
@@ -68,6 +72,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     _minPaymentController.dispose();
     _maxPaymentController.dispose();
     _requirementsController.dispose();
+    _salaryController.dispose();
     super.dispose();
   }
 
@@ -154,6 +159,21 @@ class _PostJobScreenState extends State<PostJobScreen> {
     });
   }
 
+  void _addRequirement() {
+    if (_requirementsController.text.trim().isNotEmpty) {
+      setState(() {
+        _requirements.add(_requirementsController.text.trim());
+        _requirementsController.clear();
+      });
+    }
+  }
+
+  void _removeRequirement(int index) {
+    setState(() {
+      _requirements.removeAt(index);
+    });
+  }
+
   String _getCategoryDisplayName(String categoryValue) {
     final category = _categories.firstWhere(
       (cat) => cat['value'] == categoryValue,
@@ -223,20 +243,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
     try {
       // Validate job data
-      final minPayment = double.tryParse(_minPaymentController.text) ?? 0;
-      final maxPayment = double.tryParse(_maxPaymentController.text) ?? 0;
+      final salary = double.tryParse(_salaryController.text) ?? 0;
       
       if (!_jobService.validateJobData(
         title: _titleController.text,
         description: _descriptionController.text,
         location: _locationController.text,
-        minPayment: minPayment,
+        minPayment: salary,
       )) {
         throw Exception('Please fill in all required fields correctly');
       }
 
-      if (maxPayment <= minPayment) {
-        throw Exception('Maximum payment must be greater than minimum payment');
+      if (salary <= 0) {
+        throw Exception('Salary must be greater than 0');
       }
 
       // Create job using JobService
@@ -245,12 +264,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
         location: _locationController.text.trim(),
-        minPayment: minPayment,
-        maxPayment: maxPayment,
-        paymentType: PaymentType.per_job, // Fixed to per_job for now
+        minPayment: salary,
+        maxPayment: salary, // Use single salary value
+        paymentType: PaymentType.values.firstWhere(
+          (e) => e.toString().split('.').last == _selectedSalaryType,
+        ),
         duration: _selectedDuration,
         workersNeeded: int.parse(_selectedWorkers),
-        requirements: _requirementsController.text.trim(),
+        requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
         contactPreference: ContactPreference.values.firstWhere(
           (e) => e.toString().split('.').last == _contactPreference,
         ),
@@ -963,8 +984,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Payment Range Row
-              _buildSectionHeader('Payment Range', Icons.payment_outlined),
+              // Salary Section
+              _buildSectionHeader('Salary', Icons.payment_outlined),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -988,7 +1009,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           Icon(Icons.payment_outlined, color: ThemeConstants.primaryColor),
                           const SizedBox(width: 12),
                           Text(
-                            'Payment Range (TZS)',
+                            'Salary (TZS)',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1014,71 +1035,80 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                              controller: _minPaymentController,
-                      decoration: InputDecoration(
-                                labelText: 'Min Amount',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                                fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.all(16),
-                        suffixText: 'TZS',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                                  return 'Please enter minimum amount';
-                        }
-                        if (int.tryParse(value) == null) {
-                                  return 'Please enter valid amount';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                            child: TextFormField(
-                              controller: _maxPaymentController,
+                      child: TextFormField(
+                        controller: _salaryController,
                         decoration: InputDecoration(
-                                labelText: 'Max Amount',
+                          labelText: 'Salary Amount',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                                fillColor: Colors.grey[50],
+                          fillColor: Colors.grey[50],
                           contentPadding: const EdgeInsets.all(16),
-                                suffixText: 'TZS',
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter maximum amount';
-                                }
-                                if (int.tryParse(value) == null) {
-                                  return 'Please enter valid amount';
-                                }
-                                final minAmount = int.tryParse(_minPaymentController.text) ?? 0;
-                                final maxAmount = int.tryParse(value) ?? 0;
-                                if (maxAmount <= minAmount) {
-                                  return 'Max amount must be greater than min amount';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
+                          suffixText: 'TZS',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter salary amount';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Please enter valid amount';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Salary Type
+              _buildSectionHeader('Salary Type', Icons.attach_money_outlined),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedSalaryType,
+                  decoration: InputDecoration(
+                    labelText: 'Salary Type',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.all(16),
+                    prefixIcon: Icon(
+                      Icons.attach_money_outlined,
+                      color: ThemeConstants.primaryColor,
                     ),
                   ),
-                ],
-              ),
+                  items: _salaryTypes.map((type) {
+                    return DropdownMenuItem(
+                      value: type['value'],
+                      child: Text(type['label'] ?? ''),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedSalaryType = value!;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -1099,9 +1129,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: DropdownButtonFormField<String>(
-                value: _selectedWorkers,
-                decoration: InputDecoration(
-                  labelText: context.tr('workers_needed'),
+                  value: _selectedWorkers,
+                  decoration: InputDecoration(
+                    labelText: context.tr('workers_needed'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1113,19 +1143,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.people_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
+                  ),
+                  items: ['1', '2', '3', '4', '5+'].map((workers) {
+                    return DropdownMenuItem(
+                      value: workers,
+                      child: Text('$workers ${context.tr('person')}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedWorkers = value!;
+                    });
+                  },
                 ),
-                items: ['1', '2', '3', '4', '5+'].map((workers) {
-                  return DropdownMenuItem(
-                    value: workers,
-                    child: Text('$workers ${context.tr('person')}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedWorkers = value!;
-                  });
-                },
-              ),
               ),
               const SizedBox(height: 24),
 
@@ -1145,25 +1175,92 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ),
                   ],
                 ),
-                child: TextFormField(
-                controller: _requirementsController,
-                decoration: InputDecoration(
-                  labelText: context.tr('special_requirements'),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _requirementsController,
+                              decoration: InputDecoration(
+                                labelText: 'Add Requirement',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                                contentPadding: const EdgeInsets.all(16),
+                                hintText: 'Enter a requirement...',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed: _addRequirement,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ThemeConstants.primaryColor,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            child: const Text('Add'),
+                          ),
+                        ],
+                      ),
                     ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.all(16),
-                    prefixIcon: Icon(
-                      Icons.checklist_outlined,
-                      color: ThemeConstants.primaryColor,
-                    ),
-                  hintText: context.tr('requirements_hint'),
+                    if (_requirements.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Requirements:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ..._requirements.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final requirement = entry.value;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '• $requirement',
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () => _removeRequirement(index),
+                                      icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                      iconSize: 20,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-                maxLines: 2,
-              ),
               ),
               const SizedBox(height: 24),
 

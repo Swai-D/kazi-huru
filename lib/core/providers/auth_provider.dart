@@ -22,6 +22,30 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get isInitialized => _isInitialized;
   String? get userRole => _userProfile?['role'];
+  
+  // Check if user has complete profile
+  bool get hasCompleteProfile {
+    if (_userProfile == null) return false;
+    
+    // Check required fields
+    final requiredFields = ['name', 'phoneNumber', 'role'];
+    for (final field in requiredFields) {
+      if (_userProfile![field] == null || _userProfile![field].toString().isEmpty) {
+        print('🔐 Missing required field: $field');
+        return false;
+      }
+    }
+    
+    // Check if role is valid
+    final role = _userProfile!['role'];
+    if (role != 'job_seeker' && role != 'job_provider') {
+      print('🔐 Invalid role: $role');
+      return false;
+    }
+    
+    print('🔐 User has complete profile');
+    return true;
+  }
 
   AuthProvider() {
     _initializeAuth();
@@ -29,17 +53,29 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _initializeAuth() async {
     try {
+      print('🔐 Initializing authentication...');
+      _setLoading(true);
+      
+      // Get current user from Firebase Auth
       _currentUser = _authService.currentUser;
       
       if (_currentUser != null) {
         print('🔐 Found existing user: ${_currentUser!.uid}');
+        print('📧 User email: ${_currentUser!.email}');
+        print('👤 User display name: ${_currentUser!.displayName}');
+        
+        // Load user profile from Firestore
         await _loadUserProfile();
+        
+        print('✅ User automatically logged in');
       } else {
-        print('🔐 No existing user found');
+        print('🔐 No existing user found - user needs to login');
       }
       
-      // Listen to auth state changes
+      // Listen to auth state changes for real-time updates
       _authService.authStateChanges.listen((User? user) async {
+        print('🔐 Auth state changed: ${user?.uid ?? 'null'}');
+        
         _currentUser = user;
         if (user != null) {
           print('🔐 User authenticated: ${user.uid}');
@@ -52,12 +88,21 @@ class AuthProvider extends ChangeNotifier {
         }
         _error = null;
         _isInitialized = true;
+        _setLoading(false);
         notifyListeners();
       });
+      
+      // If no auth state change listener triggered, mark as initialized
+      if (_currentUser == null) {
+        _isInitialized = true;
+        _setLoading(false);
+        notifyListeners();
+      }
     } catch (e) {
       print('❌ Error initializing auth: $e');
       _error = 'Hitilafu katika kuanzisha: $e';
       _isInitialized = true;
+      _setLoading(false);
       notifyListeners();
     }
   }
@@ -66,16 +111,34 @@ class AuthProvider extends ChangeNotifier {
     if (_currentUser != null) {
       try {
         print('🔐 Loading user profile for: ${_currentUser!.uid}');
+        print('🔐 User email: ${_currentUser!.email}');
+        print('🔐 User display name: ${_currentUser!.displayName}');
+        
         _userProfile = await _firestoreService.getUserProfile(_currentUser!.uid);
+        
         if (_userProfile != null) {
-          print('🔐 User profile loaded: ${_userProfile!['name']} (${_userProfile!['role']})');
+          print('🔐 User profile loaded successfully');
+          print('👤 Name: ${_userProfile!['name']}');
+          print('📱 Phone: ${_userProfile!['phoneNumber']}');
+          print('🎭 Role: ${_userProfile!['role']}');
+          print('📅 Created: ${_userProfile!['createdAt']}');
+          print('✅ Profile complete: ${hasCompleteProfile}');
         } else {
           print('🔐 No user profile found for user: ${_currentUser!.uid}');
+          print('🔐 Trying to recover profile...');
+          
+          // Try to recover profile from other identifiers
+          final recovered = await tryRecoverUserProfile();
+          if (recovered) {
+            print('🔐 Profile recovered successfully');
+          } else {
+            print('🔐 User will need to complete profile setup');
+          }
         }
         notifyListeners();
       } catch (e) {
-        _error = 'Hitilafu katika kupata wasifu: $e';
         print('❌ Error loading user profile: $e');
+        _error = 'Hitilafu katika kupata wasifu: $e';
         notifyListeners();
       }
     }
@@ -414,21 +477,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Sign out
-  Future<bool> signOut() async {
-    _setLoading(true);
-    _clearError();
-
+  // Sign out user
+  Future<void> signOut() async {
     try {
+      print('🔐 Signing out user...');
+      _setLoading(true);
+      
+      // Sign out from Firebase Auth
       await _authService.signOut();
+      
+      // Clear local data
       _currentUser = null;
       _userProfile = null;
-      print('🔐 User signed out successfully');
-      return true;
+      _error = null;
+      
+      print('✅ User signed out successfully');
+      notifyListeners();
     } catch (e) {
-      _setError('Hitilafu katika kutoka: $e');
       print('❌ Error signing out: $e');
-      return false;
+      _setError('Hitilafu katika kujitoa: $e');
     } finally {
       _setLoading(false);
     }
@@ -484,6 +551,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Clear error
   void _clearError() {
     _error = null;
     notifyListeners();
@@ -544,14 +612,36 @@ class AuthProvider extends ChangeNotifier {
     await _loadUserProfile();
   }
 
-  // Check if user has complete profile
-  bool get hasCompleteProfile {
-    if (_userProfile == null) return false;
-    return _userProfile!['name'] != null && 
-           _userProfile!['name'].toString().isNotEmpty &&
-           _userProfile!['role'] != null && 
-           _userProfile!['phoneNumber'] != null &&
-           _userProfile!['phoneNumber'].toString().isNotEmpty;
+  // Debug method to check user profile status
+  Future<void> debugUserProfile() async {
+    if (_currentUser != null) {
+      print('🔍 DEBUG: Current user UID: ${_currentUser!.uid}');
+      print('🔍 DEBUG: Current user email: ${_currentUser!.email}');
+      print('🔍 DEBUG: Current user display name: ${_currentUser!.displayName}');
+      
+      // Try to get profile by UID
+      final profileByUid = await _firestoreService.getUserProfile(_currentUser!.uid);
+      print('🔍 DEBUG: Profile by UID: ${profileByUid != null ? 'Found' : 'Not found'}');
+      
+      // Try to get profile by email
+      if (_currentUser!.email != null) {
+        final profileByEmail = await _firestoreService.getUserByEmail(_currentUser!.email!);
+        print('🔍 DEBUG: Profile by email: ${profileByEmail != null ? 'Found' : 'Not found'}');
+        if (profileByEmail != null) {
+          print('🔍 DEBUG: Email profile role: ${profileByEmail['role']}');
+        }
+      }
+      
+      // Try to get profile by phone number (if we can extract it)
+      if (_currentUser!.email != null && _currentUser!.email!.contains('@kazihuru.com')) {
+        final phoneNumber = _currentUser!.email!.replaceAll('@kazihuru.com', '');
+        final profileByPhone = await _firestoreService.getUserByPhone(phoneNumber);
+        print('🔍 DEBUG: Profile by phone: ${profileByPhone != null ? 'Found' : 'Not found'}');
+        if (profileByPhone != null) {
+          print('🔍 DEBUG: Phone profile role: ${profileByPhone['role']}');
+        }
+      }
+    }
   }
 
   // Check if current user profile needs to be fixed (has empty data)
@@ -579,5 +669,72 @@ class AuthProvider extends ChangeNotifier {
     }
     
     return fields;
+  }
+
+  // Try to recover user profile from different identifiers
+  Future<bool> tryRecoverUserProfile() async {
+    if (_currentUser == null) return false;
+    
+    try {
+      print('🔧 Trying to recover user profile...');
+      
+      // Try by email first
+      if (_currentUser!.email != null) {
+        final profileByEmail = await _firestoreService.getUserByEmail(_currentUser!.email!);
+        if (profileByEmail != null) {
+          print('🔧 Found profile by email: ${profileByEmail['name']} (${profileByEmail['role']})');
+          _userProfile = profileByEmail;
+          notifyListeners();
+          return true;
+        }
+      }
+      
+      // Try by phone number if email contains phone
+      if (_currentUser!.email != null && _currentUser!.email!.contains('@kazihuru.com')) {
+        final phoneNumber = _currentUser!.email!.replaceAll('@kazihuru.com', '');
+        final profileByPhone = await _firestoreService.getUserByPhone(phoneNumber);
+        if (profileByPhone != null) {
+          print('🔧 Found profile by phone: ${profileByPhone['name']} (${profileByPhone['role']})');
+          _userProfile = profileByPhone;
+          notifyListeners();
+          return true;
+        }
+      }
+      
+      print('🔧 Could not recover user profile');
+      return false;
+    } catch (e) {
+      print('❌ Error recovering user profile: $e');
+      return false;
+    }
+  }
+
+  // Force refresh auth state
+  Future<void> forceRefreshAuthState() async {
+    print('🔄 Force refreshing auth state...');
+    _setLoading(true);
+    
+    try {
+      // Reload current user
+      _currentUser = _authService.currentUser;
+      
+      if (_currentUser != null) {
+        print('🔄 Current user: ${_currentUser!.uid}');
+        
+        // Force reload user profile
+        await _loadUserProfile();
+        
+        // Force notify listeners
+        notifyListeners();
+        
+        print('🔄 Auth state refreshed successfully');
+      } else {
+        print('🔄 No current user found');
+      }
+    } catch (e) {
+      print('❌ Error refreshing auth state: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 } 

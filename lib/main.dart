@@ -124,7 +124,7 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
           ),
         ),
       ),
-      home: const SplashScreen(), // Start with splash screen
+      home: const AuthWrapper(), // Use AuthWrapper for persistent authentication
       debugShowCheckedModeBanner: false,
       
       // Localization support

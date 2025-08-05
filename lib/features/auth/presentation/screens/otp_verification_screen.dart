@@ -46,7 +46,18 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   @override
   void initState() {
     super.initState();
-    _currentOTP = widget.otp; // Initialize with widget OTP
+    _currentOTP = widget.otp;
+    
+    // Debug information
+    print('🔍 OTP Verification Screen Debug Info:');
+    print('📱 Phone Number: ${widget.phoneNumber}');
+    print('🔢 Initial OTP: ${widget.otp}');
+    print('📧 Email: ${widget.email}');
+    print('👤 Is New User: ${widget.isNewUser}');
+    print('👤 Name: ${widget.name}');
+    print('🔢 Current OTP: $_currentOTP');
+    
+    // Start countdown
     _startResendTimer();
     
     // Request focus after a short delay to ensure widget is built
@@ -86,7 +97,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   Future<void> _verifyOTP() async {
     if (_otpController.text.length != 6) {
       setState(() {
-        _errorMessage = 'Tafadhali weka namba ya uthibitishaji kamili';
+        _errorMessage = 'Tafadhali weka namba 6 za uthibitishaji';
       });
       return;
     }
@@ -97,104 +108,40 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
-      print('Verifying OTP...');
-      
       final enteredOTP = _otpController.text.trim();
       
-      // Use current OTP if available, otherwise use widget.otp
-      String expectedOTP = _currentOTP.isNotEmpty ? _currentOTP : widget.otp;
-      
       print('🔍 OTP Verification Debug:');
-      print('   Entered OTP: $enteredOTP');
-      print('   Expected OTP: $expectedOTP');
-      print('   OTP Length: ${enteredOTP.length}');
-      print('   Expected Length: ${expectedOTP.length}');
+      print('📱 Phone Number: ${widget.phoneNumber}');
+      print('🔢 Entered OTP: $enteredOTP');
+      print('🔢 Current OTP: $_currentOTP');
+      print('🔢 Widget OTP: ${widget.otp}');
       
-      if (enteredOTP != expectedOTP) {
-        print('❌ OTP mismatch!');
-        throw Exception('OTP si sahihi. Tafadhali jaribu tena.');
-      }
+      // Use current OTP if available, otherwise use widget OTP
+      final expectedOTP = _currentOTP.isNotEmpty ? _currentOTP : widget.otp;
       
-      print('✅ OTP verified successfully!');
+      print('🔢 Expected OTP: $expectedOTP');
+      print('✅ OTP Match: ${enteredOTP == expectedOTP}');
 
-      if (widget.isNewUser) {
-        // Create new user account with email format
-        final userCredential = await _authService.createUserWithEmailAndPassword(
-          email: widget.email, // This is already in format: +255767265780@kazihuru.com
-          password: widget.password,
-        );
-
-        if (userCredential != null) {
-          // Create user profile
-          await _firestore.collection('users').doc(userCredential.user!.uid).set({
-            'name': widget.name,
-            'phoneNumber': widget.phoneNumber.replaceAll('+', ''), // Store without +
-            'role': widget.role,
-            'email': widget.email,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-          // Update display name
-          await userCredential.user!.updateDisplayName(widget.name);
-
-          if (mounted) {
-            // Navigate to role selection for new users
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RoleSelectionScreen(
-                  phoneNumber: widget.phoneNumber,
-                  password: widget.password,
-                  name: widget.name,
-                ),
-              ),
-            );
-          }
+      if (enteredOTP == expectedOTP) {
+        print('✅ OTP verification successful!');
+        
+        if (widget.isNewUser) {
+          print('👤 Creating new user...');
+          await _createNewUser();
         } else {
-          throw Exception('Imeshindwa kuunda akaunti. Tafadhali jaribu tena.');
+          print('👤 Logging in existing user...');
+          await _loginExistingUser();
         }
       } else {
-        // Login existing user
-        final userCredential = await _authService.signInWithEmailAndPassword(
-          email: widget.email,
-          password: widget.password,
-        );
-
-        if (userCredential != null) {
-          // Check if user has profile
-          final profileDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
-          
-          if (profileDoc.exists) {
-            // User has profile - navigate to dashboard
-            final profile = profileDoc.data()!;
-            final role = profile['role'] ?? 'job_seeker';
-            if (role == 'job_seeker') {
-              Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
-            } else {
-              Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
-            }
-          } else {
-            // User doesn't have profile - go to role selection
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RoleSelectionScreen(
-                  phoneNumber: widget.phoneNumber,
-                  password: widget.password,
-                  name: userCredential.user!.displayName ?? '',
-                ),
-              ),
-            );
-          }
-        } else {
-          throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
-        }
+        print('❌ OTP verification failed!');
+        setState(() {
+          _errorMessage = 'Namba ya uthibitishaji si sahihi. Jaribu tena.';
+        });
       }
     } catch (e) {
-      print('Error verifying OTP: $e');
+      print('❌ Error during OTP verification: $e');
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = 'Kuna shida. Jaribu tena.';
       });
     } finally {
       if (mounted) {
@@ -202,6 +149,89 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _createNewUser() async {
+    try {
+      final userCredential = await _authService.createUserWithEmailAndPassword(
+        email: widget.email,
+        password: widget.password,
+      );
+
+      if (userCredential != null) {
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'name': widget.name,
+          'phoneNumber': widget.phoneNumber.replaceAll('+', ''),
+          'role': widget.role,
+          'email': widget.email,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        await userCredential.user!.updateDisplayName(widget.name);
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RoleSelectionScreen(
+                phoneNumber: widget.phoneNumber,
+                password: widget.password,
+                name: widget.name,
+              ),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Imeshindwa kuunda akaunti. Tafadhali jaribu tena.');
+      }
+    } catch (e) {
+      print('❌ Error creating new user: $e');
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  Future<void> _loginExistingUser() async {
+    try {
+      final userCredential = await _authService.signInWithEmailAndPassword(
+        email: widget.email,
+        password: widget.password,
+      );
+
+      if (userCredential != null) {
+        final profileDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+        
+        if (profileDoc.exists) {
+          final profile = profileDoc.data()!;
+          final role = profile['role'] ?? 'job_seeker';
+          if (role == 'job_seeker') {
+            Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
+          }
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RoleSelectionScreen(
+                phoneNumber: widget.phoneNumber,
+                password: widget.password,
+                name: userCredential.user!.displayName ?? '',
+              ),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
+      }
+    } catch (e) {
+      print('❌ Error logging in existing user: $e');
+      setState(() {
+        _errorMessage = e.toString();
+      });
     }
   }
 

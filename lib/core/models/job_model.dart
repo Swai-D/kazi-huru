@@ -69,38 +69,40 @@ class JobModel {
   factory JobModel.fromMap(Map<String, dynamic> map, String documentId) {
     return JobModel(
       id: documentId,
-      providerId: map['providerId'] ?? '',
+      providerId: map['jobProviderId'] ?? map['providerId'] ?? '',
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       category: map['category'] ?? '',
       location: map['location'] ?? '',
-      minPayment: (map['minPayment'] ?? map['payment'] ?? 0).toDouble(),
-      maxPayment: (map['maxPayment'] ?? map['payment'] ?? 0).toDouble(),
+      minPayment: (map['salary'] ?? map['minPayment'] ?? map['payment'] ?? 0).toDouble(),
+      maxPayment: (map['salary'] ?? map['maxPayment'] ?? map['payment'] ?? 0).toDouble(),
       paymentType: PaymentType.values.firstWhere(
-        (e) => e.toString() == 'PaymentType.${map['paymentType']}',
+        (e) => e.toString() == 'PaymentType.${map['salaryType'] ?? map['paymentType']}',
         orElse: () => PaymentType.per_job,
       ),
       duration: map['duration'] ?? '',
       workersNeeded: map['workersNeeded'] ?? 1,
-      requirements: map['requirements'] ?? '',
+      requirements: map['requirements'] is List 
+        ? (map['requirements'] as List).join(', ')
+        : (map['requirements'] ?? ''),
       contactPreference: ContactPreference.values.firstWhere(
         (e) => e.toString() == 'ContactPreference.${map['contactPreference']}',
         orElse: () => ContactPreference.in_app,
       ),
-      startDate: (map['startDate'] as Timestamp).toDate(),
+      startDate: (map['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       startTime: TimeOfDay(
         hour: map['startTimeHour'] ?? 0,
         minute: map['startTimeMinute'] ?? 0,
       ),
-      deadline: (map['deadline'] as Timestamp).toDate(),
+      deadline: (map['deadline'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(days: 1)),
       imageUrl: map['imageUrl'],
       status: JobStatus.values.firstWhere(
         (e) => e.toString() == 'JobStatus.${map['status']}',
         orElse: () => JobStatus.active,
       ),
       applicationsCount: map['applicationsCount'] ?? 0,
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
@@ -251,4 +253,4 @@ class JobModel {
   bool get isActive => status == JobStatus.active;
   bool get isCompleted => status == JobStatus.completed;
   bool get isCancelled => status == JobStatus.cancelled;
-} 
+}

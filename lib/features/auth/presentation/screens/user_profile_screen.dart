@@ -24,7 +24,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _locationController = TextEditingController(text: 'Dar es Salaam');
-  final _bioController = TextEditingController(text: 'Mtaalamu wa IT na uzoefu wa miaka 3');
+  final _bioController = TextEditingController(text: 'Experienced software developer with a passion for building scalable applications.');
   
   // Company information for job providers
   final _companyNameController = TextEditingController(text: 'Tech Solutions Ltd');
@@ -50,9 +50,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _logout() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.signOut();
+    await authProvider.signOut();
     
-    if (success && mounted) {
+    if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }

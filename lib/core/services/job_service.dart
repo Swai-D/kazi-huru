@@ -39,24 +39,23 @@ class JobService {
       }
 
       final jobData = {
-        'providerId': user.uid,
+        'jobProviderId': user.uid,
         'title': title,
         'description': description,
         'category': category,
         'location': location,
-        'minPayment': minPayment,
-        'maxPayment': maxPayment,
-        'paymentType': paymentType.toString().split('.').last,
+        'salary': minPayment, // Single salary value
+        'salaryType': paymentType.toString().split('.').last,
         'duration': duration,
         'workersNeeded': workersNeeded,
-        'requirements': requirements,
+        'requirements': requirements.split(',').map((e) => e.trim()).toList(), // Array of requirements
         'contactPreference': contactPreference.toString().split('.').last,
         'startDate': Timestamp.fromDate(startDate),
         'startTimeHour': startTime.hour,
         'startTimeMinute': startTime.minute,
         'deadline': Timestamp.fromDate(deadline),
         'imageUrl': imageUrl,
-        'status': JobStatus.active.toString().split('.').last,
+        'status': 'active',
         'applicationsCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -100,18 +99,28 @@ class JobService {
     double? minPayment,
     double? maxPayment,
   }) {
+    // Use a simple query without ordering to avoid composite index requirement
     return _firestoreService
-        .getJobs(
-          location: location,
-          jobType: 'temporary',
-          minSalary: minPayment,
-          maxSalary: maxPayment,
-          status: 'active',
-        )
-        .map((snapshot) => snapshot.docs
-            .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .where((job) => category == null || job.category == category)
-            .toList());
+        .getJobsSimple(status: 'active')
+        .map((snapshot) {
+          final jobs = snapshot.docs
+              .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+              .where((job) {
+                // Filter by category if specified
+                if (category != null && job.category != category) return false;
+                // Filter by location if specified
+                if (location != null && !job.location.toLowerCase().contains(location.toLowerCase())) return false;
+                // Filter by payment range if specified
+                if (minPayment != null && job.minPayment < minPayment) return false;
+                if (maxPayment != null && job.maxPayment > maxPayment) return false;
+                return true;
+              })
+              .toList();
+          
+          // Sort by createdAt in descending order (newest first) on client side
+          jobs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return jobs;
+        });
   }
 
   // Get jobs by provider
