@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/verification_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/location_service.dart';
-import '../../../../core/services/verification_service.dart';
-import '../../../../core/services/notification_service.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
-
+import '../../../auth/presentation/screens/user_profile_screen.dart';
+import 'location_permission_screen.dart';
+import 'job_search_screen.dart';
+import 'applied_jobs_screen.dart';
+import 'completed_jobs_screen.dart';
 import 'job_details_screen.dart';
 
 class JobSeekerDashboardScreen extends StatefulWidget {
@@ -121,14 +127,18 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final userName = authProvider.userName ?? 'User';
+        
     return Scaffold(
               backgroundColor: const Color(0xFFF5F7FA), // Light grey/off-white like wallet screen
       appBar: AppBar(
         title: Column(
           children: [
-            const Text(
-              'John Doe',
-              style: TextStyle(
+                Text(
+                  userName,
+                  style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF222B45),
@@ -219,7 +229,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                             minHeight: 16,
                           ),
                           child: Text(
-                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                unreadCount.toString(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -234,6 +244,25 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
               );
             },
           ),
+              
+              // Profile Button
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
+                    );
+                  },
+                  tooltip: 'Profile',
+                ),
+              ),
         ],
       ),
       body: Padding(
@@ -486,6 +515,8 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

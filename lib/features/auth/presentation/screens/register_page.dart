@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/utils/phone_number_validator.dart';
+import '../../../../core/utils/error_handler.dart';
 import 'otp_verification_screen.dart';
+import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -15,8 +19,31 @@ class _RegisterPageState extends State<RegisterPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
@@ -27,36 +54,54 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
-      // Format phone number
+      // Validate and format phone number
       String phoneNumber = _phoneController.text.trim();
-      if (phoneNumber.startsWith('0')) {
-        phoneNumber = phoneNumber.substring(1);
-      }
-      phoneNumber = '+255$phoneNumber';
-
-      // Simulate OTP generation (template only)
-      final otp = '123456'; // Mock OTP for template
       
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OTPVerificationScreen(
-              phoneNumber: phoneNumber,
-              otp: otp,
-              email: '$phoneNumber@kazihuru.com',
-              password: _passwordController.text,
-              isNewUser: true,
-              name: _nameController.text.trim(),
-              role: 'job_seeker',
+      if (!PhoneNumberValidator.isValidTanzanianPhoneNumber(phoneNumber)) {
+        throw FormatException('Namba ya simu si sahihi. Tafadhali weka namba sahihi ya Tanzania');
+      }
+      
+      phoneNumber = PhoneNumberValidator.formatTanzanianPhoneNumber(phoneNumber);
+      print('📱 Formatted phone number: $phoneNumber');
+
+      // Check if user already exists
+      final userExists = await _authService.checkUserExists(phoneNumber);
+      
+      if (userExists) {
+        setState(() {
+          _errorMessage = AuthErrorHandler.getLocalizedErrorMessage('user-exists');
+        });
+        return;
+      }
+
+      // Send OTP for phone verification
+      final otp = await _authService.sendOTP(phoneNumber);
+      
+      if (otp != null) {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OTPVerificationScreen(
+                phoneNumber: phoneNumber,
+                otp: otp,
+                email: '$phoneNumber@kazihuru.com', // Convert to email format
+                password: _passwordController.text,
+                isNewUser: true,
+                name: _nameController.text.trim(),
+                role: 'job_seeker',
+              ),
             ),
-          ),
-        );
+          );
+        }
+      } else {
+        throw Exception(AuthErrorHandler.getLocalizedErrorMessage('sms-send-failed'));
       }
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = AuthErrorHandler.handleFirebaseAuthException(e);
       });
+      AuthErrorHandler.logError('registration-failed', e.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -69,6 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(context.tr('register')),
         backgroundColor: Colors.transparent,
@@ -82,8 +128,6 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              
-              // App Logo
               Container(
                 width: 100,
                 height: 100,
@@ -120,46 +164,38 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // App Name
               Text(
                 'Kazi Huru',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: ThemeConstants.primaryColor,
-                  letterSpacing: 1.0,
                 ),
               ),
               const SizedBox(height: 8),
-              
-              // Welcome Text
               Text(
-                context.tr('welcome'),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                'Tengeneza akaunti yako',
+                style: TextStyle(
+                  fontSize: 16,
                   color: Colors.grey[600],
-                  fontWeight: FontWeight.w400,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 40),
-              
-              // Form Fields Container
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Column(
-                  children: [
+              const SizedBox(height: 32),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: context.tr('full_name'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person_outline),
+                  prefixIcon: const Icon(Icons.person),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                  ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_name');
+                  if (value == null || value.trim().isEmpty) {
+                    return context.tr('name_required');
+                  }
+                  if (value.trim().length < 2) {
+                    return context.tr('name_too_short');
                   }
                   return null;
                 },
@@ -167,126 +203,113 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: context.tr('phone'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.phone_android),
-                  hintText: '07XXXXXXXX',
-                ),
                 keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: context.tr('phone_number'),
+                  hintText: '0712345678',
+                  prefixIcon: const Icon(Icons.phone),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                  ),
+                ),
+                validator: (value) {
+                  return PhoneNumberValidator.validatePhoneInput(value);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: context.tr('password'),
+                  prefixIcon: const Icon(Icons.lock),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_phone');
+                    return context.tr('password_required');
                   }
-                  if (!RegExp(r'^(\+255|0)7[0-9]{8}$').hasMatch(value.trim())) {
-                    return context.tr('enter_valid_tanzania_phone');
+                  if (value.length < 6) {
+                    return context.tr('password_too_short');
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: context.tr('password'),
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                ),
+                controller: _confirmPasswordController,
                 obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Thibitisha Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_password');
+                    return 'Tafadhali thibitisha password';
                   }
-                  if (value.length < 6) {
-                    return context.tr('password_min_length');
+                  if (value != _passwordController.text) {
+                    return 'Password hazifanani';
                   }
                   return null;
                 },
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          'Endelea',
+                          style: const TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(context.tr('already_have_account')),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                    child: Text(context.tr('login')),
+                  ),
+                ],
+              ),
               if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(top: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: Colors.red.shade700),
                     textAlign: TextAlign.center,
                   ),
                 ),
-              const SizedBox(height: 24),
-              
-              // Buttons Container
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Column(
-                  children: [
-              ElevatedButton(
-                onPressed: _isLoading ? null : _register,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        context.tr('continue'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: ThemeConstants.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  context.tr('already_have_account'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 } 

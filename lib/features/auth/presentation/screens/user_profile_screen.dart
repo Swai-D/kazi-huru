@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userRole; // 'job_seeker' or 'job_provider'
@@ -19,9 +21,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool _isEditing = false;
   
   // Controllers for form fields
-  final _nameController = TextEditingController(text: 'John Doe');
-  final _phoneController = TextEditingController(text: '+255767265780');
-  final _emailController = TextEditingController(text: 'john.doe@example.com');
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _locationController = TextEditingController(text: 'Dar es Salaam');
   final _bioController = TextEditingController(text: 'Mtaalamu wa IT na uzoefu wa miaka 3');
   
@@ -31,6 +32,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _companyDescriptionController = TextEditingController(text: 'Leading technology company in Tanzania');
 
   String _selectedLanguage = LocalizationService().currentLocale.languageCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userName = authProvider.userName ?? '';
+    final userPhone = authProvider.userPhoneNumber ?? '';
+    
+    _nameController.text = userName;
+    _phoneController.text = userPhone;
+  }
+
+  Future<void> _logout() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.signOut();
+    
+    if (success && mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,17 +160,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Column(
         children: [
           // Profile Picture
-          CircleAvatar(
-            radius: 50,
+              CircleAvatar(
+                radius: 50,
             backgroundColor: ThemeConstants.primaryColor,
             child: Text(
               _nameController.text.isNotEmpty ? _nameController.text[0] : '',
               style: const TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+                      color: Colors.white,
+                    ),
+          ),
           ),
           const SizedBox(height: 16),
           // Name
@@ -154,13 +179,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: ThemeConstants.textColor,
+                  color: ThemeConstants.textColor,
             ),
           ),
           const SizedBox(height: 8),
           // Role
           Text(
-            widget.userRole == 'job_seeker'
+            widget.userRole == 'job_seeker' 
                 ? context.tr('job_seeker')
                 : context.tr('job_provider'),
             style: const TextStyle(
@@ -208,21 +233,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  context.tr('personal_information'),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textColor,
-                  ),
-                ),
+          context.tr('personal_information'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+                color: ThemeConstants.textColor,
+          ),
+        ),
               ),
               IconButton(
                 icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
@@ -233,8 +258,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 },
               ),
             ],
-          ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
           _InfoRow(
             icon: Icons.person,
             label: context.tr('full_name'),
@@ -245,12 +270,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icons.phone,
             label: context.tr('phone'),
             value: _phoneController.text,
-          ),
-          const SizedBox(height: 12),
-          _InfoRow(
-            icon: Icons.email,
-            label: context.tr('email'),
-            value: _emailController.text,
           ),
           const SizedBox(height: 12),
           _InfoRow(
@@ -901,21 +920,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                 context.tr('language'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ThemeConstants.textColor,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
                     child: FilterChip(
                       label: const Text('Swahili'),
                       selected: _selectedLanguage == 'sw',
@@ -930,10 +949,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       },
                       selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
                       checkmarkColor: ThemeConstants.primaryColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                    const SizedBox(width: 12),
+                    Expanded(
                     child: FilterChip(
                       label: const Text('English'),
                       selected: _selectedLanguage == 'en',
@@ -948,11 +967,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       },
                       selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
                       checkmarkColor: ThemeConstants.primaryColor,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
           ),
         ),
         const SizedBox(height: 16),
@@ -961,42 +980,39 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         Row(
           children: [
             Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Navigate to change password screen
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeConstants.primaryColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+          child: ElevatedButton(
+            onPressed: () {
+              // Navigate to change password screen
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ThemeConstants.primaryColor,
+              padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                child: Text(
-                  context.tr('change_password'),
+            ),
+            child: Text(
+              context.tr('change_password'),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            ),
+          ),
+        ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  // Show logout confirmation dialog
-                  _showLogoutDialog();
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+          child: OutlinedButton(
+            onPressed: _logout,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
                   side: const BorderSide(color: Colors.red),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                child: Text(
-                  context.tr('logout'),
+            ),
+            child: Text(
+              context.tr('logout'),
                   style: const TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.bold,
@@ -1024,12 +1040,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               child: Text(context.tr('cancel')),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                // Perform logout
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.tr('logged_out'))),
-                );
+                await _logout();
               },
               child: Text(
                 context.tr('logout'),

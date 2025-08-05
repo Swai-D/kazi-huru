@@ -252,18 +252,18 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         backgroundColor: ThemeConstants.primaryColor,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             Icon(
               Icons.phone_android,
-              size: 60,
+              size: 80,
               color: ThemeConstants.primaryColor,
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 20),
             Text(
               'Tuma namba ya uthibitishaji',
               style: TextStyle(
@@ -282,7 +282,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             TextFormField(
               controller: _otpController,
               focusNode: _otpFocusNode,

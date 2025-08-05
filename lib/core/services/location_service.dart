@@ -35,13 +35,40 @@ class LocationService {
         return null;
       }
 
-      // Get current position
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      return _currentPosition;
+      // Try to get current position with a shorter timeout first
+      try {
+        _currentPosition = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 5),
+        );
+        return _currentPosition;
+      } catch (e) {
+        print('First attempt failed, trying with lower accuracy: $e');
+        
+        // If first attempt fails, try with lower accuracy and longer timeout
+        try {
+          _currentPosition = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.low,
+            timeLimit: const Duration(seconds: 15),
+          );
+          return _currentPosition;
+        } catch (e2) {
+          print('Second attempt also failed: $e2');
+          
+          // Last resort: try to get last known position
+          try {
+            _currentPosition = await Geolocator.getLastKnownPosition();
+            if (_currentPosition != null) {
+              print('Using last known position');
+              return _currentPosition;
+            }
+          } catch (e3) {
+            print('Could not get last known position: $e3');
+          }
+          
+          return null;
+        }
+      }
     } catch (e) {
       print('Error getting location: $e');
       return null;

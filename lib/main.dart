@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'features/job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
 import 'features/auth/presentation/screens/login_page.dart';
 import 'features/auth/presentation/screens/register_page.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
+import 'core/widgets/auth_wrapper.dart';
 
 import 'features/job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 import 'features/job_provider/presentation/screens/post_job_screen.dart';
@@ -25,11 +27,19 @@ import 'features/job_seeker/presentation/screens/applied_jobs_screen.dart';
 import 'features/job_seeker/presentation/screens/completed_jobs_screen.dart';
 import 'features/job_provider/presentation/screens/posted_jobs_screen.dart';
 import 'features/job_provider/presentation/screens/applications_received_screen.dart';
+import 'features/auth/presentation/screens/firebase_test_screen.dart';
+import 'features/auth/presentation/screens/auth_test_screen.dart';
 
 import 'core/services/localization_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/firebase_init_service.dart';
+
 import 'core/constants/theme_constants.dart';
+import 'core/providers/auth_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/services/maps_service.dart';
 
 // Global navigation key for notification navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -37,12 +47,27 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize Firebase
+  await Firebase.initializeApp();
+  
   // Initialize services
   await LocalizationService().loadTranslations();
   await NotificationService().initialize();
   await PushNotificationService().initialize();
   
-  runApp(const KaziHuruApp());
+  print('🚀 Kazi Huru app starting...');
+  
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const KaziHuruApp(),
+    ),
+  );
 }
 
 class KaziHuruApp extends StatefulWidget {
@@ -152,6 +177,8 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
         '/applications_received': (context) => const ApplicationsReceivedScreen(), // Applications received list
         '/payment_details': (context) => const WalletScreen(), // Payment details (redirect to wallet)
         '/job_application_details': (context) => const JobSeekerDashboardScreen(), // Job application details (redirect to dashboard)
+        '/firebase_test': (context) => const FirebaseTestScreen(), // Firebase test screen
+        '/auth_test': (context) => const AuthTestScreen(), // Auth test screen
       },
     );
   }

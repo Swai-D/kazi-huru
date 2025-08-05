@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/wallet_service.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
+import '../../../auth/presentation/screens/user_profile_screen.dart';
 import 'company_profile_screen.dart';
 import 'post_job_screen.dart';
 
@@ -92,42 +95,46 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final userName = authProvider.userName ?? 'User';
         
-        // Prevent going back to login/register pages
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        } else {
-          // If no previous pages, go to role selection
-          Navigator.pushReplacementNamed(context, '/role_selection');
-        }
-      },
-      child: Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Column(
-          children: [
-            const Text(
-              'John Doe',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF222B45),
-              ),
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (didPop) return;
+            
+            // Prevent going back to login/register pages
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              // If no previous pages, go to role selection
+              Navigator.pushReplacementNamed(context, '/role_selection');
+            }
+          },
+          child: Scaffold(
+          backgroundColor: const Color(0xFFF5F7FA),
+          appBar: AppBar(
+            title: Column(
+              children: [
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF222B45),
+                  ),
+                ),
+                Text(
+                  'Karibu tena!',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              'Karibu tena!',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: Container(
@@ -276,6 +283,8 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

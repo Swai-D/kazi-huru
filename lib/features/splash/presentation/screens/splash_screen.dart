@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../auth/presentation/screens/login_page.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
+import '../../../job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -43,15 +47,65 @@ class _SplashScreenState extends State<SplashScreen>
     // Start animation
     _animationController.forward();
 
-    // Navigate to login page after delay
+    // Check authentication status and navigate accordingly
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    // Wait for animation to complete
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (!mounted) return;
+
+    // Get auth provider
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Wait a bit more for auth state to be determined
+    await Future.delayed(const Duration(seconds: 1));
+    
+    if (!mounted) return;
+
+    if (authProvider.isLoggedIn && authProvider.userProfile != null) {
+      // User is authenticated and has profile - navigate to appropriate dashboard
+      final userRole = authProvider.userRole;
+      
+      if (userRole == 'job_seeker') {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => 
+                const JobSeekerDashboardScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      } else if (userRole == 'job_provider') {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => 
+                const JobProviderDashboardScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      } else {
+        // Unknown role - go to login
+        _navigateToLogin();
+      }
+    } else {
+      // User is not authenticated - go to login
     _navigateToLogin();
+    }
   }
 
   Future<void> _navigateToLogin() async {
-    // Simulate loading time
-    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
     
-    if (mounted) {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -62,7 +116,6 @@ class _SplashScreenState extends State<SplashScreen>
           transitionDuration: const Duration(milliseconds: 500),
         ),
       );
-    }
   }
 
   @override

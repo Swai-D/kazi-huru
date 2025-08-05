@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   final String phoneNumber;
@@ -21,6 +23,22 @@ class RoleSelectionScreen extends StatefulWidget {
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String? _selectedRole;
   bool _isLoading = false;
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize name controller with existing name if available
+    if (widget.name.isNotEmpty) {
+      _nameController.text = widget.name;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   Future<void> _completeRegistration() async {
     if (_selectedRole == null) {
@@ -33,27 +51,53 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       return;
     }
 
+    // Validate name
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tafadhali weka jina lako'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Simulate registration completion
-      await Future.delayed(const Duration(seconds: 1));
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      if (mounted) {
+      // Create user profile with selected role and entered name
+      final success = await authProvider.createUserProfileAfterPhoneAuth(
+        name: name,
+        phoneNumber: widget.phoneNumber,
+        role: _selectedRole!,
+        email: widget.phoneNumber.contains('@') ? widget.phoneNumber : null,
+      );
+
+      if (success && mounted) {
         // Navigate to appropriate dashboard based on role
         if (_selectedRole == 'job_provider') {
           Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
         } else {
           Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
         }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? context.tr('registration_failed')),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.tr('registration_failed')),
+            content: Text('Hitilafu: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -95,6 +139,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             ),
             const SizedBox(height: 32),
             
+            // Name Input Field
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Jina lako kamili',
+                hintText: 'Mfano: John Doe',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
             // Job Seeker Option
             _RoleCard(
               title: context.tr('job_seeker'),
@@ -125,33 +183,31 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             
             const Spacer(),
             
-            // Continue Button
+            // Complete Registration Button
             ElevatedButton(
               onPressed: _isLoading ? null : _completeRegistration,
               style: ElevatedButton.styleFrom(
                 backgroundColor: ThemeConstants.primaryColor,
                 foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 24,
-                      height: 24,
+                      height: 20,
+                      width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : Text(
-                      context.tr('continue'),
+                      context.tr('complete_registration'),
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
