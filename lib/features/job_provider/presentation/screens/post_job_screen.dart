@@ -9,7 +9,12 @@ import '../../../../core/models/job_model.dart';
 import '../../../../core/utils/image_placeholders.dart';
 
 class PostJobScreen extends StatefulWidget {
-  const PostJobScreen({super.key});
+  final JobModel? jobToEdit;
+  
+  const PostJobScreen({
+    super.key,
+    this.jobToEdit,
+  });
 
   @override
   State<PostJobScreen> createState() => _PostJobScreenState();
@@ -23,7 +28,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _minPaymentController = TextEditingController();
   final _maxPaymentController = TextEditingController();
   final _requirementsController = TextEditingController();
-  final _salaryController = TextEditingController();
   final VerificationService _verificationService = VerificationService();
   final JobService _jobService = JobService();
   final LocationService _locationService = LocationService();
@@ -36,7 +40,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _contactPreference = 'in_app';
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
-  final DateTime _deadline = DateTime.now().add(const Duration(days: 1));
+  DateTime _deadline = DateTime.now().add(const Duration(days: 1));
   
   // Requirements list
   List<String> _requirements = [];
@@ -44,6 +48,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   bool _isLoading = false;
   File? _selectedImage;
   bool _hasImage = false;
+  bool _isEditMode = false;
 
   // Get categories, payment types, and durations from service
   late final List<Map<String, String>> _categories = _jobService.getJobCategories();
@@ -54,6 +59,45 @@ class _PostJobScreenState extends State<PostJobScreen> {
   void initState() {
     super.initState();
     _checkVerificationStatus();
+    _initializeForm();
+  }
+
+  void _initializeForm() {
+    if (widget.jobToEdit != null) {
+      _isEditMode = true;
+      _populateFormWithJobData(widget.jobToEdit!);
+    }
+  }
+
+  void _populateFormWithJobData(JobModel job) {
+    // Populate text controllers
+    _titleController.text = job.title;
+    _descriptionController.text = job.description;
+    _locationController.text = job.location;
+    _minPaymentController.text = job.minPayment.toString();
+    _maxPaymentController.text = job.maxPayment.toString();
+    
+    // Populate dropdowns
+    _selectedCategory = job.category;
+    _selectedSalaryType = job.paymentType.toString().split('.').last;
+    _selectedDuration = job.duration;
+    _selectedWorkers = job.workersNeeded.toString();
+    _contactPreference = job.contactPreference.toString().split('.').last;
+    
+    // Populate dates
+    _startDate = job.startDate;
+    _startTime = job.startTime;
+    _deadline = job.deadline;
+    
+    // Populate requirements
+    if (job.requirements.isNotEmpty) {
+      _requirements = job.requirements.split(',').map((e) => e.trim()).toList();
+    }
+    
+    // Set image if exists
+    if (job.imageUrl != null && job.imageUrl!.isNotEmpty) {
+      _hasImage = true;
+    }
   }
 
   Future<void> _checkVerificationStatus() async {
@@ -72,7 +116,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
     _minPaymentController.dispose();
     _maxPaymentController.dispose();
     _requirementsController.dispose();
-    _salaryController.dispose();
     super.dispose();
   }
 
@@ -243,58 +286,101 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
     try {
       // Validate job data
-      final salary = double.tryParse(_salaryController.text) ?? 0;
+      final minSalary = double.tryParse(_minPaymentController.text) ?? 0;
+      final maxSalary = double.tryParse(_maxPaymentController.text) ?? 0;
       
-      if (!_jobService.validateJobData(
-        title: _titleController.text,
-        description: _descriptionController.text,
-        location: _locationController.text,
-        minPayment: salary,
-      )) {
+      // Validate required fields
+      if (_titleController.text.trim().isEmpty ||
+          _descriptionController.text.trim().isEmpty ||
+          _locationController.text.trim().isEmpty) {
         throw Exception('Please fill in all required fields correctly');
       }
 
-      if (salary <= 0) {
-        throw Exception('Salary must be greater than 0');
+      if (minSalary <= 0) {
+        throw Exception('Minimum salary must be greater than 0');
       }
 
-      // Create job using JobService
-      final jobId = await _jobService.createJob(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        category: _selectedCategory,
-        location: _locationController.text.trim(),
-        minPayment: salary,
-        maxPayment: salary, // Use single salary value
-        paymentType: PaymentType.values.firstWhere(
-          (e) => e.toString().split('.').last == _selectedSalaryType,
-        ),
-        duration: _selectedDuration,
-        workersNeeded: int.parse(_selectedWorkers),
-        requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
-        contactPreference: ContactPreference.values.firstWhere(
-          (e) => e.toString().split('.').last == _contactPreference,
-        ),
-        startDate: _startDate,
-        startTime: _startTime,
-        deadline: _deadline,
-        imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Job posted successfully! ID: $jobId'),
+      if (maxSalary <= 0) {
+        throw Exception('Maximum salary must be greater than 0');
+      }
+
+      if (maxSalary < minSalary) {
+        throw Exception('Maximum salary must be greater than or equal to minimum salary');
+      }
+
+      if (_isEditMode && widget.jobToEdit != null) {
+        // Update existing job
+        await _jobService.updateJob(
+          jobId: widget.jobToEdit!.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          category: _selectedCategory,
+          location: _locationController.text.trim(),
+          minPayment: minSalary,
+          maxPayment: maxSalary,
+          paymentType: PaymentType.values.firstWhere(
+            (e) => e.toString().split('.').last == _selectedSalaryType,
+          ),
+          duration: _selectedDuration,
+          workersNeeded: int.parse(_selectedWorkers),
+          requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
+          contactPreference: ContactPreference.values.firstWhere(
+            (e) => e.toString().split('.').last == _contactPreference,
+          ),
+          startDate: _startDate,
+          startTime: _startTime,
+          deadline: _deadline,
+          imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+            content: Text('Job updated successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}'),
             backgroundColor: Colors.green,
           ),
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        // Create new job
+        final jobId = await _jobService.createJob(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          category: _selectedCategory,
+          location: _locationController.text.trim(),
+          minPayment: minSalary,
+          maxPayment: maxSalary,
+          paymentType: PaymentType.values.firstWhere(
+            (e) => e.toString().split('.').last == _selectedSalaryType,
+          ),
+          duration: _selectedDuration,
+          workersNeeded: int.parse(_selectedWorkers),
+          requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
+          contactPreference: ContactPreference.values.firstWhere(
+            (e) => e.toString().split('.').last == _contactPreference,
+          ),
+          startDate: _startDate,
+          startTime: _startTime,
+          deadline: _deadline,
+          imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
         );
-        Navigator.pop(context);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+            content: Text('Job posted successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}'),
+            backgroundColor: Colors.green,
+          ),
+          );
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to post job: ${e.toString()}'),
+            content: Text('Failed to ${_isEditMode ? 'update' : 'post'} job: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -314,7 +400,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(
-          context.tr('post_job'),
+          _isEditMode ? context.tr('edit_job') : context.tr('post_job'),
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -443,7 +529,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Post a New Job',
+                            _isEditMode ? 'Edit Job' : 'Post a New Job',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -452,7 +538,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Fill in the details below to find the perfect worker',
+                            _isEditMode 
+                              ? 'Update the job details below'
+                              : 'Fill in the details below to find the perfect worker. Set a salary range to allow negotiation.',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -985,7 +1073,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               const SizedBox(height: 24),
 
               // Salary Section
-              _buildSectionHeader('Salary', Icons.payment_outlined),
+              _buildSectionHeader('Salary Range', Icons.payment_outlined),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -1009,7 +1097,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           Icon(Icons.payment_outlined, color: ThemeConstants.primaryColor),
                           const SizedBox(width: 12),
                           Text(
-                            'Salary (TZS)',
+                            'Salary Range (TZS)',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -1034,11 +1122,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: TextFormField(
-                        controller: _salaryController,
+                        controller: _minPaymentController,
                         decoration: InputDecoration(
-                          labelText: 'Salary Amount',
+                          labelText: 'Minimum Salary',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -1051,10 +1139,42 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter salary amount';
+                            return 'Please enter minimum salary';
                           }
                           if (int.tryParse(value) == null) {
                             return 'Please enter valid amount';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: TextFormField(
+                        controller: _maxPaymentController,
+                        decoration: InputDecoration(
+                          labelText: 'Maximum Salary',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          contentPadding: const EdgeInsets.all(16),
+                          suffixText: 'TZS',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter maximum salary';
+                          }
+                          if (int.tryParse(value) == null) {
+                            return 'Please enter valid amount';
+                          }
+                          final minSalary = double.tryParse(_minPaymentController.text) ?? 0;
+                          final maxSalary = double.tryParse(value) ?? 0;
+                          if (maxSalary < minSalary) {
+                            return 'Maximum must be greater than minimum';
                           }
                           return null;
                         },
@@ -1083,15 +1203,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 child: DropdownButtonFormField<String>(
                   value: _selectedSalaryType,
-                  decoration: InputDecoration(
+                        decoration: InputDecoration(
                     labelText: 'Salary Type',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
                     fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.all(16),
+                          contentPadding: const EdgeInsets.all(16),
                     prefixIcon: Icon(
                       Icons.attach_money_outlined,
                       color: ThemeConstants.primaryColor,
@@ -1108,7 +1228,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       _selectedSalaryType = value!;
                     });
                   },
-                ),
+              ),
               ),
               const SizedBox(height: 24),
 
@@ -1129,9 +1249,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: DropdownButtonFormField<String>(
-                  value: _selectedWorkers,
-                  decoration: InputDecoration(
-                    labelText: context.tr('workers_needed'),
+                value: _selectedWorkers,
+                decoration: InputDecoration(
+                  labelText: context.tr('workers_needed'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1143,19 +1263,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.people_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
-                  ),
-                  items: ['1', '2', '3', '4', '5+'].map((workers) {
-                    return DropdownMenuItem(
-                      value: workers,
-                      child: Text('$workers ${context.tr('person')}'),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedWorkers = value!;
-                    });
-                  },
                 ),
+                items: ['1', '2', '3', '4', '5+'].map((workers) {
+                  return DropdownMenuItem(
+                    value: workers,
+                    child: Text('$workers ${context.tr('person')}'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedWorkers = value!;
+                  });
+                },
+              ),
               ),
               const SizedBox(height: 24),
 
@@ -1182,17 +1302,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: TextFormField(
-                              controller: _requirementsController,
-                              decoration: InputDecoration(
+                child: TextFormField(
+                controller: _requirementsController,
+                decoration: InputDecoration(
                                 labelText: 'Add Requirement',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
                                 fillColor: Colors.grey[50],
-                                contentPadding: const EdgeInsets.all(16),
+                    contentPadding: const EdgeInsets.all(16),
                                 hintText: 'Enter a requirement...',
                               ),
                             ),
@@ -1260,7 +1380,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         ),
                       ),
                   ],
-                ),
+              ),
               ),
               const SizedBox(height: 24),
 
@@ -1336,7 +1456,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         ),
                       )
                     : Text(
-                        context.tr('post_job'),
+                        _isEditMode ? context.tr('update_job') : context.tr('post_job'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

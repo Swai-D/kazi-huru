@@ -120,134 +120,134 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
       builder: (context, authProvider, child) {
         final userName = authProvider.userName ?? 'User';
         
-        return Scaffold(
+    return Scaffold(
           backgroundColor: const Color(0xFFF5F7FA),
-          appBar: AppBar(
-            title: Column(
-              children: [
+      appBar: AppBar(
+        title: Column(
+          children: [
                 Text(
                   userName,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF222B45),
-                  ),
-                ),
-                Text(
-                  'Karibu tena!',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF222B45),
+              ),
             ),
-            backgroundColor: Colors.white,
-            elevation: 0,
+            Text(
+              'Karibu tena!',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
             leading: Padding(
               padding: const EdgeInsets.all(8),
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: 32,
-                height: 32,
-              ),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 32,
+            height: 32,
+          ),
+        ),
+        actions: [
+          // Chat Button
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Container(
+            decoration: BoxDecoration(
+              color: ThemeConstants.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            actions: [
-              // Chat Button
+            child: IconButton(
+              icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChatListScreen()),
+              );
+            },
+              tooltip: 'Messages',
+                  ),
+            ),
+          ),
+          
+          // Notifications Button
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ChatListScreen()),
-                      );
-                    },
-                    tooltip: 'Messages',
-                  ),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              
-              // Notifications Button
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Stack(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-                          );
-                        },
-                        tooltip: 'Notifications',
-                      ),
+                child: Stack(
+                  children: [
+          IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              );
+            },
+                      tooltip: 'Notifications',
+                    ),
                       if (_notificationService.unreadCount > 0)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Text(
-                              _notificationService.unreadCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
-                              textAlign: TextAlign.center,
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                              _notificationService.unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-              ),
+                ),
+          ),
               
               // Profile Button
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: PopupMenuButton<String>(
-                    icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
-                    onSelected: (value) async {
-                      if (value == 'profile') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
-                        );
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
+                  onSelected: (value) async {
+                    if (value == 'profile') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
+                      );
                       } else if (value == 'debug_refresh') {
                         // Debug: Refresh user profile
                         await authProvider.refreshUserProfile();
@@ -257,49 +257,49 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                             backgroundColor: Colors.blue,
                           ),
                         );
-                      } else if (value == 'logout') {
-                        // Show confirmation dialog
-                        final shouldLogout = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Thibitisha'),
-                            content: const Text('Unahitaji kutoka kwenye app?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
-                                child: const Text('Hapana'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.of(context).pop(true),
-                                child: const Text('Ndiyo'),
-                              ),
-                            ],
-                          ),
-                        );
-                        
-                        if (shouldLogout == true) {
-                          // Sign out user
-                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                          await authProvider.signOut();
-                          
-                          // Navigate to login
-                          if (mounted) {
-                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                          }
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'profile',
-                        child: Row(
-                          children: [
-                            Icon(Icons.person, color: ThemeConstants.primaryColor),
-                            SizedBox(width: 8),
-                            Text('Wasifu'),
+                    } else if (value == 'logout') {
+                      // Show confirmation dialog
+                      final shouldLogout = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Thibitisha'),
+                          content: const Text('Unahitaji kutoka kwenye app?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Hapana'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Ndiyo'),
+                            ),
                           ],
                         ),
+                      );
+                      
+                      if (shouldLogout == true) {
+                        // Sign out user
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        await authProvider.signOut();
+                        
+                        // Navigate to login
+                        if (mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'profile',
+                      child: Row(
+                        children: [
+                          Icon(Icons.person, color: ThemeConstants.primaryColor),
+                          SizedBox(width: 8),
+                          Text('Wasifu'),
+                        ],
                       ),
+                    ),
                       const PopupMenuItem(
                         value: 'debug_refresh',
                         child: Row(
@@ -310,124 +310,124 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
-                        value: 'logout',
-                        child: Row(
-                          children: [
-                            Icon(Icons.logout, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Toka', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
+                    const PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Toka', style: TextStyle(color: Colors.red)),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
                   ),
                 ),
               ),
-            ],
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Balance Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '${context.tr('balance')}: TZS ${_walletService.currentBalance.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeConstants.textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const WalletScreen(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          context.tr('add_balance'),
-                          style: const TextStyle(
-                            color: ThemeConstants.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                
-                // Location Indicator
-                if (_isLocationEnabled && _currentLocation != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: ThemeConstants.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Balance Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: ThemeConstants.primaryColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '${context.tr('balance')}: TZS ${_walletService.currentBalance.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeConstants.textColor,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
-                        const SizedBox(width: 8),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const WalletScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      context.tr('add_balance'),
+                      style: const TextStyle(
+                        color: ThemeConstants.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            
+            // Location Indicator
+            if (_isLocationEnabled && _currentLocation != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
+                    const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Near: $_currentLocation',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: ThemeConstants.primaryColor,
-                              fontWeight: FontWeight.w500,
+                      'Near: $_currentLocation',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ThemeConstants.primaryColor,
+                        fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                
-                Text(
-                  'Kazi za Karibu Yako',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textColor,
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                // Job List
-                Expanded(
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            Text(
+              'Kazi za Karibu Yako',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: ThemeConstants.textColor,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Job List
+            Expanded(
                   child: _recentJobs.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                children: [
                             Icon(
                               Icons.work_outline,
                               size: 64,
@@ -459,14 +459,14 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                           final job = _recentJobs[index];
                           return Column(
                             children: [
-                              _JobCard(
+                  _JobCard(
                                 title: job.title,
                                 location: job.location,
                                 pay: job.formattedPayment,
                                 distance: _isLocationEnabled ? '2.5 km' : null,
                                 image: job.imageUrl ?? 'assets/images/image_1.jpg',
                                 category: job.categoryDisplayName,
-                                onPressed: () {
+                    onPressed: () {
                                   // Convert JobModel to Map for JobDetailsScreen
                                   final jobData = {
                                     'id': job.id,
@@ -485,65 +485,65 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                                     'latitude': 0.0,
                                     'longitude': 0.0,
                                     'image': job.imageUrl ?? 'assets/images/image_1.jpg',
-                                  };
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
+                      };
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
                                       builder: (context) => JobDetailsScreen(job: jobData),
-                                    ),
-                                  );
-                                },
-                              ),
+                        ),
+                      );
+                    },
+                  ),
                               if (index < _recentJobs.length - 1) const SizedBox(height: 12),
-                            ],
+                ],
                           );
                         },
-                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: ThemeConstants.cardBackgroundColor,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _BottomNavItem(
+                  icon: Icons.home,
+                  label: context.tr('home'),
+                  selected: true,
+                  color: ThemeConstants.primaryColor,
+                  onTap: () {},
+                ),
+                _BottomNavItem(
+                  icon: Icons.work,
+                  label: context.tr('search_jobs'),
+                  selected: false,
+                  color: ThemeConstants.textColor,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/job_search');
+                  },
+                ),
+                _BottomNavItem(
+                  icon: Icons.person,
+                  label: context.tr('profile'),
+                  selected: false,
+                  color: ThemeConstants.textColor,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/profile');
+                  },
                 ),
               ],
             ),
           ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: ThemeConstants.cardBackgroundColor,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _BottomNavItem(
-                      icon: Icons.home,
-                      label: context.tr('home'),
-                      selected: true,
-                      color: ThemeConstants.primaryColor,
-                      onTap: () {},
-                    ),
-                    _BottomNavItem(
-                      icon: Icons.work,
-                      label: context.tr('search_jobs'),
-                      selected: false,
-                      color: ThemeConstants.textColor,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/job_search');
-                      },
-                    ),
-                    _BottomNavItem(
-                      icon: Icons.person,
-                      label: context.tr('profile'),
-                      selected: false,
-                      color: ThemeConstants.textColor,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/profile');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        ),
+      ),
         );
       },
     );

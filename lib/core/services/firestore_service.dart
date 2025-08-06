@@ -242,6 +242,126 @@ class FirestoreService {
     return query.snapshots();
   }
 
+  // Delete job
+  Future<void> deleteJob(String jobId) async {
+    try {
+      await _firestore.collection(jobsCollection).doc(jobId).delete();
+    } catch (e) {
+      throw Exception('Hitilafu katika kufuta kazi: $e');
+    }
+  }
+
+  // Get applications with user details
+  Stream<List<Map<String, dynamic>>> getJobApplicationsWithUserDetails(String jobId) {
+    return _firestore
+        .collection(jobsCollection)
+        .doc(jobId)
+        .collection(applicationsCollection)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          List<Map<String, dynamic>> applicationsWithDetails = [];
+          
+          for (final doc in snapshot.docs) {
+            final applicationData = doc.data();
+            final applicantId = applicationData['applicantId'];
+            
+            // Get user details
+            final userDoc = await _firestore.collection(usersCollection).doc(applicantId).get();
+            final userData = userDoc.data() as Map<String, dynamic>?;
+            
+            applicationsWithDetails.add({
+              'id': doc.id,
+              ...applicationData,
+              'applicantName': userData?['name'] ?? 'Unknown',
+              'applicantPhone': userData?['phoneNumber'] ?? '',
+              'applicantEmail': userData?['email'] ?? '',
+              'applicantProfileImage': userData?['profileImageUrl'] ?? '',
+            });
+          }
+          
+          return applicationsWithDetails;
+        });
+  }
+
+  // Get all applications for a provider
+  Stream<List<Map<String, dynamic>>> getProviderApplications(String providerId) {
+    return _firestore
+        .collection(jobsCollection)
+        .where('jobProviderId', isEqualTo: providerId)
+        .snapshots()
+        .asyncMap((jobsSnapshot) async {
+          List<Map<String, dynamic>> allApplications = [];
+          
+          for (final jobDoc in jobsSnapshot.docs) {
+            final applicationsSnapshot = await _firestore
+                .collection(jobsCollection)
+                .doc(jobDoc.id)
+                .collection(applicationsCollection)
+                .get();
+            
+            for (final appDoc in applicationsSnapshot.docs) {
+              final applicationData = appDoc.data();
+              final applicantId = applicationData['applicantId'];
+              
+              // Get user details
+              final userDoc = await _firestore.collection(usersCollection).doc(applicantId).get();
+              final userData = userDoc.data() as Map<String, dynamic>?;
+              
+              allApplications.add({
+                'id': appDoc.id,
+                'jobId': jobDoc.id,
+                'jobTitle': jobDoc.data()['title'] ?? '',
+                'jobLocation': jobDoc.data()['location'] ?? '',
+                ...applicationData,
+                'applicantName': userData?['name'] ?? 'Unknown',
+                'applicantPhone': userData?['phoneNumber'] ?? '',
+                'applicantEmail': userData?['email'] ?? '',
+                'applicantProfileImage': userData?['profileImageUrl'] ?? '',
+              });
+            }
+          }
+          
+          return allApplications;
+        });
+  }
+
+  // Send message to applicant
+  Future<void> sendMessageToApplicant({
+    required String jobId,
+    required String applicationId,
+    required String message,
+    required String senderId,
+  }) async {
+    try {
+      // Create or get chat room
+      final chatRoomId = '${jobId}_${applicationId}';
+      
+      // Add message to chat
+      await _firestore
+          .collection(chatsCollection)
+          .doc(chatRoomId)
+          .collection(messagesCollection)
+          .add({
+        'senderId': senderId,
+        'message': message,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+      
+      // Update chat room metadata
+      await _firestore.collection(chatsCollection).doc(chatRoomId).set({
+        'jobId': jobId,
+        'applicationId': applicationId,
+        'lastMessage': message,
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'participants': [senderId, applicationId], // applicationId here represents the applicant
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      throw Exception('Hitilafu katika kutuma ujumbe: $e');
+    }
+  }
+
   // Job Applications
   Future<String> applyForJob({
     required String jobId,

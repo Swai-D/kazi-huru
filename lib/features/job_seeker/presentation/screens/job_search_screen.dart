@@ -29,7 +29,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'id': '1',
       'title': 'Kumuhamisha Mtu',
       'location': 'Dar es Salaam, Sala Sala',
-      'payment': 'TZS 20,000',
+                      'payment': 'TZS 15,000 - TZS 20,000',
       'category': 'Transport',
       'type': 'Part-time',
       'description': 'Need someone to help move furniture from one house to another.',
@@ -48,7 +48,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'id': '2',
       'title': 'Kusafisha Compound',
       'location': 'Dar es Salaam, Mbezi Beach',
-      'payment': 'TZS 15,000',
+                      'payment': 'TZS 12,000 - TZS 15,000',
       'category': 'Cleaning',
       'type': 'One-time',
       'description': 'Cleaning services needed for a residential compound.',
@@ -67,7 +67,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'id': '3',
       'title': 'Kusaidia Kwenye Event',
       'location': 'Dar es Salaam, Masaki',
-      'payment': 'TZS 25,000',
+                      'payment': 'TZS 20,000 - TZS 25,000',
       'category': 'Events',
       'type': 'Part-time',
       'description': 'Event assistance needed for a wedding ceremony.',
@@ -86,7 +86,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'id': '4',
       'title': 'Kusaidia Kwenye Construction',
       'location': 'Dar es Salaam, Oyster Bay',
-      'payment': 'TZS 30,000',
+                      'payment': 'TZS 25,000 - TZS 30,000',
       'category': 'Construction',
       'type': 'Full-time',
       'description': 'Construction assistance needed for building project.',
@@ -105,7 +105,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       'id': '5',
       'title': 'Kusambaza Vitu',
       'location': 'Dar es Salaam, City Centre',
-      'payment': 'TZS 18,000',
+                      'payment': 'TZS 15,000 - TZS 18,000',
       'category': 'Delivery',
       'type': 'Part-time',
       'description': 'Delivery services needed for packages and documents.',
@@ -570,15 +570,17 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         break;
       case 'payment_high':
         filtered.sort((a, b) {
-          final aPayment = int.tryParse(a['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          final bPayment = int.tryParse(b['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          // Extract max payment from range (e.g., "15,000 - 20,000" -> 20000)
+          final aPayment = int.tryParse(a['payment'].toString().split('-').last.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          final bPayment = int.tryParse(b['payment'].toString().split('-').last.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
           return bPayment.compareTo(aPayment);
         });
         break;
       case 'payment_low':
         filtered.sort((a, b) {
-          final aPayment = int.tryParse(a['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          final bPayment = int.tryParse(b['payment'].toString().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          // Extract min payment from range (e.g., "15,000 - 20,000" -> 15000)
+          final aPayment = int.tryParse(a['payment'].toString().split('-').first.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+          final bPayment = int.tryParse(b['payment'].toString().split('-').first.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
           return aPayment.compareTo(bPayment);
         });
         break;

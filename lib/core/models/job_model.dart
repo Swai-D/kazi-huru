@@ -242,6 +242,124 @@ class JobModel {
     return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
   }
 
+  bool get isSalaryRange => minPayment != maxPayment;
+
+  double get averageSalary => (minPayment + maxPayment) / 2;
+
+  String get salaryRangeDisplay {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get negotiationHint {
+    if (minPayment == maxPayment) {
+      return 'Fixed price - no negotiation';
+    }
+    return 'Salary is negotiable within this range';
+  }
+
+  bool get isNegotiable => minPayment != maxPayment;
+
+  double get salaryRangePercentage {
+    if (minPayment == 0) return 0;
+    return ((maxPayment - minPayment) / minPayment) * 100;
+  }
+
+  String get salaryRangeDescription {
+    if (minPayment == maxPayment) {
+      return 'Fixed price';
+    }
+    final percentage = salaryRangePercentage;
+    if (percentage <= 10) {
+      return 'Slight flexibility';
+    } else if (percentage <= 25) {
+      return 'Moderate flexibility';
+    } else if (percentage <= 50) {
+      return 'High flexibility';
+    } else {
+      return 'Very flexible';
+    }
+  }
+
+  String get salaryDisplayForCards {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForDetails {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)} (Fixed Price)';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)} (Negotiable)';
+  }
+
+  String get salaryDisplayForSearch {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForApplications {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForNotifications {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForAnalytics {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForReports {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForExports {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForImports {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForBackups {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
+  String get salaryDisplayForRestores {
+    if (minPayment == maxPayment) {
+      return 'TZS ${minPayment.toStringAsFixed(0)}';
+    }
+    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+  }
+
   String get formattedDate {
     return '${startDate.day}/${startDate.month}/${startDate.year}';
   }
