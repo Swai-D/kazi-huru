@@ -396,7 +396,7 @@ class _DashboardContentState extends State<_DashboardContent> {
           
           // Quick Stats Section
           Text(
-            'Takwimu za Hivi Karibuni',
+            'Takwimu Muhimu',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -405,7 +405,7 @@ class _DashboardContentState extends State<_DashboardContent> {
           ),
           const SizedBox(height: 16),
           
-          // Quick Stats Grid
+          // Quick Stats Grid - Only essential stats for MVP
           Row(
             children: [
               Expanded(
@@ -427,10 +427,10 @@ class _DashboardContentState extends State<_DashboardContent> {
               const SizedBox(width: 12),
               Expanded(
                 child: _QuickStatCard(
-                  title: 'Kazi Zilizokamilika',
-                  value: _isLoadingStats ? '...' : '${_statistics['completedJobs']}',
-                  icon: Icons.check_circle_outline,
-                  color: Colors.green,
+                  title: 'Kazi Zinazoendelea',
+                  value: _isLoadingStats ? '...' : '${_statistics['activeJobs']}',
+                  icon: Icons.play_circle_outline,
+                  color: Colors.orange,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -446,23 +446,6 @@ class _DashboardContentState extends State<_DashboardContent> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: _QuickStatCard(
-                  title: 'Kazi Zilizopostwa',
-                  value: _isLoadingStats ? '...' : '${_statistics['totalJobs']}',
-                  icon: Icons.work_outline,
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PostedJobsScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: _QuickStatCard(
                   title: 'Watumishi Walioonekana',
@@ -474,27 +457,6 @@ class _DashboardContentState extends State<_DashboardContent> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const JobSeekerSearchScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickStatCard(
-                  title: 'Kazi Zinazoendelea',
-                  value: _isLoadingStats ? '...' : '${_statistics['activeJobs']}',
-                  icon: Icons.play_circle_outline,
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PostedJobsScreen(),
                       ),
                     );
                   },
@@ -523,7 +485,7 @@ class _DashboardContentState extends State<_DashboardContent> {
           
           // Quick Actions Section
           Text(
-            'Vitendo vya Haraka',
+            'Vitendo Muhimu',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -532,7 +494,7 @@ class _DashboardContentState extends State<_DashboardContent> {
           ),
           const SizedBox(height: 16),
           
-          // Quick Actions Grid
+          // Quick Actions Grid - Only essential actions for MVP
           Row(
             children: [
               Expanded(
@@ -554,15 +516,15 @@ class _DashboardContentState extends State<_DashboardContent> {
               const SizedBox(width: 12),
               Expanded(
                 child: _QuickActionCard(
-                  title: 'Tazama Maombi',
-                  subtitle: 'Ona maombi yote ya kazi',
-                  icon: Icons.people,
-                  color: Colors.blue,
+                  title: 'Tafuta Watumishi',
+                  subtitle: 'Tafuta na uchague watumishi',
+                  icon: Icons.search,
+                  color: Colors.teal,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const ApplicationsScreen(),
+                        builder: (context) => const JobSeekerSearchScreen(),
                       ),
                     );
                   },
@@ -575,15 +537,15 @@ class _DashboardContentState extends State<_DashboardContent> {
             children: [
               Expanded(
                 child: _QuickActionCard(
-                  title: 'Tafuta Watumishi',
-                  subtitle: 'Tafuta na uchague watumishi',
-                  icon: Icons.search,
-                  color: Colors.teal,
+                  title: 'Tazama Maombi',
+                  subtitle: 'Ona maombi yote ya kazi',
+                  icon: Icons.people,
+                  color: Colors.blue,
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const JobSeekerSearchScreen(),
+                        builder: (context) => const ApplicationsScreen(),
                       ),
                     );
                   },
@@ -601,44 +563,6 @@ class _DashboardContentState extends State<_DashboardContent> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const PostedJobsScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickActionCard(
-                  title: 'Pochi',
-                  subtitle: 'Ona salio na malipo',
-                  icon: Icons.account_balance_wallet,
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const WalletScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickActionCard(
-                  title: 'Ujumbe',
-                  subtitle: 'Ona ujumbe na maongezi',
-                  icon: Icons.chat,
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChatListScreen(),
                       ),
                     );
                   },
