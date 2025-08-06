@@ -69,18 +69,37 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              leading: Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
+              ),
               title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     userName,
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF222B45),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
                     ),
                   ),
                   Text(
-                    'Karibu tena!',
+                    'Karibu tena! 👋',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -89,26 +108,24 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   ),
                 ],
               ),
-              backgroundColor: Colors.white,
-              elevation: 0,
-              leading: Container(
-                margin: const EdgeInsets.all(8),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 32,
-                  height: 32,
-                ),
-              ),
               actions: [
                 // Chat Button
                 Container(
-                  margin: const EdgeInsets.only(right: 4),
+                  margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.grey[200]!,
+                      width: 1,
+                    ),
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
+                    icon: Icon(
+                      Icons.chat_bubble_outline,
+                      color: Colors.grey[700],
+                      size: 20,
+                    ),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -116,6 +133,11 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                       );
                     },
                     tooltip: 'Messages',
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                   ),
                 ),
                 
@@ -125,15 +147,23 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                   builder: (context, child) {
                     final unreadCount = _notificationService.unreadCount;
                     return Container(
-                      margin: const EdgeInsets.only(right: 4),
+                      margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: ThemeConstants.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
                       ),
                       child: Stack(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
+                            icon: Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.grey[700],
+                              size: 20,
+                            ),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -141,34 +171,39 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                               );
                             },
                             tooltip: 'Notifications',
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
                           ),
                           if (unreadCount > 0)
                             Positioned(
-                              right: 8,
-                              top: 8,
+                              right: 6,
+                              top: 6,
                               child: Container(
-                                padding: const EdgeInsets.all(4),
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: Colors.red[500],
+                                  borderRadius: BorderRadius.circular(8),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.red.withOpacity(0.3),
                                       blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                                      offset: const Offset(0, 1),
                                     ),
                                   ],
                                 ),
                                 constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
+                                  minWidth: 14,
+                                  minHeight: 14,
                                 ),
                                 child: Text(
                                   unreadCount > 99 ? '99+' : unreadCount.toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
