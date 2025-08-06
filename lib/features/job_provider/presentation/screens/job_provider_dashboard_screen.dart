@@ -17,6 +17,7 @@ import '../../../../core/models/job_model.dart';
 import 'post_job_screen.dart';
 import 'applications_screen.dart';
 import 'posted_jobs_screen.dart';
+import 'job_seeker_search_screen.dart';
 
 class JobProviderDashboardScreen extends StatefulWidget {
   const JobProviderDashboardScreen({super.key});
@@ -181,6 +182,18 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
               ],
             ),
             body: _DashboardContent(walletService: _walletService),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const JobSeekerSearchScreen(),
+                  ),
+                );
+              },
+              backgroundColor: ThemeConstants.primaryColor,
+              child: const Icon(Icons.search, color: Colors.white),
+            ),
             bottomNavigationBar: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -199,29 +212,15 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                         onTap: () => setState(() => _selectedIndex = 0),
                       ),
                       _BottomNavItem(
-                        icon: Icons.people_outline,
-                        label: context.tr('applications'),
+                        icon: Icons.add_circle_outline,
+                        label: 'Post Kazi',
                         selected: _selectedIndex == 1,
                         onTap: () {
                           setState(() => _selectedIndex = 1);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ApplicationsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _BottomNavItem(
-                        icon: Icons.work_outline,
-                        label: context.tr('jobs'),
-                        selected: _selectedIndex == 2,
-                        onTap: () {
-                          setState(() => _selectedIndex = 2);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PostedJobsScreen(),
+                              builder: (context) => const PostJobScreen(),
                             ),
                           );
                         },
@@ -229,9 +228,9 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                       _BottomNavItem(
                         icon: Icons.person_outline,
                         label: context.tr('profile'),
-                        selected: _selectedIndex == 3,
+                        selected: _selectedIndex == 2,
                         onTap: () {
-                          setState(() => _selectedIndex = 3);
+                          setState(() => _selectedIndex = 2);
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -270,6 +269,7 @@ class _DashboardContentState extends State<_DashboardContent> {
     'activeJobs': 0,
     'completedJobs': 0,
     'totalApplications': 0,
+    'availableJobSeekers': 0,
   };
   bool _isLoadingStats = true;
 
@@ -453,10 +453,48 @@ class _DashboardContentState extends State<_DashboardContent> {
               const SizedBox(width: 12),
               Expanded(
                 child: _QuickStatCard(
+                  title: 'Watumishi Walioonekana',
+                  value: _isLoadingStats ? '...' : '${_statistics['availableJobSeekers'] ?? 0}',
+                  icon: Icons.people_outline,
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JobSeekerSearchScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickStatCard(
                   title: 'Kazi Zinazoendelea',
                   value: _isLoadingStats ? '...' : '${_statistics['activeJobs']}',
                   icon: Icons.play_circle_outline,
                   color: Colors.orange,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PostedJobsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickStatCard(
+                  title: 'Kazi Zilizokamilika',
+                  value: _isLoadingStats ? '...' : '${_statistics['completedJobs']}',
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -487,6 +525,23 @@ class _DashboardContentState extends State<_DashboardContent> {
             children: [
               Expanded(
                 child: _QuickActionCard(
+                  title: 'Post Kazi',
+                  subtitle: 'Tengeneza kazi mpya',
+                  icon: Icons.add_circle,
+                  color: ThemeConstants.primaryColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PostJobScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickActionCard(
                   title: 'Tazama Maombi',
                   subtitle: 'Ona maombi yote ya kazi',
                   icon: Icons.people,
@@ -496,6 +551,27 @@ class _DashboardContentState extends State<_DashboardContent> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ApplicationsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  title: 'Tafuta Watumishi',
+                  subtitle: 'Tafuta na uchague watumishi',
+                  icon: Icons.search,
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JobSeekerSearchScreen(),
                       ),
                     );
                   },
