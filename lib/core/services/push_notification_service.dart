@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/notification_model.dart';
 import 'notification_service.dart';
 import '../../main.dart';
 
-class PushNotificationService {
+class PushNotificationService extends ChangeNotifier {
   static final PushNotificationService _instance = PushNotificationService._internal();
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
@@ -12,7 +16,15 @@ class PushNotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  String? _fcmToken;
   bool _isInitialized = false;
+
+  String? get fcmToken => _fcmToken;
+  bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -44,59 +56,54 @@ class PushNotificationService {
     // Create notification channels for Android
     await _createNotificationChannels();
 
-    _isInitialized = true;
+    try {
+      // Request permission
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // Get FCM token
+        _fcmToken = await _messaging.getToken();
+        
+        // Save token to user's document
+        await _saveTokenToUser();
+        
+        // Listen for token refresh
+        _messaging.onTokenRefresh.listen((token) {
+          _fcmToken = token;
+          _saveTokenToUser();
+        });
+
+        // Handle background messages
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+        // Handle foreground messages
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          _handleForegroundMessage(message);
+        });
+
+        // Handle when app is opened from notification
+        FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          _handleNotificationTap(message);
+        });
+
+        _isInitialized = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error initializing push notifications: $e');
+    }
   }
 
   Future<void> _createNotificationChannels() async {
     if (Platform.isAndroid) {
-      // Job Applications Channel
-      const AndroidNotificationChannel jobApplicationsChannel =
-          AndroidNotificationChannel(
-        'job_applications',
-        'Job Applications',
-        description: 'Notifications for new job applications',
-        importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      );
-
-      // Job Updates Channel
-      const AndroidNotificationChannel jobUpdatesChannel =
-          AndroidNotificationChannel(
-        'job_updates',
-        'Job Updates',
-        description: 'Notifications for job status updates',
-        importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      );
-
-      // Payments Channel
-      const AndroidNotificationChannel paymentsChannel =
-          AndroidNotificationChannel(
-        'payments',
-        'Payments',
-        description: 'Notifications for payment transactions',
-        importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      );
-
-      // Verification Channel
-      const AndroidNotificationChannel verificationChannel =
-          AndroidNotificationChannel(
-        'verification',
-        'Verification',
-        description: 'Notifications for ID verification status',
-        importance: Importance.none,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-      );
-
       // Chat Channel
       const AndroidNotificationChannel chatChannel =
           AndroidNotificationChannel(
@@ -109,77 +116,120 @@ class PushNotificationService {
         showBadge: true,
       );
 
-      // System Channel
-      const AndroidNotificationChannel systemChannel =
-          AndroidNotificationChannel(
-        'system',
-        'System Notifications',
-        description: 'System and general notifications',
-        importance: Importance.low,
-        playSound: false,
-        enableVibration: false,
-        showBadge: false,
-      );
-
-      // Create all channels
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(jobApplicationsChannel);
-
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(jobUpdatesChannel);
-
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(paymentsChannel);
-
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(verificationChannel);
-
+      // Create chat channel
       await _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(chatChannel);
-
-      await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(systemChannel);
     }
   }
 
-  String _getChannelId(NotificationType type) {
-    switch (type) {
-      case NotificationType.jobApplication:
-        return 'job_applications';
-      case NotificationType.jobAccepted:
-      case NotificationType.jobRejected:
-        return 'job_updates';
-      case NotificationType.payment:
-        return 'payments';
-      case NotificationType.verification:
-        return 'verification';
-      case NotificationType.chat:
-        return 'chat';
-      case NotificationType.system:
-      default:
-        return 'system';
+  Future<void> _saveTokenToUser() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null && _fcmToken != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': _fcmToken,
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error saving FCM token: $e');
     }
   }
 
+  void _handleForegroundMessage(RemoteMessage message) {
+    // Handle chat messages
+    if (message.data['type'] == 'chat_message') {
+      // Show local notification for chat messages
+      _showChatNotification(message);
+    }
+    
+    // Handle other notification types
+    notifyListeners();
+  }
+
+  void _handleNotificationTap(RemoteMessage message) {
+    // Navigate to appropriate screen based on notification type
+    if (message.data['type'] == 'chat_message') {
+      // Navigate to chat detail screen
+      _navigateToChat(message.data['chatRoomId']);
+    }
+  }
+
+  void _showChatNotification(RemoteMessage message) {
+    // This would typically use a local notification plugin
+    // For now, we'll just notify listeners
+    notifyListeners();
+  }
+
+  void _navigateToChat(String chatRoomId) {
+    // This would typically use a navigation service
+    // For now, we'll just notify listeners
+    notifyListeners();
+  }
+
+  // Send chat notification to specific user
+  Future<void> sendChatNotification({
+    required String receiverId,
+    required String senderName,
+    required String message,
+    required String chatRoomId,
+  }) async {
+    try {
+      // Get receiver's FCM token
+      final receiverDoc = await _firestore.collection('users').doc(receiverId).get();
+      if (!receiverDoc.exists) return;
+
+      final receiverData = receiverDoc.data()!;
+      final fcmToken = receiverData['fcmToken'];
+
+      if (fcmToken == null) return;
+
+      // Send notification via Cloud Functions or your backend
+      await _firestore.collection('notifications').add({
+        'receiverId': receiverId,
+        'senderId': _auth.currentUser?.uid,
+        'senderName': senderName,
+        'message': message,
+        'chatRoomId': chatRoomId,
+        'type': 'chat_message',
+        'fcmToken': fcmToken,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+    } catch (e) {
+      print('Error sending chat notification: $e');
+    }
+  }
+
+  // Subscribe to chat notifications
+  Future<void> subscribeToChatNotifications(String chatRoomId) async {
+    try {
+      await _messaging.subscribeToTopic('chat_$chatRoomId');
+    } catch (e) {
+      print('Error subscribing to chat notifications: $e');
+    }
+  }
+
+  // Unsubscribe from chat notifications
+  Future<void> unsubscribeFromChatNotifications(String chatRoomId) async {
+    try {
+      await _messaging.unsubscribeFromTopic('chat_$chatRoomId');
+    } catch (e) {
+      print('Error unsubscribing from chat notifications: $e');
+    }
+  }
+
+  // Show notification
   Future<void> showNotification(NotificationModel notification) async {
     if (!_isInitialized) await initialize();
 
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      _getChannelId(notification.type),
-      _getChannelId(notification.type),
-      channelDescription: 'Notifications for ${notification.type.name}',
+      'chat',
+      'Chat Messages',
+      channelDescription: 'Notifications for chat messages',
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
@@ -188,11 +238,6 @@ class PushNotificationService {
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       styleInformation: BigTextStyleInformation(notification.body),
       category: AndroidNotificationCategory.message,
-      actions: [
-        const AndroidNotificationAction('mark_read', 'Soma'),
-        const AndroidNotificationAction('view', 'Tazama'),
-        const AndroidNotificationAction('open_detail', 'Fungua Maelezo'),
-      ],
     );
 
     final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
@@ -200,7 +245,7 @@ class PushNotificationService {
       presentBadge: true,
       presentSound: true,
       categoryIdentifier: 'message',
-      threadIdentifier: notification.type.name,
+      threadIdentifier: 'chat',
     );
 
     final NotificationDetails notificationDetails = NotificationDetails(
@@ -217,66 +262,30 @@ class PushNotificationService {
     );
   }
 
-  Future<void> showJobApplicationNotification(String jobTitle, String applicantName) async {
-    final notification = NotificationService().createNotification(
-      title: 'Ombi Jipya la Kazi',
-      body: '$applicantName ameomba kazi yako ya $jobTitle.',
-      type: NotificationType.jobApplication,
-      data: {
-        'jobTitle': jobTitle,
-        'applicantName': applicantName,
-      },
-    );
+  // Request permissions
+  Future<void> requestPermissions() async {
+    if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
 
-    await showNotification(notification);
+      await androidImplementation?.requestNotificationsPermission();
+    } else if (Platform.isIOS) {
+      // iOS permissions are handled automatically by the plugin
+      // No additional setup needed for iOS
+    }
   }
 
-  Future<void> showPaymentNotification(double amount) async {
-    final notification = NotificationService().createNotification(
-      title: 'Malipo Yamepokelewa',
-      body: 'Umefanikiwa kupokea TZS ${amount.toStringAsFixed(0)}.',
-      type: NotificationType.payment,
-      data: {'amount': amount},
-    );
+  // Check if notifications are enabled
+  Future<bool> areNotificationsEnabled() async {
+    if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
 
-    await showNotification(notification);
-  }
-
-  Future<void> showVerificationNotification(bool isApproved) async {
-    final notification = NotificationService().createNotification(
-      title: isApproved ? 'Uthibitishaji wa ID' : 'Uthibitishaji wa ID Umekataliwa',
-      body: isApproved 
-        ? 'ID yako imethibitishwa na timu yetu.'
-        : 'ID yako haijathibitishwa. Tafadhali jaribu tena.',
-      type: NotificationType.verification,
-      data: {'isApproved': isApproved},
-    );
-
-    await showNotification(notification);
-  }
-
-  Future<void> showChatNotification(String senderName, String message) async {
-    final notification = NotificationService().createNotification(
-      title: 'Ujumbe Mpya',
-      body: '$senderName: $message',
-      type: NotificationType.chat,
-      data: {
-        'senderName': senderName,
-        'message': message,
-      },
-    );
-
-    await showNotification(notification);
-  }
-
-  Future<void> showSystemNotification(String title, String body) async {
-    final notification = NotificationService().createNotification(
-      title: title,
-      body: body,
-      type: NotificationType.system,
-    );
-
-    await showNotification(notification);
+      return await androidImplementation?.areNotificationsEnabled() ?? false;
+    }
+    return true; // iOS permissions are handled differently
   }
 
   void _onNotificationTapped(NotificationResponse response) {
@@ -292,14 +301,6 @@ class PushNotificationService {
     } else if (actionId == 'view') {
       // Navigate to relevant screen based on notification type
       _navigateToRelevantScreen(notificationId);
-    } else if (actionId == 'open_detail') {
-      // Navigate to notification detail screen
-      if (notificationId != null) {
-        navigatorKey.currentState?.pushNamed(
-          '/notification-detail',
-          arguments: {'notificationId': notificationId},
-        );
-      }
     } else {
       // Default tap action - navigate to notification detail
       if (notificationId != null) {
@@ -333,39 +334,14 @@ class PushNotificationService {
     }
   }
 
-  Future<void> cancelNotification(int id) async {
-    await _flutterLocalNotificationsPlugin.cancel(id);
+  @override
+  void dispose() {
+    super.dispose();
   }
+}
 
-  Future<void> cancelAllNotifications() async {
-    await _flutterLocalNotificationsPlugin.cancelAll();
-  }
-
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
-  }
-
-  Future<void> requestPermissions() async {
-    if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-
-      await androidImplementation?.requestNotificationsPermission();
-    } else if (Platform.isIOS) {
-      // iOS permissions are handled automatically by the plugin
-      // No additional setup needed for iOS
-    }
-  }
-
-  Future<bool> areNotificationsEnabled() async {
-    if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-
-      return await androidImplementation?.areNotificationsEnabled() ?? false;
-    }
-    return true; // iOS permissions are handled differently
-  }
-} 
+// Background message handler
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Handle background messages
+  print('Handling background message: ${message.messageId}');
+}

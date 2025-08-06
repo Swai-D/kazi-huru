@@ -123,18 +123,37 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     return Scaffold(
           backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: ThemeConstants.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 24,
+              height: 24,
+            ),
+          ),
+        ),
         title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-                Text(
-                  userName,
-                  style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF222B45),
+            Text(
+              userName,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
               ),
             ),
             Text(
-              'Karibu tena!',
+              'Karibu tena! 👋',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],
@@ -143,85 +162,102 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
             ),
           ],
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-            leading: Padding(
-              padding: const EdgeInsets.all(8),
-          child: Image.asset(
-            'assets/images/logo.png',
-            width: 32,
-            height: 32,
-          ),
-        ),
         actions: [
           // Chat Button
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Container(
+          Container(
+            margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: ThemeConstants.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.grey[200]!,
+                width: 1,
+              ),
             ),
             child: IconButton(
-              icon: const Icon(Icons.chat_outlined, color: ThemeConstants.primaryColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChatListScreen()),
-              );
-            },
+              icon: Icon(
+                Icons.chat_bubble_outline,
+                color: Colors.grey[700],
+                size: 20,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ChatListScreen()),
+                );
+              },
               tooltip: 'Messages',
-                  ),
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
             ),
           ),
           
           // Notifications Button
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: Container(
+          ListenableBuilder(
+            listenable: _notificationService,
+            builder: (context, child) {
+              final unreadCount = _notificationService.unreadCount;
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.grey[200]!,
+                    width: 1,
+                  ),
                 ),
                 child: Stack(
                   children: [
-          IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: ThemeConstants.primaryColor),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
-              );
-            },
+                    IconButton(
+                      icon: Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.grey[700],
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                        );
+                      },
                       tooltip: 'Notifications',
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
-                      if (_notificationService.unreadCount > 0)
+                    if (unreadCount > 0)
                       Positioned(
-                        right: 8,
-                        top: 8,
+                        right: 6,
+                        top: 6,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.red[500],
+                            borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.red.withOpacity(0.3),
                                 blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                offset: const Offset(0, 1),
                               ),
                             ],
                           ),
                           constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
+                            minWidth: 14,
+                            minHeight: 14,
                           ),
                           child: Text(
-                              _notificationService.unreadCount.toString(),
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -229,101 +265,9 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                       ),
                   ],
                 ),
-                ),
+              );
+            },
           ),
-              
-              // Profile Button
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Container(
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.person_outline, color: ThemeConstants.primaryColor),
-                  onSelected: (value) async {
-                    if (value == 'profile') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => UserProfileScreen(userRole: authProvider.userRole ?? 'job_seeker')),
-                      );
-                      } else if (value == 'debug_refresh') {
-                        // Debug: Refresh user profile
-                        await authProvider.refreshUserProfile();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Profile refreshed. Please restart the app.'),
-                            backgroundColor: Colors.blue,
-                          ),
-                        );
-                    } else if (value == 'logout') {
-                      // Show confirmation dialog
-                      final shouldLogout = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Thibitisha'),
-                          content: const Text('Unahitaji kutoka kwenye app?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Hapana'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Ndiyo'),
-                            ),
-                          ],
-                        ),
-                      );
-                      
-                      if (shouldLogout == true) {
-                        // Sign out user
-                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                        await authProvider.signOut();
-                        
-                        // Navigate to login
-                        if (mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                        }
-                      }
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'profile',
-                      child: Row(
-                        children: [
-                          Icon(Icons.person, color: ThemeConstants.primaryColor),
-                          SizedBox(width: 8),
-                          Text('Wasifu'),
-                        ],
-                      ),
-                    ),
-                      const PopupMenuItem(
-                        value: 'debug_refresh',
-                        child: Row(
-                          children: [
-                            Icon(Icons.refresh),
-                            SizedBox(width: 8),
-                            Text('Refresh Profile (Debug)'),
-                          ],
-                        ),
-                      ),
-                    const PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Toka', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
-                  ),
-                ),
-              ),
         ],
       ),
       body: Padding(

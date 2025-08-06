@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_model.dart';
 
 class ChatService extends ChangeNotifier {
-  // Mock data for development
-  final List<ChatRoom> _chatRooms = [];
-  final Map<String, List<ChatMessage>> _messages = {};
-  final List<ChatUser> _users = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   
   // Stream controllers for real-time updates
   final StreamController<List<ChatRoom>> _chatRoomsController = 
@@ -17,147 +17,56 @@ class ChatService extends ChangeNotifier {
       StreamController<ChatMessage>.broadcast();
 
   // Getters
-  List<ChatRoom> get chatRooms => List.unmodifiable(_chatRooms);
-  List<ChatUser> get users => List.unmodifiable(_users);
   Stream<List<ChatRoom>> get chatRoomsStream => _chatRoomsController.stream;
   Stream<List<ChatMessage>> get messagesStream => _messagesController.stream;
   Stream<ChatMessage> get newMessageStream => _newMessageController.stream;
 
+  // Current user ID
+  String? get currentUserId => _auth.currentUser?.uid;
+
   ChatService() {
-    _initializeMockData();
-    // Emit initial data
-    _chatRoomsController.add(_chatRooms);
+    _initializeChatRoomsStream();
   }
 
-  void _initializeMockData() {
-    // Mock users
-    _users.addAll([
-      ChatUser(
-        id: 'user1',
-        name: 'John Doe',
-        avatar: null,
-        role: 'job_seeker',
-        isOnline: true,
-        lastSeen: DateTime.now(),
-      ),
-      ChatUser(
-        id: 'user2',
-        name: 'Tanzania Tech Solutions',
-        avatar: null,
-        role: 'job_provider',
-        isOnline: false,
-        lastSeen: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-      ChatUser(
-        id: 'user3',
-        name: 'Sarah Johnson',
-        avatar: null,
-        role: 'job_seeker',
-        isOnline: true,
-        lastSeen: DateTime.now(),
-      ),
-    ]);
-
-    // Mock chat rooms
-    _chatRooms.addAll([
-      ChatRoom(
-        id: 'room1',
-        participant1Id: 'user1',
-        participant2Id: 'user2',
-        participant1Name: 'John Doe',
-        participant2Name: 'Tanzania Tech Solutions',
-        lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
-        lastMessage: 'Thank you for the opportunity!',
-        unreadCount: 2,
-        isActive: true,
-      ),
-      ChatRoom(
-        id: 'room2',
-        participant1Id: 'user1',
-        participant2Id: 'user3',
-        participant1Name: 'John Doe',
-        participant2Name: 'Sarah Johnson',
-        lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
-        lastMessage: 'How is the job search going?',
-        unreadCount: 0,
-        isActive: true,
-      ),
-    ]);
-
-    // Mock messages
-    _messages['room1'] = [
-      ChatMessage(
-        id: 'msg1',
-        senderId: 'user2',
-        receiverId: 'user1',
-        content: 'Hello! We received your application for the Software Developer position.',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-        status: MessageStatus.read,
-      ),
-      ChatMessage(
-        id: 'msg2',
-        senderId: 'user1',
-        receiverId: 'user2',
-        content: 'Thank you for considering my application. I\'m very interested in this position.',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
-        status: MessageStatus.read,
-      ),
-      ChatMessage(
-        id: 'msg3',
-        senderId: 'user2',
-        receiverId: 'user1',
-        content: 'Great! We would like to schedule an interview. Are you available tomorrow?',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-        status: MessageStatus.delivered,
-      ),
-      ChatMessage(
-        id: 'msg4',
-        senderId: 'user1',
-        receiverId: 'user2',
-        content: 'Thank you for the opportunity!',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        status: MessageStatus.sent,
-      ),
-    ];
-
-    _messages['room2'] = [
-      ChatMessage(
-        id: 'msg5',
-        senderId: 'user3',
-        receiverId: 'user1',
-        content: 'Hi John! How is the job search going?',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-        status: MessageStatus.read,
-      ),
-      ChatMessage(
-        id: 'msg6',
-        senderId: 'user1',
-        receiverId: 'user3',
-        content: 'It\'s going well! I have a few interviews lined up.',
-        type: MessageType.text,
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        status: MessageStatus.read,
-      ),
-    ];
-
-    _notifyListeners();
+  void _initializeChatRoomsStream() {
+    if (currentUserId == null) return;
+    
+    _firestore
+        .collection('chatRooms')
+        .where('participants', arrayContains: currentUserId)
+        .snapshots()
+        .listen((snapshot) {
+      final chatRooms = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ChatRoom(
+          id: doc.id,
+          participant1Id: data['participant1Id'] ?? '',
+          participant2Id: data['participant2Id'] ?? '',
+          participant1Name: data['participant1Name'] ?? '',
+          participant2Name: data['participant2Name'] ?? '',
+          participant1Avatar: data['participant1Avatar'],
+          participant2Avatar: data['participant2Avatar'],
+                     lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          lastMessage: data['lastMessage'] ?? '',
+          unreadCount: data['unreadCount'] ?? 0,
+          isActive: data['isActive'] ?? true,
+        );
+      }).toList();
+      
+      _chatRoomsController.add(chatRooms);
+    });
   }
 
   // Get chat rooms for a user
   List<ChatRoom> getChatRoomsForUser(String userId) {
-    return _chatRooms.where((room) => 
-      room.participant1Id == userId || room.participant2Id == userId
-    ).toList();
+    // This will be handled by the stream
+    return [];
   }
 
   // Get messages for a chat room
   List<ChatMessage> getMessagesForRoom(String roomId) {
-    return _messages[roomId] ?? [];
+    // This will be handled by the stream
+    return [];
   }
 
   // Send a message
@@ -170,88 +79,126 @@ class ChatService extends ChangeNotifier {
     String? attachmentUrl,
     String? attachmentType,
   }) async {
-    final message = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: senderId,
-      receiverId: receiverId,
-      content: content,
-      type: type,
-      timestamp: DateTime.now(),
-      status: MessageStatus.sending,
-      attachmentUrl: attachmentUrl,
-      attachmentType: attachmentType,
-    );
-
-    // Add to local storage
-    if (!_messages.containsKey(roomId)) {
-      _messages[roomId] = [];
-    }
-    _messages[roomId]!.add(message);
-
-    // Update chat room
-    final roomIndex = _chatRooms.indexWhere((room) => room.id == roomId);
-    if (roomIndex != -1) {
-      final room = _chatRooms[roomIndex];
-      _chatRooms[roomIndex] = ChatRoom(
-        id: room.id,
-        participant1Id: room.participant1Id,
-        participant2Id: room.participant2Id,
-        participant1Name: room.participant1Name,
-        participant2Name: room.participant2Name,
-        participant1Avatar: room.participant1Avatar,
-        participant2Avatar: room.participant2Avatar,
-        lastMessageTime: DateTime.now(),
-        lastMessage: content,
-        unreadCount: room.unreadCount + (senderId != room.participant1Id ? 1 : 0),
-        isActive: room.isActive,
+    try {
+      final message = ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        senderId: senderId,
+        receiverId: receiverId,
+        content: content,
+        type: type,
+        timestamp: DateTime.now(),
+        status: MessageStatus.sending,
+        attachmentUrl: attachmentUrl,
+        attachmentType: attachmentType,
       );
-    }
 
-    // Simulate message sending
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Update message status
-    final updatedMessage = message.copyWith(status: MessageStatus.sent);
-    final messageIndex = _messages[roomId]!.indexWhere((m) => m.id == message.id);
-    if (messageIndex != -1) {
-      _messages[roomId]![messageIndex] = updatedMessage;
-    }
+      // Add message to Firestore
+      await _firestore
+          .collection('chatRooms')
+          .doc(roomId)
+          .collection('messages')
+          .add({
+        'senderId': senderId,
+        'receiverId': receiverId,
+        'content': content,
+        'type': type.toString().split('.').last,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': MessageStatus.sent.toString().split('.').last,
+        'attachmentUrl': attachmentUrl,
+        'attachmentType': attachmentType,
+      });
 
-    _notifyListeners();
-    _newMessageController.add(updatedMessage);
+      // Update chat room with last message
+      await _firestore.collection('chatRooms').doc(roomId).update({
+        'lastMessage': content,
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'unreadCount': FieldValue.increment(1),
+      });
+
+      // Get sender info for notification
+      final senderDoc = await _firestore.collection('users').doc(senderId).get();
+      final senderName = senderDoc.exists ? senderDoc.data()!['name'] ?? 'Unknown User' : 'Unknown User';
+
+      // Send push notification
+      await _sendPushNotification(
+        receiverId: receiverId,
+        senderName: senderName,
+        message: content,
+        chatRoomId: roomId,
+      );
+
+      // Emit new message
+      _newMessageController.add(message);
+      
+    } catch (e) {
+      print('Error sending message: $e');
+      rethrow;
+    }
+  }
+
+  // Send push notification for chat message
+  Future<void> _sendPushNotification({
+    required String receiverId,
+    required String senderName,
+    required String message,
+    required String chatRoomId,
+  }) async {
+    try {
+      // Get receiver's FCM token
+      final receiverDoc = await _firestore.collection('users').doc(receiverId).get();
+      if (!receiverDoc.exists) return;
+
+      final receiverData = receiverDoc.data()!;
+      final fcmToken = receiverData['fcmToken'];
+
+      if (fcmToken == null) return;
+
+      // Send notification via Cloud Functions or your backend
+      await _firestore.collection('notifications').add({
+        'receiverId': receiverId,
+        'senderId': _auth.currentUser?.uid,
+        'senderName': senderName,
+        'message': message,
+        'chatRoomId': chatRoomId,
+        'type': 'chat_message',
+        'fcmToken': fcmToken,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+    } catch (e) {
+      print('Error sending push notification: $e');
+    }
   }
 
   // Mark messages as read
   Future<void> markMessagesAsRead(String roomId, String userId) async {
-    final messages = _messages[roomId];
-    if (messages != null) {
-      for (int i = 0; i < messages.length; i++) {
-        if (messages[i].receiverId == userId && messages[i].status != MessageStatus.read) {
-          messages[i] = messages[i].copyWith(status: MessageStatus.read);
-        }
+    try {
+      // Update unread messages
+      final messagesQuery = await _firestore
+          .collection('chatRooms')
+          .doc(roomId)
+          .collection('messages')
+          .where('receiverId', isEqualTo: userId)
+          .where('status', isEqualTo: MessageStatus.delivered.toString().split('.').last)
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in messagesQuery.docs) {
+        batch.update(doc.reference, {
+          'status': MessageStatus.read.toString().split('.').last,
+        });
       }
-    }
+      await batch.commit();
 
-    // Reset unread count
-    final roomIndex = _chatRooms.indexWhere((room) => room.id == roomId);
-    if (roomIndex != -1) {
-      final room = _chatRooms[roomIndex];
-      _chatRooms[roomIndex] = ChatRoom(
-        id: room.id,
-        participant1Id: room.participant1Id,
-        participant2Id: room.participant2Id,
-        participant1Name: room.participant1Name,
-        participant2Name: room.participant2Name,
-        participant1Avatar: room.participant1Avatar,
-        participant2Avatar: room.participant2Avatar,
-        lastMessageTime: room.lastMessageTime,
-        lastMessage: room.lastMessage,
-        unreadCount: 0,
-        isActive: room.isActive,
-      );
-    }
+      // Reset unread count
+      await _firestore.collection('chatRooms').doc(roomId).update({
+        'unreadCount': 0,
+      });
 
-    _notifyListeners();
+    } catch (e) {
+      print('Error marking messages as read: $e');
+    }
   }
 
   // Create a new chat room
@@ -263,65 +210,260 @@ class ChatService extends ChangeNotifier {
     String? participant1Avatar,
     String? participant2Avatar,
   }) async {
-    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}';
-    
-    final room = ChatRoom(
-      id: roomId,
-      participant1Id: participant1Id,
-      participant2Id: participant2Id,
-      participant1Name: participant1Name,
-      participant2Name: participant2Name,
-      participant1Avatar: participant1Avatar,
-      participant2Avatar: participant2Avatar,
-      lastMessageTime: DateTime.now(),
-      lastMessage: '',
-      unreadCount: 0,
-      isActive: true,
-    );
+    try {
+      // Check if chat room already exists
+      final existingRoom = await _firestore
+          .collection('chatRooms')
+          .where('participants', arrayContains: participant1Id)
+          .get();
 
-    _chatRooms.add(room);
-    _messages[roomId] = [];
-    
-    _notifyListeners();
-    return room;
+      for (final doc in existingRoom.docs) {
+        final data = doc.data();
+        if (data['participants'].contains(participant2Id)) {
+          // Room already exists, return it
+          return ChatRoom(
+            id: doc.id,
+            participant1Id: data['participant1Id'] ?? '',
+            participant2Id: data['participant2Id'] ?? '',
+            participant1Name: data['participant1Name'] ?? '',
+            participant2Name: data['participant2Name'] ?? '',
+            participant1Avatar: data['participant1Avatar'],
+            participant2Avatar: data['participant2Avatar'],
+            lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            lastMessage: data['lastMessage'] ?? '',
+            unreadCount: data['unreadCount'] ?? 0,
+            isActive: data['isActive'] ?? true,
+          );
+        }
+      }
+
+      // Create new chat room
+      final roomRef = await _firestore.collection('chatRooms').add({
+        'participant1Id': participant1Id,
+        'participant2Id': participant2Id,
+        'participant1Name': participant1Name,
+        'participant2Name': participant2Name,
+        'participant1Avatar': participant1Avatar,
+        'participant2Avatar': participant2Avatar,
+        'participants': [participant1Id, participant2Id],
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessage': '',
+        'unreadCount': 0,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      return ChatRoom(
+        id: roomRef.id,
+        participant1Id: participant1Id,
+        participant2Id: participant2Id,
+        participant1Name: participant1Name,
+        participant2Name: participant2Name,
+        participant1Avatar: participant1Avatar,
+        participant2Avatar: participant2Avatar,
+        lastMessageTime: DateTime.now(),
+        lastMessage: '',
+        unreadCount: 0,
+        isActive: true,
+      );
+    } catch (e) {
+      print('Error creating chat room: $e');
+      rethrow;
+    }
+  }
+
+  // Create chat room from job application
+  Future<ChatRoom?> createChatRoomFromJobApplication({
+    required String jobId,
+    required String jobSeekerId,
+    required String jobProviderId,
+    required String jobSeekerName,
+    required String jobProviderName,
+    String? jobSeekerAvatar,
+    String? jobProviderAvatar,
+  }) async {
+    try {
+      // Check if chat room already exists for this job application
+      final existingRoom = await _firestore
+          .collection('chatRooms')
+          .where('jobId', isEqualTo: jobId)
+          .where('participants', arrayContains: jobSeekerId)
+          .get();
+
+      if (existingRoom.docs.isNotEmpty) {
+        final doc = existingRoom.docs.first;
+        final data = doc.data();
+        return ChatRoom(
+          id: doc.id,
+          participant1Id: data['participant1Id'] ?? '',
+          participant2Id: data['participant2Id'] ?? '',
+          participant1Name: data['participant1Name'] ?? '',
+          participant2Name: data['participant2Name'] ?? '',
+          participant1Avatar: data['participant1Avatar'],
+          participant2Avatar: data['participant2Avatar'],
+          lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          lastMessage: data['lastMessage'] ?? '',
+          unreadCount: data['unreadCount'] ?? 0,
+          isActive: data['isActive'] ?? true,
+        );
+      }
+
+      // Create new chat room for job application
+      final roomRef = await _firestore.collection('chatRooms').add({
+        'participant1Id': jobSeekerId,
+        'participant2Id': jobProviderId,
+        'participant1Name': jobSeekerName,
+        'participant2Name': jobProviderName,
+        'participant1Avatar': jobSeekerAvatar,
+        'participant2Avatar': jobProviderAvatar,
+        'participants': [jobSeekerId, jobProviderId],
+        'jobId': jobId,
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessage': '',
+        'unreadCount': 0,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'type': 'job_application',
+      });
+
+      return ChatRoom(
+        id: roomRef.id,
+        participant1Id: jobSeekerId,
+        participant2Id: jobProviderId,
+        participant1Name: jobSeekerName,
+        participant2Name: jobProviderName,
+        participant1Avatar: jobSeekerAvatar,
+        participant2Avatar: jobProviderAvatar,
+        lastMessageTime: DateTime.now(),
+        lastMessage: '',
+        unreadCount: 0,
+        isActive: true,
+      );
+    } catch (e) {
+      print('Error creating chat room from job application: $e');
+      return null;
+    }
+  }
+
+  // Get messages stream for a specific room
+  Stream<List<ChatMessage>> getMessagesStream(String roomId) {
+    return _firestore
+        .collection('chatRooms')
+        .doc(roomId)
+        .collection('messages')
+        .orderBy('timestamp', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return ChatMessage(
+          id: doc.id,
+          senderId: data['senderId'] ?? '',
+          receiverId: data['receiverId'] ?? '',
+          content: data['content'] ?? '',
+          type: MessageType.values.firstWhere(
+            (e) => e.toString() == 'MessageType.${data['type']}',
+            orElse: () => MessageType.text,
+          ),
+          timestamp: (data['timestamp'] as Timestamp).toDate(),
+          status: MessageStatus.values.firstWhere(
+            (e) => e.toString() == 'MessageStatus.${data['status']}',
+            orElse: () => MessageStatus.sent,
+          ),
+          attachmentUrl: data['attachmentUrl'],
+          attachmentType: data['attachmentType'],
+        );
+      }).toList();
+    });
   }
 
   // Get user by ID
-  ChatUser? getUserById(String userId) {
+  Future<ChatUser?> getUserById(String userId) async {
     try {
-      return _users.firstWhere((user) => user.id == userId);
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        return ChatUser(
+          id: doc.id,
+          name: data['name'] ?? '',
+          avatar: data['avatar'],
+          role: data['role'] ?? '',
+          isOnline: data['isOnline'] ?? false,
+          lastSeen: data['lastSeen'] != null 
+              ? (data['lastSeen'] as Timestamp).toDate() 
+              : null,
+        );
+      }
+      return null;
     } catch (e) {
+      print('Error getting user: $e');
       return null;
     }
   }
 
   // Get total unread count for a user
-  int getTotalUnreadCount(String userId) {
-    return _chatRooms
-        .where((room) => 
-          (room.participant1Id == userId || room.participant2Id == userId) &&
-          room.unreadCount > 0
-        )
-        .fold(0, (sum, room) => sum + room.unreadCount);
+  Future<int> getTotalUnreadCount(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('chatRooms')
+          .where('participants', arrayContains: userId)
+          .get();
+
+             int totalUnread = 0;
+       for (final doc in snapshot.docs) {
+         totalUnread += (doc.data()['unreadCount'] ?? 0) as int;
+       }
+      return totalUnread;
+    } catch (e) {
+      print('Error getting unread count: $e');
+      return 0;
+    }
   }
 
   // Delete a chat room
   Future<void> deleteChatRoom(String roomId) async {
-    _chatRooms.removeWhere((room) => room.id == roomId);
-    _messages.remove(roomId);
-    _notifyListeners();
+    try {
+      await _firestore.collection('chatRooms').doc(roomId).delete();
+    } catch (e) {
+      print('Error deleting chat room: $e');
+    }
   }
 
   // Clear all messages in a room
   Future<void> clearMessages(String roomId) async {
-    _messages[roomId]?.clear();
-    _notifyListeners();
+    try {
+      final messages = await _firestore
+          .collection('chatRooms')
+          .doc(roomId)
+          .collection('messages')
+          .get();
+
+      final batch = _firestore.batch();
+      for (final doc in messages.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      // Update room
+      await _firestore.collection('chatRooms').doc(roomId).update({
+        'lastMessage': '',
+        'unreadCount': 0,
+      });
+    } catch (e) {
+      print('Error clearing messages: $e');
+    }
   }
 
-  void _notifyListeners() {
-    notifyListeners();
-    _chatRoomsController.add(_chatRooms);
-    // Note: messages stream would need room-specific implementation
+  // Update user online status
+  Future<void> updateUserOnlineStatus(String userId, bool isOnline) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'isOnline': isOnline,
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating online status: $e');
+    }
   }
 
   @override

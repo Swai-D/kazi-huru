@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/models/chat_model.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
@@ -22,23 +23,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late ChatService _chatService;
-  List<ChatMessage> _messages = [];
   bool _isLoading = true;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
     _chatService = ChatService();
-    _loadMessages();
     _markMessagesAsRead();
-  }
-
-  void _loadMessages() {
-    _messages = _chatService.getMessagesForRoom(widget.chatRoom.id);
-    setState(() {
-      _isLoading = false;
-    });
-    _scrollToBottom();
   }
 
   void _markMessagesAsRead() {
@@ -52,20 +44,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty || _isSending) return;
 
-    final receiverId = widget.chatRoom.getOtherParticipantId(widget.currentUserId);
-    
-    _chatService.sendMessage(
-      roomId: widget.chatRoom.id,
-      senderId: widget.currentUserId,
-      receiverId: receiverId,
-      content: _messageController.text.trim(),
-    );
+    setState(() {
+      _isSending = true;
+    });
 
-    _messageController.clear();
-    _scrollToBottom();
+    try {
+      final receiverId = widget.chatRoom.getOtherParticipantId(widget.currentUserId);
+      
+      await _chatService.sendMessage(
+        roomId: widget.chatRoom.id,
+        senderId: widget.currentUserId,
+        receiverId: receiverId,
+        content: _messageController.text.trim(),
+      );
+
+      _messageController.clear();
+      _scrollToBottom();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error sending message: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSending = false;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -96,7 +105,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   : null,
               child: otherUserAvatar == null
                   ? Text(
-                      otherUserName[0].toUpperCase(),
+                      otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : '?',
                       style: const TextStyle(color: Colors.white),
                     )
                   : null,
@@ -109,6 +118,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   Text(
                     otherUserName,
                     style: const TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     context.tr('online'),
@@ -140,71 +150,132 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : StreamBuilder<ChatMessage>(
-                    stream: _chatService.newMessageStream,
-                    builder: (context, snapshot) {
-                      // Refresh messages when new message arrives
-                      if (snapshot.hasData) {
-                        _messages = _chatService.getMessagesForRoom(widget.chatRoom.id);
-                      }
-                      
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          final isMe = message.senderId == widget.currentUserId;
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: _chatService.getMessagesStream(widget.chatRoom.id),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading messages',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.red[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please try again later',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-                          return Align(
-                            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isMe ? ThemeConstants.primaryColor : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    message.content,
-                                    style: TextStyle(
-                                      color: isMe ? Colors.white : Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _formatTime(message.timestamp),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: isMe ? Colors.white70 : Colors.grey,
-                                        ),
-                                      ),
-                                      if (isMe) ...[
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          _getStatusIcon(message.status),
-                                          size: 12,
-                                          color: Colors.white70,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = snapshot.data!;
+                
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No messages yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start the conversation!',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMe = message.senderId == widget.currentUserId;
+
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isMe ? ThemeConstants.primaryColor : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              message.content,
+                              style: TextStyle(
+                                color: isMe ? Colors.white : Colors.black87,
                               ),
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _formatTime(message.timestamp),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: isMe ? Colors.white70 : Colors.grey,
+                                  ),
+                                ),
+                                if (isMe) ...[
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _getStatusIcon(message.status),
+                                    size: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
@@ -239,12 +310,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       ),
                     ),
                     onSubmitted: (_) => _sendMessage(),
+                    enabled: !_isSending,
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _sendMessage,
+                  icon: _isSending 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.send),
+                  onPressed: _isSending ? null : _sendMessage,
                   color: ThemeConstants.primaryColor,
                 ),
               ],
@@ -358,12 +436,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: Text(context.tr('cancel')),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _chatService.clearMessages(widget.chatRoom.id);
-              setState(() {
-                _messages.clear();
-              });
+              try {
+                await _chatService.clearMessages(widget.chatRoom.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Chat cleared successfully')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error clearing chat: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: Text(
               context.tr('clear'),
