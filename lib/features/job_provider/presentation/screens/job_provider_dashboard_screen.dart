@@ -357,30 +357,7 @@ class _DashboardContentState extends State<_DashboardContent> {
           ),
           const SizedBox(height: 24),
           
-          // Post Job Button
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PostJobScreen()),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: Text(
-              context.tr('post_new_job'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-          ),
-          const SizedBox(height: 24),
+
           
           // Quick Stats Section
           Text(
