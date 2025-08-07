@@ -4,7 +4,6 @@ import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/utils/phone_number_validator.dart';
 import '../../../../core/utils/error_handler.dart';
-import 'otp_verification_screen.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -66,14 +65,21 @@ class _LoginPageState extends State<LoginPage> {
 
       // Login with email and password
       try {
-        await _authService.signInWithEmailAndPassword(
+        final userCredential = await _authService.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
         
+        print('🔐 ===== LOGIN PAGE SUCCESS =====');
+        print('🔐 User logged in: ${userCredential.user?.uid}');
+        print('🔐 User email: ${userCredential.user?.email}');
+        print('🔐 Navigating to main app - AuthWrapper will handle routing');
+        print('🔐 ===============================');
+        
         if (mounted) {
-          // Navigate to appropriate dashboard based on user role
-          Navigator.pushReplacementNamed(context, '/dashboard');
+          // Navigate to main app and let AuthWrapper handle the routing
+          // This prevents direct navigation and role confusion
+          Navigator.pushReplacementNamed(context, '/');
         }
       } catch (e) {
         setState(() {

@@ -74,14 +74,24 @@ class AuthProvider extends ChangeNotifier {
       
       // Listen to auth state changes for real-time updates
       _authService.authStateChanges.listen((User? user) async {
+        print('🔐 ============= AUTH STATE CHANGE =============');
         print('🔐 Auth state changed: ${user?.uid ?? 'null'}');
         
         _currentUser = user;
         if (user != null) {
           print('🔐 User authenticated: ${user.uid}');
+          print('🔐 Loading fresh user profile...');
+          
+          // Clear any old profile data first
+          _userProfile = null;
+          
+          // Load fresh profile
           await _loadUserProfile();
+          
           // Log auth status for debugging
           AuthStatusChecker.checkAuthStatus();
+          
+          print('🔐 Auth state change processing complete');
         } else {
           _userProfile = null;
           print('🔐 User signed out');
@@ -89,6 +99,7 @@ class AuthProvider extends ChangeNotifier {
         _error = null;
         _isInitialized = true;
         _setLoading(false);
+        print('🔐 ============================================');
         notifyListeners();
       });
       
@@ -110,30 +121,29 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadUserProfile() async {
     if (_currentUser != null) {
       try {
+        print('🔐 =================================================');
         print('🔐 Loading user profile for: ${_currentUser!.uid}');
         print('🔐 User email: ${_currentUser!.email}');
         print('🔐 User display name: ${_currentUser!.displayName}');
+        print('🔐 =================================================');
         
         _userProfile = await _firestoreService.getUserProfile(_currentUser!.uid);
         
         if (_userProfile != null) {
-          print('🔐 User profile loaded successfully');
+          print('🔐 ✅ User profile loaded successfully');
           print('👤 Name: ${_userProfile!['name']}');
           print('📱 Phone: ${_userProfile!['phoneNumber']}');
           print('🎭 Role: ${_userProfile!['role']}');
           print('📅 Created: ${_userProfile!['createdAt']}');
           print('✅ Profile complete: ${hasCompleteProfile}');
+          print('🔐 =================================================');
         } else {
-          print('🔐 No user profile found for user: ${_currentUser!.uid}');
-          print('🔐 Trying to recover profile...');
+          print('🔐 ❌ No user profile found for user: ${_currentUser!.uid}');
+          print('🔐 User will need to complete profile setup');
+          print('🔐 =================================================');
           
-          // Try to recover profile from other identifiers
-          final recovered = await tryRecoverUserProfile();
-          if (recovered) {
-            print('🔐 Profile recovered successfully');
-          } else {
-            print('🔐 User will need to complete profile setup');
-          }
+          // Note: Removed dangerous profile recovery logic that could load wrong user's profile
+          // Profile recovery by email/phone can cause users to get wrong profiles loaded
         }
         notifyListeners();
       } catch (e) {
@@ -410,7 +420,7 @@ class AuthProvider extends ChangeNotifier {
   // Check if user exists and get their profile
   Future<Map<String, dynamic>?> checkExistingUser(String email) async {
     try {
-      // Check by email in Firestore
+      // Check by email in Firestore - only used during registration validation
       final userQuery = await _firestoreService.getUserByEmail(email);
       return userQuery;
     } catch (e) {
@@ -619,28 +629,17 @@ class AuthProvider extends ChangeNotifier {
       print('🔍 DEBUG: Current user email: ${_currentUser!.email}');
       print('🔍 DEBUG: Current user display name: ${_currentUser!.displayName}');
       
-      // Try to get profile by UID
+      // Only try to get profile by UID (the correct and safe way)
       final profileByUid = await _firestoreService.getUserProfile(_currentUser!.uid);
       print('🔍 DEBUG: Profile by UID: ${profileByUid != null ? 'Found' : 'Not found'}');
       
-      // Try to get profile by email
-      if (_currentUser!.email != null) {
-        final profileByEmail = await _firestoreService.getUserByEmail(_currentUser!.email!);
-        print('🔍 DEBUG: Profile by email: ${profileByEmail != null ? 'Found' : 'Not found'}');
-        if (profileByEmail != null) {
-          print('🔍 DEBUG: Email profile role: ${profileByEmail['role']}');
-        }
+      if (profileByUid != null) {
+        print('🔍 DEBUG: Profile role: ${profileByUid['role']}');
+        print('🔍 DEBUG: Profile name: ${profileByUid['name']}');
+        print('🔍 DEBUG: Profile phone: ${profileByUid['phoneNumber']}');
       }
       
-      // Try to get profile by phone number (if we can extract it)
-      if (_currentUser!.email != null && _currentUser!.email!.contains('@kazihuru.com')) {
-        final phoneNumber = _currentUser!.email!.replaceAll('@kazihuru.com', '');
-        final profileByPhone = await _firestoreService.getUserByPhone(phoneNumber);
-        print('🔍 DEBUG: Profile by phone: ${profileByPhone != null ? 'Found' : 'Not found'}');
-        if (profileByPhone != null) {
-          print('🔍 DEBUG: Phone profile role: ${profileByPhone['role']}');
-        }
-      }
+      // Removed email and phone lookups to prevent cross-user contamination
     }
   }
 
@@ -671,42 +670,15 @@ class AuthProvider extends ChangeNotifier {
     return fields;
   }
 
-  // Try to recover user profile from different identifiers
+  // DISABLED: Try to recover user profile from different identifiers
+  // This method was causing cross-user profile contamination where wrong profiles
+  // could be loaded based on email/phone matches instead of correct UID
   Future<bool> tryRecoverUserProfile() async {
     if (_currentUser == null) return false;
     
-    try {
-      print('🔧 Trying to recover user profile...');
-      
-      // Try by email first
-      if (_currentUser!.email != null) {
-        final profileByEmail = await _firestoreService.getUserByEmail(_currentUser!.email!);
-        if (profileByEmail != null) {
-          print('🔧 Found profile by email: ${profileByEmail['name']} (${profileByEmail['role']})');
-          _userProfile = profileByEmail;
-          notifyListeners();
-          return true;
-        }
-      }
-      
-      // Try by phone number if email contains phone
-      if (_currentUser!.email != null && _currentUser!.email!.contains('@kazihuru.com')) {
-        final phoneNumber = _currentUser!.email!.replaceAll('@kazihuru.com', '');
-        final profileByPhone = await _firestoreService.getUserByPhone(phoneNumber);
-        if (profileByPhone != null) {
-          print('🔧 Found profile by phone: ${profileByPhone['name']} (${profileByPhone['role']})');
-          _userProfile = profileByPhone;
-          notifyListeners();
-          return true;
-        }
-      }
-      
-      print('🔧 Could not recover user profile');
-      return false;
-    } catch (e) {
-      print('❌ Error recovering user profile: $e');
-      return false;
-    }
+    print('🔧 Profile recovery is disabled to prevent cross-user contamination');
+    print('🔧 Users must use correct UID-based profile lookup only');
+    return false;
   }
 
   // Force refresh auth state

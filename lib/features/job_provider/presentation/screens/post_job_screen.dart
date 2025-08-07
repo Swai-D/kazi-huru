@@ -102,7 +102,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
   Future<void> _checkVerificationStatus() async {
     const userId = 'provider_123'; // Mock user ID
-    final isVerified = _verificationService.isUserVerified(userId);
+    final isVerified = await _verificationService.isUserVerified(userId);
     setState(() {
       _isVerified = isVerified;
     });
@@ -311,24 +311,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
       if (_isEditMode && widget.jobToEdit != null) {
         // Update existing job
         await _jobService.updateJob(
-          jobId: widget.jobToEdit!.id,
+          widget.jobToEdit!.id,
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
           minPayment: minSalary,
           maxPayment: maxSalary,
-          paymentType: PaymentType.values.firstWhere(
-            (e) => e.toString().split('.').last == _selectedSalaryType,
-          ),
+          paymentType: _selectedSalaryType,
           duration: _selectedDuration,
           workersNeeded: int.parse(_selectedWorkers),
           requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
-          contactPreference: ContactPreference.values.firstWhere(
-            (e) => e.toString().split('.').last == _contactPreference,
-          ),
+          contactPreference: _contactPreference,
           startDate: _startDate,
-          startTime: _startTime,
+          startTime: '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
           deadline: _deadline,
           imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
         );
@@ -345,23 +341,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
       } else {
         // Create new job
         final jobId = await _jobService.createJob(
+          providerId: 'provider_123', // TODO: Get actual provider ID
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
           category: _selectedCategory,
           location: _locationController.text.trim(),
           minPayment: minSalary,
           maxPayment: maxSalary,
-          paymentType: PaymentType.values.firstWhere(
-            (e) => e.toString().split('.').last == _selectedSalaryType,
-          ),
+          paymentType: _selectedSalaryType,
           duration: _selectedDuration,
           workersNeeded: int.parse(_selectedWorkers),
           requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
-          contactPreference: ContactPreference.values.firstWhere(
-            (e) => e.toString().split('.').last == _contactPreference,
-          ),
+          contactPreference: _contactPreference,
           startDate: _startDate,
-          startTime: _startTime,
+          startTime: '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
           deadline: _deadline,
           imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
         );

@@ -126,17 +126,30 @@ class _ChatUsersScreenState extends State<ChatUsersScreen> {
       final currentUserAvatar = currentUserData['avatar'];
 
       // Create chat room
-      final chatRoom = await _chatService.createChatRoom(
+      final chatRoomId = await _chatService.createChatRoom(
         participant1Id: _currentUserId!,
-        participant2Id: user.id,
         participant1Name: currentUserName,
+        participant2Id: user.id,
         participant2Name: user.name,
-        participant1Avatar: currentUserAvatar,
-        participant2Avatar: user.avatar,
       );
 
       // Navigate to chat detail screen
-      if (mounted) {
+      if (mounted && chatRoomId != null) {
+        // Create a ChatRoom object for navigation
+        final chatRoom = ChatRoom(
+          id: chatRoomId,
+          participant1Id: _currentUserId!,
+          participant2Id: user.id,
+          participant1Name: currentUserName,
+          participant2Name: user.name,
+          participant1Avatar: currentUserAvatar,
+          participant2Avatar: user.avatar,
+          lastMessage: '',
+          lastMessageTime: DateTime.now(),
+          unreadCount: 0,
+          isActive: true,
+        );
+        
         Navigator.push(
           context,
           MaterialPageRoute(

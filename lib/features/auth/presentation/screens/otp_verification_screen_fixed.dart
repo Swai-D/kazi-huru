@@ -165,28 +165,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           // Check if user has profile
           final profileDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
           
-          if (profileDoc.exists) {
-            // User has profile - navigate to dashboard
-            final profile = profileDoc.data()!;
-            final role = profile['role'] ?? 'job_seeker';
-            if (role == 'job_seeker') {
-              Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
-            } else {
-              Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
-            }
-          } else {
-            // User doesn't have profile - go to role selection
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RoleSelectionScreen(
-                  phoneNumber: widget.phoneNumber,
-                  password: widget.password,
-                  name: userCredential.user!.displayName ?? '',
-                ),
-              ),
-            );
-          }
+          print('🔐 ===== OTP VERIFICATION FIXED LOGIN =====');
+          print('🔐 User logged in: ${userCredential.user!.uid}');
+          print('🔐 User email: ${userCredential.user!.email}');
+          print('🔐 Navigating to main app - AuthWrapper will handle routing');
+          print('🔐 ==========================================');
+          
+          // Navigate to main app and let AuthWrapper handle the routing
+          // This prevents direct navigation and role confusion
+          Navigator.pushReplacementNamed(context, '/');
         } else {
           throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
         }

@@ -31,10 +31,10 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
     
     // Mock user ID - in real app, get from auth service
     const userId = 'user_123';
-    final verification = _verificationService.getVerificationStatus(userId);
+    final verification = await _verificationService.getVerificationStatus(userId);
     
     if (verification != null) {
-      _idNumberController.text = verification.idNumber ?? '';
+      _idNumberController.text = verification['idNumber'] ?? '';
     }
     
     setState(() => _isLoading = false);
@@ -67,8 +67,9 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
       final success = await _verificationService.submitVerification(
         userId: userId,
         idNumber: _idNumberController.text.trim(),
-        fullName: 'User Name', // Get from user profile instead
-        idImage: _selectedImage!,
+        idType: 'national_id', // Default ID type
+        frontImageUrl: 'mock_front_image_url', // In real app, upload image and get URL
+        backImageUrl: 'mock_back_image_url', // In real app, upload image and get URL
       );
 
       if (success) {

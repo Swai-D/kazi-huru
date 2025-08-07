@@ -1,41 +1,46 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
-import 'package:image_picker/image_picker.dart';
+import 'notification_service.dart';
 import '../models/verification_model.dart';
+
+enum VerificationStatus {
+  pending,
+  approved,
+  rejected,
+}
 
 class VerificationService {
   static final VerificationService _instance = VerificationService._internal();
   factory VerificationService() => _instance;
   VerificationService._internal();
 
-  // Mock data for demonstration
-  final Map<String, VerificationModel> _verifications = {};
-
-  // Get verification status for a user
-  VerificationModel? getVerificationStatus(String userId) {
-    return _verifications[userId];
-  }
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final NotificationService _notificationService = NotificationService();
 
   // Submit ID verification
   Future<bool> submitVerification({
     required String userId,
     required String idNumber,
-    required String fullName,
-    required File idImage,
+    required String idType,
+    required String frontImageUrl,
+    required String backImageUrl,
+    String? selfieImageUrl,
   }) async {
     try {
-      // Simulate upload delay
-      await Future.delayed(const Duration(seconds: 2));
-      
-      final verification = VerificationModel(
-        userId: userId,
-        idNumber: idNumber,
-        fullName: fullName,
-        idImageUrl: 'mock_image_url_$userId.jpg', // In real app, upload to storage
-        status: VerificationStatus.pending,
-        submittedAt: DateTime.now(),
-      );
-      
-      _verifications[userId] = verification;
+      await _firestore.collection('verifications').add({
+        'userId': userId,
+        'idNumber': idNumber,
+        'idType': idType,
+        'frontImageUrl': frontImageUrl,
+        'backImageUrl': backImageUrl,
+        'selfieImageUrl': selfieImageUrl,
+        'status': 'pending',
+        'timestamp': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       return true;
     } catch (e) {
       print('Error submitting verification: $e');
@@ -43,19 +48,160 @@ class VerificationService {
     }
   }
 
-  // Admin: Verify a user's ID
+  // Update verification status (admin function)
+  Future<bool> updateVerificationStatus({
+    required String verificationId,
+    required String userId,
+    required VerificationStatus status,
+    String? rejectionReason,
+  }) async {
+    try {
+      await _firestore.collection('verifications').doc(verificationId).update({
+        'status': status.name,
+        'rejectionReason': rejectionReason,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Send notification to user
+      await _notificationService.sendVerificationNotification(
+        userId: userId,
+        isApproved: status == VerificationStatus.approved,
+      );
+
+      return true;
+    } catch (e) {
+      print('Error updating verification status: $e');
+      return false;
+    }
+  }
+
+  // Get verification status for a user
+  Future<Map<String, dynamic>?> getVerificationStatus(String userId) async {
+    try {
+      final query = await _firestore
+          .collection('verifications')
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final data = query.docs.first.data();
+        data['id'] = query.docs.first.id;
+        return data;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting verification status: $e');
+      return null;
+    }
+  }
+
+  // Get all pending verifications (admin function) as List<VerificationModel>
+  Stream<List<VerificationModel>> getPendingVerifications() {
+    return _firestore
+        .collection('verifications')
+        .where('status', isEqualTo: 'pending')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return VerificationModel.fromMap(data, doc.id);
+            }).toList());
+  }
+
+  // Get all verifications for admin
+  Stream<QuerySnapshot> getAllVerifications() {
+    return _firestore
+        .collection('verifications')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  // Check if user is verified
+  Future<bool> isUserVerified(String userId) async {
+    try {
+      final verification = await getVerificationStatus(userId);
+      return verification != null && verification['status'] == 'approved';
+    } catch (e) {
+      print('Error checking if user is verified: $e');
+      return false;
+    }
+  }
+
+  // Get verification by ID
+  Future<Map<String, dynamic>?> getVerificationById(String verificationId) async {
+    try {
+      final doc = await _firestore.collection('verifications').doc(verificationId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        data['id'] = doc.id;
+        return data;
+      }
+      return null;
+    } catch (e) {
+      print('Error getting verification by ID: $e');
+      return null;
+    }
+  }
+
+  // Delete verification
+  Future<bool> deleteVerification(String verificationId) async {
+    try {
+      await _firestore.collection('verifications').doc(verificationId).delete();
+      return true;
+    } catch (e) {
+      print('Error deleting verification: $e');
+      return false;
+    }
+  }
+
+  // Get verification statistics
+  Future<Map<String, int>> getVerificationStats() async {
+    try {
+      final pendingQuery = await _firestore
+          .collection('verifications')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      final approvedQuery = await _firestore
+          .collection('verifications')
+          .where('status', isEqualTo: 'approved')
+          .get();
+
+      final rejectedQuery = await _firestore
+          .collection('verifications')
+          .where('status', isEqualTo: 'rejected')
+          .get();
+
+      return {
+        'pending': pendingQuery.docs.length,
+        'approved': approvedQuery.docs.length,
+        'rejected': rejectedQuery.docs.length,
+        'total': pendingQuery.docs.length + approvedQuery.docs.length + rejectedQuery.docs.length,
+      };
+    } catch (e) {
+      print('Error getting verification stats: $e');
+      return {
+        'pending': 0,
+        'approved': 0,
+        'rejected': 0,
+        'total': 0,
+      };
+    }
+  }
+
+  // Verify user (admin function)
   Future<bool> verifyUser(String userId, String adminId) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final verification = _verifications[userId];
+      final verification = await getVerificationStatus(userId);
       if (verification != null) {
-        _verifications[userId] = verification.copyWith(
-          status: VerificationStatus.verified,
-          verifiedAt: DateTime.now(),
-          verifiedBy: adminId,
+        return await updateVerificationStatus(
+          verificationId: verification['id'],
+          userId: userId,
+          status: VerificationStatus.approved,
         );
-        return true;
       }
       return false;
     } catch (e) {
@@ -64,20 +210,17 @@ class VerificationService {
     }
   }
 
-  // Admin: Reject a user's ID
+  // Reject user (admin function)
   Future<bool> rejectUser(String userId, String reason, String adminId) async {
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final verification = _verifications[userId];
+      final verification = await getVerificationStatus(userId);
       if (verification != null) {
-        _verifications[userId] = verification.copyWith(
+        return await updateVerificationStatus(
+          verificationId: verification['id'],
+          userId: userId,
           status: VerificationStatus.rejected,
           rejectionReason: reason,
-          verifiedAt: DateTime.now(),
-          verifiedBy: adminId,
         );
-        return true;
       }
       return false;
     } catch (e) {
@@ -86,35 +229,9 @@ class VerificationService {
     }
   }
 
-  // Get all pending verifications (for admin)
-  List<VerificationModel> getPendingVerifications() {
-    return _verifications.values
-        .where((v) => v.status == VerificationStatus.pending)
-        .toList();
-  }
-
-  // Check if user is verified
-  bool isUserVerified(String userId) {
-    final verification = _verifications[userId];
-    return verification?.status == VerificationStatus.verified;
-  }
-
   // Pick image from camera or gallery
   Future<File?> pickImage({bool fromCamera = false}) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: fromCamera ? ImageSource.camera : ImageSource.gallery,
-        imageQuality: 80,
-      );
-      
-      if (image != null) {
-        return File(image.path);
-      }
-      return null;
-    } catch (e) {
-      print('Error picking image: $e');
-      return null;
-    }
+    // Mock implementation - in real app, use image_picker package
+    return null;
   }
 } 

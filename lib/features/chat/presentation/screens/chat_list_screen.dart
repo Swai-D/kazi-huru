@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/models/chat_model.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
@@ -67,8 +68,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<ChatRoom>>(
-        stream: _chatService.chatRoomsStream,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _chatService.getChatRooms(_currentUserId!),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -105,9 +106,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final chatRooms = snapshot.data!;
+          final chatRoomsDocs = snapshot.data!.docs;
           
-          if (chatRooms.isEmpty) {
+          if (chatRoomsDocs.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -161,10 +162,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: chatRooms.length,
+            itemCount: chatRoomsDocs.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
-              final chatRoom = chatRooms[index];
+              final chatRoomData = chatRoomsDocs[index].data() as Map<String, dynamic>;
+              final chatRoom = ChatRoom(
+                id: chatRoomsDocs[index].id,
+                participant1Id: chatRoomData['participants'][0] ?? '',
+                participant2Id: chatRoomData['participants'][1] ?? '',
+                participant1Name: chatRoomData['participantNames'][0] ?? '',
+                participant2Name: chatRoomData['participantNames'][1] ?? '',
+                participant1Avatar: chatRoomData['participantAvatars']?[0],
+                participant2Avatar: chatRoomData['participantAvatars']?[1],
+                lastMessage: chatRoomData['lastMessage'] ?? '',
+                lastMessageTime: (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                unreadCount: chatRoomData['unreadCount'] ?? 0,
+                isActive: chatRoomData['isActive'] ?? true,
+              );
               final otherUserName = chatRoom.getOtherParticipantName(_currentUserId!);
               final otherUserAvatar = chatRoom.getOtherParticipantAvatar(_currentUserId!);
               final hasUnread = chatRoom.unreadCount > 0;

@@ -68,7 +68,7 @@ class _PostedJobsScreenState extends State<PostedJobsScreen> {
         _isLoading = true;
       });
 
-      await _jobService.updateJobStatus(jobId, status);
+      await _jobService.updateJobStatus(jobId, status.toString().split('.').last);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

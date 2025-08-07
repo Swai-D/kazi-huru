@@ -26,7 +26,7 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   Future<void> _loadPendingVerifications() async {
     setState(() => _isLoading = true);
     
-    final verifications = _verificationService.getPendingVerifications();
+    final verifications = await _verificationService.getPendingVerifications().first;
     
     setState(() {
       _pendingVerifications = verifications;

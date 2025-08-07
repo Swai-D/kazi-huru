@@ -5,7 +5,6 @@ import '../../features/auth/presentation/screens/login_page.dart';
 import '../../features/job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
 import '../../features/job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 import '../../features/auth/presentation/screens/role_selection_screen.dart';
-import '../services/auth_status_checker.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -117,15 +116,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
         // User is authenticated and has complete profile - navigate to appropriate dashboard
         final userRole = authProvider.userRole;
+        print('🔐 =================== AUTH WRAPPER ROUTING ===================');
         print('🔐 User authenticated with role: $userRole');
         print('🔐 User profile: ${authProvider.userProfile != null ? 'Found' : 'Not found'}');
         print('🔐 Has complete profile: ${authProvider.hasCompleteProfile}');
         print('🔐 Raw user profile data: ${authProvider.userProfile}');
         print('🔐 Role from profile: ${authProvider.userProfile?['role']}');
         print('🔐 Role from getter: ${authProvider.userRole}');
+        print('🔐 Current user UID: ${authProvider.currentUser?.uid}');
+        print('🔐 Current user email: ${authProvider.currentUser?.email}');
+        print('🔐 ========================================================');
         
-        // Debug user profile if role is unknown
-        if (userRole == null || userRole.isEmpty) {
+        // Debug user profile if role is unknown or invalid
+        if (userRole == null || userRole.isEmpty || 
+           (userRole != 'job_seeker' && userRole != 'job_provider')) {
+          print('🔐 Invalid or missing role detected: $userRole');
           print('🔐 Debugging user profile...');
           // Call debug method without await
           authProvider.debugUserProfile();

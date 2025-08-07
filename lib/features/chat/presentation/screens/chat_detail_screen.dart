@@ -55,10 +55,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       final receiverId = widget.chatRoom.getOtherParticipantId(widget.currentUserId);
       
       await _chatService.sendMessage(
-        roomId: widget.chatRoom.id,
+        chatRoomId: widget.chatRoom.id,
         senderId: widget.currentUserId,
+        senderName: 'Current User', // Get from user profile
+        message: _messageController.text.trim(),
         receiverId: receiverId,
-        content: _messageController.text.trim(),
       );
 
       _messageController.clear();
@@ -150,8 +151,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<ChatMessage>>(
-              stream: _chatService.getMessagesStream(widget.chatRoom.id),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatService.getMessages(widget.chatRoom.id),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -188,9 +189,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final messages = snapshot.data!;
+                final messagesDocs = snapshot.data!.docs;
                 
-                if (messages.isEmpty) {
+                if (messagesDocs.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -224,9 +225,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
+                  itemCount: messagesDocs.length,
                   itemBuilder: (context, index) {
-                    final message = messages[index];
+                    final messageData = messagesDocs[index].data() as Map<String, dynamic>;
+                    final message = ChatMessage(
+                      id: messagesDocs[index].id,
+                      senderId: messageData['senderId'] ?? '',
+                      receiverId: '', // Will be set from chat room data
+                      content: messageData['message'] ?? '',
+                      timestamp: (messageData['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                      status: MessageStatus.sent,
+                      type: MessageType.text,
+                    );
                     final isMe = message.senderId == widget.currentUserId;
 
                     return Align(

@@ -1,9 +1,12 @@
 import '../models/wallet_model.dart';
+import 'notification_service.dart';
 
 class WalletService {
   static final WalletService _instance = WalletService._internal();
   factory WalletService() => _instance;
   WalletService._internal();
+
+  final NotificationService _notificationService = NotificationService();
 
   // Mock wallet data - in real app this would come from Firebase
   WalletModel _currentWallet = WalletModel.defaultWallet('user123');
@@ -36,6 +39,14 @@ class WalletService {
       transactions: [..._currentWallet.transactions, transaction],
     );
 
+    // Send notification for application fee deduction
+    _notificationService.sendPaymentNotification(
+      userId: _currentWallet.userId,
+      amount: transaction.amount.abs(),
+      transactionId: transaction.id,
+      paymentType: 'sent',
+    );
+
     return true;
   }
 
@@ -55,6 +66,14 @@ class WalletService {
       transactions: [..._currentWallet.transactions, transaction],
     );
 
+    // Send notification for successful top-up
+    _notificationService.sendPaymentNotification(
+      userId: _currentWallet.userId,
+      amount: amount,
+      transactionId: transaction.id,
+      paymentType: 'received',
+    );
+
     return true;
   }
 
@@ -69,6 +88,14 @@ class WalletService {
     _currentWallet = _currentWallet.copyWith(
       balance: _currentWallet.balance + amount,
       transactions: [..._currentWallet.transactions, transaction],
+    );
+
+    // Send notification for bonus
+    _notificationService.sendPaymentNotification(
+      userId: _currentWallet.userId,
+      amount: amount,
+      transactionId: transaction.id,
+      paymentType: 'bonus',
     );
   }
 

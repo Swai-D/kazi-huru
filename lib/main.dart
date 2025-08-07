@@ -33,13 +33,12 @@ import 'features/auth/presentation/screens/auth_test_screen.dart';
 import 'core/services/localization_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/push_notification_service.dart';
-import 'core/services/firebase_init_service.dart';
+import 'core/services/firestore_notification_service.dart';
 
 import 'core/constants/theme_constants.dart';
 import 'core/providers/auth_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'core/services/maps_service.dart';
 
 // Global navigation key for notification navigation
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -55,8 +54,11 @@ void main() async {
   
   // Initialize services
   await LocalizationService().loadTranslations();
+  
+  // Initialize notification services
   await NotificationService().initialize();
   await PushNotificationService().initialize();
+  await FirestoreNotificationService().initialize();
   
   print('🚀 Kazi Huru app starting...');
   
@@ -64,6 +66,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationService()),
+        ChangeNotifierProvider(create: (_) => FirestoreNotificationService()),
       ],
       child: const KaziHuruApp(),
     ),
@@ -124,7 +128,6 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
           ),
         ),
       ),
-      home: const AuthWrapper(), // Use AuthWrapper for persistent authentication
       debugShowCheckedModeBanner: false,
       
       // Localization support
@@ -138,6 +141,7 @@ class _KaziHuruAppState extends State<KaziHuruApp> {
       
       // Routes
       routes: {
+        '/': (context) => const AuthWrapper(), // Main app route - handles authentication routing
         '/splash': (context) => const SplashScreen(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),

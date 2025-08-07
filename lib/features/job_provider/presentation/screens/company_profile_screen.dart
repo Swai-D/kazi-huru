@@ -72,10 +72,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final providerId = authProvider.currentUser?.uid ?? '';
       
-      final jobs = await _jobService.getJobsByProvider(providerId).first;
+      final jobsSnapshot = await _jobService.getJobsByProvider(providerId).first;
       if (mounted) {
         setState(() {
-          _recentJobs = jobs.take(3).toList(); // Get latest 3 jobs
+          _recentJobs = jobsSnapshot.take(3).toList(); // Get latest 3 jobs
           _isLoadingJobs = false;
         });
       }

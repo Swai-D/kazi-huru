@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/notification_model.dart';
 import 'push_notification_service.dart';
+import 'firestore_notification_service.dart';
 
 enum NotificationType {
   jobApplication,
@@ -18,110 +19,62 @@ class NotificationService extends ChangeNotifier {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  List<NotificationModel> _notifications = [];
-  bool _isInitialized = false;
+  final FirestoreNotificationService _firestoreService = FirestoreNotificationService();
   final PushNotificationService _pushNotificationService = PushNotificationService();
 
-  List<NotificationModel> get notifications => _notifications;
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
-  bool get isInitialized => _isInitialized;
+  List<NotificationModel> get notifications => _firestoreService.notifications;
+  int get unreadCount => _firestoreService.unreadCount;
+  bool get isInitialized => _firestoreService.isInitialized;
 
-  // Initialize with sample data
+  // Initialize with real data from Firestore
   Future<void> initialize() async {
-    if (_isInitialized) return;
-    
-    // Initialize push notification service
-    await _pushNotificationService.initialize();
-    
-    _notifications = [
-      NotificationModel(
-        id: '1',
-        title: 'Ombi Jipya la Kazi',
-        body: 'John ameomba kazi yako ya Usafi.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        type: NotificationType.jobApplication,
-        data: {'jobId': 'job_123', 'applicantId': 'user_456'},
-      ),
-      NotificationModel(
-        id: '2',
-        title: 'Kazi Imeanza',
-        body: 'Kazi ya Kufua Nguo imeanza.',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-        isRead: true,
-        type: NotificationType.jobAccepted,
-        data: {'jobId': 'job_789'},
-      ),
-      NotificationModel(
-        id: '3',
-        title: 'Malipo Yamepokelewa',
-        body: 'Umefanikiwa kupokea TZS 20,000.',
-        timestamp: DateTime.now().subtract(const Duration(days: 1)),
-        type: NotificationType.payment,
-        data: {'amount': 20000, 'transactionId': 'txn_123'},
-      ),
-      NotificationModel(
-        id: '4',
-        title: 'Uthibitishaji wa ID',
-        body: 'ID yako imethibitishwa na timu yetu.',
-        timestamp: DateTime.now().subtract(const Duration(days: 2)),
-        type: NotificationType.verification,
-        data: {'verificationId': 'ver_456'},
-      ),
-      NotificationModel(
-        id: '5',
-        title: 'Ujumbe Mpya',
-        body: 'Una ujumbe mpya kutoka kwa John.',
-        timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-        type: NotificationType.chat,
-        data: {'chatId': 'chat_789', 'senderId': 'user_456'},
-      ),
-    ];
-    
-    _isInitialized = true;
-    notifyListeners();
+    try {
+      // Initialize push notification service
+      await _pushNotificationService.initialize();
+      
+      // Initialize Firestore notification service
+      await _firestoreService.initialize();
+      
+      // Listen to changes in the Firestore service
+      _firestoreService.addListener(() {
+        notifyListeners();
+      });
+    } catch (e) {
+      print('Error initializing notification service: $e');
+      // Continue without notifications if there's an error
+    }
   }
 
-  // Add new notification
+  // Add new notification (delegates to Firestore service)
   void addNotification(NotificationModel notification) {
-    _notifications.insert(0, notification);
-    notifyListeners();
-    
-    // Show push notification
+    // This is now handled by the Firestore service
+    // Local notifications are shown via push notification service
     _pushNotificationService.showNotification(notification);
   }
 
-  // Mark notification as read
-  void markAsRead(String notificationId) {
-    final index = _notifications.indexWhere((n) => n.id == notificationId);
-    if (index != -1) {
-      _notifications[index] = _notifications[index].copyWith(isRead: true);
-      notifyListeners();
-    }
+  // Mark notification as read (delegates to Firestore service)
+  Future<void> markAsRead(String notificationId) async {
+    await _firestoreService.markAsRead(notificationId);
   }
 
-  // Mark all notifications as read
-  void markAllAsRead() {
-    for (int i = 0; i < _notifications.length; i++) {
-      _notifications[i] = _notifications[i].copyWith(isRead: true);
-    }
-    notifyListeners();
+  // Mark all notifications as read (delegates to Firestore service)
+  Future<void> markAllAsRead() async {
+    await _firestoreService.markAllAsRead();
   }
 
-  // Delete notification
-  void deleteNotification(String notificationId) {
-    _notifications.removeWhere((n) => n.id == notificationId);
-    notifyListeners();
+  // Delete notification (delegates to Firestore service)
+  Future<void> deleteNotification(String notificationId) async {
+    await _firestoreService.deleteNotification(notificationId);
   }
 
-  // Delete all notifications
-  void deleteAllNotifications() {
-    _notifications.clear();
-    notifyListeners();
+  // Delete all notifications (delegates to Firestore service)
+  Future<void> deleteAllNotifications() async {
+    await _firestoreService.deleteAllNotifications();
   }
 
-  // Get notifications by type
+  // Get notifications by type (delegates to Firestore service)
   List<NotificationModel> getNotificationsByType(NotificationType type) {
-    return _notifications.where((n) => n.type == type).toList();
+    return _firestoreService.getNotificationsByType(type);
   }
 
   // Create notification by type
@@ -141,53 +94,107 @@ class NotificationService extends ChangeNotifier {
     );
   }
 
-  // Simulate real-time notifications with push notifications
-  void simulateJobApplication(String jobTitle, String applicantName) {
-    final notification = createNotification(
-      title: 'Ombi Jipya la Kazi',
-      body: '$applicantName ameomba kazi yako ya $jobTitle.',
-      type: NotificationType.jobApplication,
-      data: {
-        'jobTitle': jobTitle,
-        'applicantName': applicantName,
-      },
+  // Send job application notification
+  Future<void> sendJobApplicationNotification({
+    required String jobProviderId,
+    required String jobTitle,
+    required String applicantName,
+    required String jobId,
+  }) async {
+    await _firestoreService.sendJobApplicationNotification(
+      jobProviderId: jobProviderId,
+      jobTitle: jobTitle,
+      applicantName: applicantName,
+      jobId: jobId,
     );
-    addNotification(notification);
   }
 
-  void simulatePaymentReceived(double amount) {
-    final notification = createNotification(
-      title: 'Malipo Yamepokelewa',
-      body: 'Umefanikiwa kupokea TZS ${amount.toStringAsFixed(0)}.',
-      type: NotificationType.payment,
-      data: {'amount': amount},
+  // Send job status notification
+  Future<void> sendJobStatusNotification({
+    required String jobSeekerId,
+    required String jobTitle,
+    required bool isAccepted,
+    required String jobId,
+  }) async {
+    await _firestoreService.sendJobStatusNotification(
+      jobSeekerId: jobSeekerId,
+      jobTitle: jobTitle,
+      isAccepted: isAccepted,
+      jobId: jobId,
     );
-    addNotification(notification);
   }
 
-  void simulateVerificationUpdate(bool isApproved) {
-    final notification = createNotification(
-      title: isApproved ? 'Uthibitishaji wa ID' : 'Uthibitishaji wa ID Umekataliwa',
-      body: isApproved 
-        ? 'ID yako imethibitishwa na timu yetu.'
-        : 'ID yako haijathibitishwa. Tafadhali jaribu tena.',
-      type: NotificationType.verification,
-      data: {'isApproved': isApproved},
+  // Send payment notification
+  Future<void> sendPaymentNotification({
+    required String userId,
+    required double amount,
+    required String transactionId,
+    required String paymentType,
+  }) async {
+    await _firestoreService.sendPaymentNotification(
+      userId: userId,
+      amount: amount,
+      transactionId: transactionId,
+      paymentType: paymentType,
     );
-    addNotification(notification);
   }
 
-  void simulateChatMessage(String senderName, String message) {
-    final notification = createNotification(
-      title: 'Ujumbe Mpya',
-      body: '$senderName: $message',
-      type: NotificationType.chat,
-      data: {
-        'senderName': senderName,
-        'message': message,
-      },
+  // Send verification notification
+  Future<void> sendVerificationNotification({
+    required String userId,
+    required bool isApproved,
+  }) async {
+    await _firestoreService.sendVerificationNotification(
+      userId: userId,
+      isApproved: isApproved,
     );
-    addNotification(notification);
+  }
+
+  // Send chat notification
+  Future<void> sendChatNotification({
+    required String receiverId,
+    required String senderName,
+    required String message,
+    required String chatRoomId,
+  }) async {
+    await _firestoreService.sendChatNotification(
+      receiverId: receiverId,
+      senderName: senderName,
+      message: message,
+      chatRoomId: chatRoomId,
+    );
+  }
+
+  // Send system notification
+  Future<void> sendSystemNotification({
+    required String userId,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    await _firestoreService.sendSystemNotification(
+      userId: userId,
+      title: title,
+      body: body,
+      data: data,
+    );
+  }
+
+  // Send notification to multiple users
+  Future<void> sendNotificationToMultipleUsers({
+    required List<String> receiverIds,
+    required String title,
+    required String body,
+    required NotificationType type,
+    Map<String, dynamic>? data,
+  }) async {
+    await _firestoreService.sendNotificationToMultipleUsers(
+      receiverIds: receiverIds,
+      title: title,
+      body: body,
+      type: type,
+      data: data,
+    );
   }
 
   // Request notification permissions
@@ -201,19 +208,55 @@ class NotificationService extends ChangeNotifier {
   }
 
   // Get notification by ID
-  Future<NotificationModel?> getNotification(String notificationId) async {
-    try {
-      final notification = _notifications.firstWhere((n) => n.id == notificationId);
-      return notification;
-    } catch (e) {
-      return null;
-    }
+  NotificationModel? getNotificationById(String notificationId) {
+    return _firestoreService.getNotificationById(notificationId);
   }
 
   // Clear all data
   void clear() {
-    _notifications.clear();
-    _isInitialized = false;
-    notifyListeners();
+    // This is now handled by the Firestore service
+    // The service will automatically clear when user logs out
+  }
+
+  // Simulation methods for testing
+  void simulateJobApplication(String jobTitle, String applicantName) {
+    addNotification(
+      createNotification(
+        title: 'Ombi la Kazi Mpya',
+        body: '$applicantName ameweka ombi la kazi: $jobTitle',
+        type: NotificationType.jobApplication,
+        data: {'jobTitle': jobTitle, 'applicantName': applicantName},
+      ),
+    );
+  }
+
+  void simulatePaymentReceived(double amount) {
+    addNotification(
+      createNotification(
+        title: 'Malipo Yamepokelewa',
+        body: 'TZS ${amount.toStringAsFixed(0)} yamepokelewa kwenye account yako',
+        type: NotificationType.payment,
+        data: {'amount': amount},
+      ),
+    );
+  }
+
+  void simulateVerificationUpdate(bool isVerified) {
+    addNotification(
+      createNotification(
+        title: isVerified ? 'Account Imethibitishwa' : 'Account Haijathibitishwa',
+        body: isVerified 
+          ? 'Account yako imethibitishwa na sasa unaweza kutumia huduma zote'
+          : 'Account yako haijathibitishwa. Tafadhali subiri au wasiliana na support',
+        type: NotificationType.verification,
+        data: {'isVerified': isVerified},
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _firestoreService.dispose();
+    super.dispose();
   }
 } 

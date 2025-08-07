@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/notification_model.dart';
 import 'notification_service.dart';
+import 'firestore_notification_service.dart';
 import '../../main.dart';
 
 class PushNotificationService extends ChangeNotifier {
@@ -19,6 +20,7 @@ class PushNotificationService extends ChangeNotifier {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirestoreNotificationService _firestoreNotificationService = FirestoreNotificationService();
   
   String? _fcmToken;
   bool _isInitialized = false;
@@ -104,7 +106,43 @@ class PushNotificationService extends ChangeNotifier {
 
   Future<void> _createNotificationChannels() async {
     if (Platform.isAndroid) {
-      // Chat Channel
+      // General notifications channel
+      const AndroidNotificationChannel generalChannel =
+          AndroidNotificationChannel(
+        'general',
+        'General Notifications',
+        description: 'Notifications for general app updates',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      // Job notifications channel
+      const AndroidNotificationChannel jobChannel =
+          AndroidNotificationChannel(
+        'jobs',
+        'Job Notifications',
+        description: 'Notifications for job applications and updates',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      // Payment notifications channel
+      const AndroidNotificationChannel paymentChannel =
+          AndroidNotificationChannel(
+        'payments',
+        'Payment Notifications',
+        description: 'Notifications for payment updates',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+
+      // Chat notifications channel
       const AndroidNotificationChannel chatChannel =
           AndroidNotificationChannel(
         'chat',
@@ -116,7 +154,22 @@ class PushNotificationService extends ChangeNotifier {
         showBadge: true,
       );
 
-      // Create chat channel
+      // Create all channels
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(generalChannel);
+
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(jobChannel);
+
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(paymentChannel);
+
       await _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
@@ -139,42 +192,109 @@ class PushNotificationService extends ChangeNotifier {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    // Handle chat messages
-    if (message.data['type'] == 'chat_message') {
-      // Show local notification for chat messages
-      _showChatNotification(message);
-    }
+    // Create notification model from remote message
+    final notification = _remoteMessageToNotification(message);
     
-    // Handle other notification types
+    // Show local notification
+    showNotification(notification);
+    
+    // Notify listeners
     notifyListeners();
+  }
+
+  NotificationModel _remoteMessageToNotification(RemoteMessage message) {
+    return NotificationModel(
+      id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: message.notification?.title ?? message.data['title'] ?? '',
+      body: message.notification?.body ?? message.data['body'] ?? '',
+      timestamp: DateTime.now(),
+      type: _stringToNotificationType(message.data['type'] ?? 'system'),
+      data: message.data,
+    );
+  }
+
+  NotificationType _stringToNotificationType(String type) {
+    switch (type) {
+      case 'job_application':
+        return NotificationType.jobApplication;
+      case 'job_accepted':
+        return NotificationType.jobAccepted;
+      case 'job_rejected':
+        return NotificationType.jobRejected;
+      case 'payment':
+        return NotificationType.payment;
+      case 'verification':
+        return NotificationType.verification;
+      case 'chat':
+        return NotificationType.chat;
+      case 'system':
+      default:
+        return NotificationType.system;
+    }
   }
 
   void _handleNotificationTap(RemoteMessage message) {
     // Navigate to appropriate screen based on notification type
-    if (message.data['type'] == 'chat_message') {
-      // Navigate to chat detail screen
-      _navigateToChat(message.data['chatRoomId']);
+    final notificationType = message.data['type'];
+    
+    switch (notificationType) {
+      case 'job_application':
+        _navigateToJobApplications();
+        break;
+      case 'job_accepted':
+      case 'job_rejected':
+        _navigateToAppliedJobs();
+        break;
+      case 'payment':
+        _navigateToWallet();
+        break;
+      case 'verification':
+        _navigateToVerification();
+        break;
+      case 'chat':
+        _navigateToChat(message.data['chatRoomId']);
+        break;
+      default:
+        _navigateToNotifications();
+        break;
     }
   }
 
-  void _showChatNotification(RemoteMessage message) {
-    // This would typically use a local notification plugin
-    // For now, we'll just notify listeners
-    notifyListeners();
+  void _navigateToJobApplications() {
+    navigatorKey.currentState?.pushNamed('/applications-received');
   }
 
-  void _navigateToChat(String chatRoomId) {
-    // This would typically use a navigation service
-    // For now, we'll just notify listeners
-    notifyListeners();
+  void _navigateToAppliedJobs() {
+    navigatorKey.currentState?.pushNamed('/applied-jobs');
   }
 
-  // Send chat notification to specific user
-  Future<void> sendChatNotification({
+  void _navigateToWallet() {
+    navigatorKey.currentState?.pushNamed('/wallet');
+  }
+
+  void _navigateToVerification() {
+    navigatorKey.currentState?.pushNamed('/verification-status');
+  }
+
+  void _navigateToChat(String? chatRoomId) {
+    if (chatRoomId != null) {
+      navigatorKey.currentState?.pushNamed('/chat-detail', arguments: {'chatRoomId': chatRoomId});
+    } else {
+      navigatorKey.currentState?.pushNamed('/chat-list');
+    }
+  }
+
+  void _navigateToNotifications() {
+    navigatorKey.currentState?.pushNamed('/notifications');
+  }
+
+  // Send notification to specific user via FCM
+  Future<void> sendFCMNotification({
     required String receiverId,
-    required String senderName,
-    required String message,
-    required String chatRoomId,
+    required String title,
+    required String body,
+    required NotificationType type,
+    Map<String, dynamic>? data,
   }) async {
     try {
       // Get receiver's FCM token
@@ -186,50 +306,82 @@ class PushNotificationService extends ChangeNotifier {
 
       if (fcmToken == null) return;
 
-      // Send notification via Cloud Functions or your backend
+      // Store notification in Firestore
       await _firestore.collection('notifications').add({
         'receiverId': receiverId,
-        'senderId': _auth.currentUser?.uid,
-        'senderName': senderName,
-        'message': message,
-        'chatRoomId': chatRoomId,
-        'type': 'chat_message',
-        'fcmToken': fcmToken,
+        'title': title,
+        'body': body,
+        'type': _notificationTypeToString(type),
+        'data': data ?? {},
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
+        'fcmToken': fcmToken,
       });
 
+      // Note: In a real app, you would send the FCM notification via Cloud Functions
+      // For now, we'll just store it in Firestore and let the client handle it
+      print('Notification stored in Firestore for user: $receiverId');
+
     } catch (e) {
-      print('Error sending chat notification: $e');
+      print('Error sending FCM notification: $e');
     }
   }
 
-  // Subscribe to chat notifications
-  Future<void> subscribeToChatNotifications(String chatRoomId) async {
-    try {
-      await _messaging.subscribeToTopic('chat_$chatRoomId');
-    } catch (e) {
-      print('Error subscribing to chat notifications: $e');
+  String _notificationTypeToString(NotificationType type) {
+    switch (type) {
+      case NotificationType.jobApplication:
+        return 'job_application';
+      case NotificationType.jobAccepted:
+        return 'job_accepted';
+      case NotificationType.jobRejected:
+        return 'job_rejected';
+      case NotificationType.payment:
+        return 'payment';
+      case NotificationType.verification:
+        return 'verification';
+      case NotificationType.chat:
+        return 'chat';
+      case NotificationType.system:
+      default:
+        return 'system';
     }
   }
 
-  // Unsubscribe from chat notifications
-  Future<void> unsubscribeFromChatNotifications(String chatRoomId) async {
-    try {
-      await _messaging.unsubscribeFromTopic('chat_$chatRoomId');
-    } catch (e) {
-      print('Error unsubscribing from chat notifications: $e');
-    }
-  }
-
-  // Show notification
+  // Show local notification
   Future<void> showNotification(NotificationModel notification) async {
     if (!_isInitialized) await initialize();
 
+    String channelId = 'general';
+    String channelName = 'General Notifications';
+    String channelDescription = 'Notifications for general app updates';
+
+    // Set channel based on notification type
+    switch (notification.type) {
+      case NotificationType.jobApplication:
+      case NotificationType.jobAccepted:
+      case NotificationType.jobRejected:
+        channelId = 'jobs';
+        channelName = 'Job Notifications';
+        channelDescription = 'Notifications for job applications and updates';
+        break;
+      case NotificationType.payment:
+        channelId = 'payments';
+        channelName = 'Payment Notifications';
+        channelDescription = 'Notifications for payment updates';
+        break;
+      case NotificationType.chat:
+        channelId = 'chat';
+        channelName = 'Chat Messages';
+        channelDescription = 'Notifications for new chat messages';
+        break;
+      default:
+        break;
+    }
+
     final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'chat',
-      'Chat Messages',
-      channelDescription: 'Notifications for chat messages',
+      channelId,
+      channelName,
+      channelDescription: channelDescription,
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
@@ -245,7 +397,7 @@ class PushNotificationService extends ChangeNotifier {
       presentBadge: true,
       presentSound: true,
       categoryIdentifier: 'message',
-      threadIdentifier: 'chat',
+      threadIdentifier: channelId,
     );
 
     final NotificationDetails notificationDetails = NotificationDetails(
@@ -317,20 +469,40 @@ class PushNotificationService extends ChangeNotifier {
 
     try {
       // Get notification details
-      final notification = await NotificationService().getNotification(notificationId);
+      final notification = NotificationService().getNotificationById(notificationId);
       if (notification == null) return;
 
       // Mark as read
       NotificationService().markAsRead(notificationId);
 
-      // Navigate to notification detail screen for all types
-      navigatorKey.currentState?.pushNamed(
-        '/notification-detail',
-        arguments: {'notificationId': notificationId},
-      );
+      // Navigate based on notification type
+      switch (notification.type) {
+        case NotificationType.jobApplication:
+          _navigateToJobApplications();
+          break;
+        case NotificationType.jobAccepted:
+        case NotificationType.jobRejected:
+          _navigateToAppliedJobs();
+          break;
+        case NotificationType.payment:
+          _navigateToWallet();
+          break;
+        case NotificationType.verification:
+          _navigateToVerification();
+          break;
+        case NotificationType.chat:
+          _navigateToChat(notification.data?['chatRoomId']);
+          break;
+        default:
+          navigatorKey.currentState?.pushNamed(
+            '/notification-detail',
+            arguments: {'notificationId': notificationId},
+          );
+          break;
+      }
     } catch (e) {
       // If navigation fails, just mark as read
-      NotificationService().markAsRead(notificationId);
+      NotificationService().markAsRead(notificationId!);
     }
   }
 

@@ -3,6 +3,8 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/services/maps_service.dart';
+import '../../../../core/services/job_service.dart';
+import '../../../../core/services/notification_service.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -19,6 +21,8 @@ class JobDetailsScreen extends StatefulWidget {
 class _JobDetailsScreenState extends State<JobDetailsScreen> {
   bool _isApplying = false;
   final WalletService _walletService = WalletService();
+  final JobService _jobService = JobService();
+  final NotificationService _notificationService = NotificationService();
   bool _isSaved = false;
 
   @override
@@ -810,46 +814,94 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       _isApplying = true;
     });
 
-    // Deduct application fee
-    final success = _walletService.deductApplicationFee(
-      widget.job['title'],
-      widget.job['id'],
-    );
-
-    if (!success) {
-      setState(() {
-        _isApplying = false;
-      });
-      return;
-    }
-
-    // Simulate application process
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() {
-        _isApplying = false;
-      });
-
-      // Show success dialog
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(context.tr('application_sent')),
-            content: Text(context.tr('application_sent_message')),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop(); // Go back to job list
-                },
-                child: Text(context.tr('ok')),
-              ),
-            ],
-          );
-        },
+    try {
+      // Deduct application fee
+      final success = _walletService.deductApplicationFee(
+        widget.job['title'],
+        widget.job['id'],
       );
+
+      if (!success) {
+        setState(() {
+          _isApplying = false;
+        });
+        return;
+      }
+
+      // Apply for the job using the job service
+      final applicationSuccess = await _jobService.applyForJob(
+        jobId: widget.job['id'],
+        seekerId: 'user123', // This should come from current user
+        message: 'I am interested in this job', // Default message
+      );
+
+      if (mounted) {
+        setState(() {
+          _isApplying = false;
+        });
+
+        if (applicationSuccess) {
+          // Show success dialog
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text(context.tr('application_sent')),
+                content: Text(context.tr('application_sent_message')),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(); // Go back to job list
+                    },
+                    child: Text(context.tr('ok')),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          // Show error dialog
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Error'),
+                content: Text('Failed to apply for job. Please try again.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(context.tr('ok')),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isApplying = false;
+        });
+
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('An error occurred while applying for the job. Please try again.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(context.tr('ok')),
+                ),
+              ],
+            );
+          },
+        );
+      }
     }
   }
 } 

@@ -35,7 +35,7 @@ class _NotificationDetailScreenState extends State<NotificationDetailScreen> {
       });
     } else {
       // Load notification from service
-      final notification = await NotificationService().getNotification(widget.notificationId);
+      final notification = NotificationService().getNotificationById(widget.notificationId);
       setState(() {
         _notification = notification;
         _isLoading = false;

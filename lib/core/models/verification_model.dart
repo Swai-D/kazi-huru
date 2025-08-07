@@ -49,6 +49,31 @@ class VerificationModel {
     );
   }
 
+  factory VerificationModel.fromMap(Map<String, dynamic> data, String id) {
+    return VerificationModel(
+      userId: data['userId'] ?? '',
+      idImageUrl: data['idImageUrl'],
+      idNumber: data['idNumber'],
+      fullName: data['fullName'],
+      status: VerificationStatus.values.firstWhere(
+        (e) => e.toString() == 'VerificationStatus.${data['status']}',
+        orElse: () => VerificationStatus.notSubmitted,
+      ),
+      rejectionReason: data['rejectionReason'],
+      submittedAt: data['submittedAt'] != null 
+          ? (data['submittedAt'] is DateTime 
+              ? data['submittedAt'] 
+              : DateTime.parse(data['submittedAt'].toString()))
+          : null,
+      verifiedAt: data['verifiedAt'] != null 
+          ? (data['verifiedAt'] is DateTime 
+              ? data['verifiedAt'] 
+              : DateTime.parse(data['verifiedAt'].toString()))
+          : null,
+      verifiedBy: data['verifiedBy'],
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,

@@ -1,58 +1,92 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import '../models/job_model.dart';
-import 'firestore_service.dart';
-import 'firebase_storage_service.dart';
 
 class JobService {
   static final JobService _instance = JobService._internal();
   factory JobService() => _instance;
   JobService._internal();
 
-  final FirestoreService _firestoreService = FirestoreService();
-  final FirebaseStorageService _storageService = FirebaseStorageService();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Create a new job posting
+  // Job Categories
+  List<Map<String, String>> getJobCategories() {
+    return [
+      {'value': 'usafi', 'label': 'Usafi (Cleaning)'},
+      {'value': 'kufua', 'label': 'Kufua (Laundry)'},
+      {'value': 'kubeba', 'label': 'Kubeba (Moving/Carrying)'},
+      {'value': 'uongozi', 'label': 'Uongozi (Management)'},
+      {'value': 'utumishi', 'label': 'Utumishi (Service)'},
+      {'value': 'ujenzi', 'label': 'Ujenzi (Construction)'},
+      {'value': 'kilimo', 'label': 'Kilimo (Agriculture)'},
+      {'value': 'biashara', 'label': 'Biashara (Business)'},
+      {'value': 'teknolojia', 'label': 'Teknolojia (Technology)'},
+      {'value': 'mengine', 'label': 'Mengine (Other)'},
+    ];
+  }
+
+  // Payment Types
+  List<Map<String, String>> getPaymentTypes() {
+    return [
+      {'value': 'per_job', 'label': 'Kwa Kazi (Per Job)'},
+      {'value': 'per_hour', 'label': 'Kwa Saa (Per Hour)'},
+      {'value': 'per_day', 'label': 'Kwa Siku (Per Day)'},
+    ];
+  }
+
+  // Duration Options
+  List<Map<String, String>> getDurationOptions() {
+    return [
+      {'value': '1_hour', 'label': 'Saa 1 (1 Hour)'},
+      {'value': '2_hours', 'label': 'Masaa 2 (2 Hours)'},
+      {'value': '3_hours', 'label': 'Masaa 3 (3 Hours)'},
+      {'value': '4_hours', 'label': 'Masaa 4 (4 Hours)'},
+      {'value': '6_hours', 'label': 'Masaa 6 (6 Hours)'},
+      {'value': '8_hours', 'label': 'Masaa 8 (8 Hours)'},
+      {'value': '1_day', 'label': 'Siku 1 (1 Day)'},
+      {'value': '2_days', 'label': 'Siku 2 (2 Days)'},
+      {'value': '3_days', 'label': 'Siku 3 (3 Days)'},
+      {'value': '1_week', 'label': 'Wiki 1 (1 Week)'},
+      {'value': '2_weeks', 'label': 'Wiki 2 (2 Weeks)'},
+      {'value': '1_month', 'label': 'Mwezi 1 (1 Month)'},
+    ];
+  }
+
+  // Create Job
   Future<String> createJob({
+    required String providerId,
     required String title,
     required String description,
     required String category,
     required String location,
     required double minPayment,
     required double maxPayment,
-    required PaymentType paymentType,
+    required String paymentType,
     required String duration,
     required int workersNeeded,
     required String requirements,
-    required ContactPreference contactPreference,
+    required String contactPreference,
     required DateTime startDate,
-    required TimeOfDay startTime,
+    required String startTime,
     required DateTime deadline,
     String? imageUrl,
   }) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-
       final jobData = {
-        'jobProviderId': user.uid,
+        'providerId': providerId,
         'title': title,
         'description': description,
         'category': category,
         'location': location,
-        'salary': minPayment, // Single salary value
-        'salaryType': paymentType.toString().split('.').last,
+        'minPayment': minPayment,
+        'maxPayment': maxPayment,
+        'paymentType': paymentType,
         'duration': duration,
         'workersNeeded': workersNeeded,
-        'requirements': requirements.split(',').map((e) => e.trim()).toList(), // Array of requirements
-        'contactPreference': contactPreference.toString().split('.').last,
+        'requirements': requirements,
+        'contactPreference': contactPreference,
         'startDate': Timestamp.fromDate(startDate),
-        'startTimeHour': startTime.hour,
-        'startTimeMinute': startTime.minute,
+        'startTime': startTime,
         'deadline': Timestamp.fromDate(deadline),
         'imageUrl': imageUrl,
         'status': 'active',
@@ -61,188 +95,164 @@ class JobService {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      final jobId = await _firestoreService.createJob(
-        jobProviderId: user.uid,
-        title: title,
-        description: description,
-        location: location,
-        salary: minPayment,
-        salaryType: paymentType.toString().split('.').last,
-        requirements: requirements.split(',').map((e) => e.trim()).toList(),
-        jobType: 'temporary', // For Kazi Huru jobs
-        additionalData: {
-          'category': category,
-          'duration': duration,
-          'workersNeeded': workersNeeded,
-          'contactPreference': contactPreference.toString().split('.').last,
-          'startDate': Timestamp.fromDate(startDate),
-          'startTimeHour': startTime.hour,
-          'startTimeMinute': startTime.minute,
-          'deadline': Timestamp.fromDate(deadline),
-          'imageUrl': imageUrl,
-        },
-      );
-      
-      // Track analytics
-      await _trackJobPosting(jobId, category, minPayment, maxPayment, location);
-      
-      return jobId;
+      DocumentReference docRef = await _firestore.collection('jobs').add(jobData);
+      return docRef.id;
     } catch (e) {
-      throw Exception('Failed to create job: $e');
+      throw Exception('Hitilafu katika kuunda kazi: $e');
     }
   }
 
-  // Get all active jobs
-  Stream<List<JobModel>> getActiveJobs({
-    String? category,
-    String? location,
-    double? minPayment,
-    double? maxPayment,
-  }) {
-    // Use a simple query without ordering to avoid composite index requirement
-    return _firestoreService
-        .getJobsSimple(status: 'active')
-        .map((snapshot) {
-          final jobs = snapshot.docs
-              .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-              .where((job) {
-                // Filter by category if specified
-                if (category != null && job.category != category) return false;
-                // Filter by location if specified
-                if (location != null && !job.location.toLowerCase().contains(location.toLowerCase())) return false;
-                // Filter by payment range if specified
-                if (minPayment != null && job.minPayment < minPayment) return false;
-                if (maxPayment != null && job.maxPayment > maxPayment) return false;
-                return true;
-              })
-              .toList();
-          
-          // Sort by createdAt in descending order (newest first) on client side
-          jobs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return jobs;
-        });
-  }
-
-  // Get jobs by provider
-  Stream<List<JobModel>> getJobsByProvider(String providerId) {
-    return _firestoreService
-        .getJobsSimple(status: 'active') // Use simple query without ordering
-        .map((snapshot) => snapshot.docs
-            .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .where((job) => job.providerId == providerId) // Filter on client side
-            .toList());
-  }
-
-  // Get a single job by ID
-  Future<JobModel?> getJob(String jobId) async {
-    try {
-      final jobData = await _firestoreService.getJob(jobId);
-      if (jobData != null) {
-        return JobModel.fromMap(jobData, jobId);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to get job: $e');
-    }
-  }
-
-  // Update job status
-  Future<void> updateJobStatus(String jobId, JobStatus status) async {
-    try {
-      await _firestoreService.updateJob(
-        jobId: jobId,
-        updateData: {
-          'status': status.toString().split('.').last,
-        },
-      );
-    } catch (e) {
-      throw Exception('Failed to update job status: $e');
-    }
-  }
-
-  // Update job
-  Future<void> updateJob({
-    required String jobId,
-    String? title,
-    String? description,
-    String? category,
-    String? location,
-    double? minPayment,
-    double? maxPayment,
-    PaymentType? paymentType,
-    String? duration,
-    int? workersNeeded,
-    String? requirements,
-    ContactPreference? contactPreference,
-    DateTime? startDate,
-    TimeOfDay? startTime,
-    DateTime? deadline,
+  // Update Job
+  Future<void> updateJob(
+    String jobId, {
+    required String title,
+    required String description,
+    required String category,
+    required String location,
+    required double minPayment,
+    required double maxPayment,
+    required String paymentType,
+    required String duration,
+    required int workersNeeded,
+    required String requirements,
+    required String contactPreference,
+    required DateTime startDate,
+    required String startTime,
+    required DateTime deadline,
     String? imageUrl,
-    JobStatus? status,
   }) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-
-      final updateData = <String, dynamic>{
+      final updateData = {
+        'title': title,
+        'description': description,
+        'category': category,
+        'location': location,
+        'minPayment': minPayment,
+        'maxPayment': maxPayment,
+        'paymentType': paymentType,
+        'duration': duration,
+        'workersNeeded': workersNeeded,
+        'requirements': requirements,
+        'contactPreference': contactPreference,
+        'startDate': Timestamp.fromDate(startDate),
+        'startTime': startTime,
+        'deadline': Timestamp.fromDate(deadline),
+        'imageUrl': imageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (title != null) updateData['title'] = title;
-      if (description != null) updateData['description'] = description;
-      if (category != null) updateData['category'] = category;
-      if (location != null) updateData['location'] = location;
-      if (minPayment != null) updateData['salary'] = minPayment;
-      if (paymentType != null) updateData['salaryType'] = paymentType.toString().split('.').last;
-      if (duration != null) updateData['duration'] = duration;
-      if (workersNeeded != null) updateData['workersNeeded'] = workersNeeded;
-      if (requirements != null) updateData['requirements'] = requirements.split(',').map((e) => e.trim()).toList();
-      if (contactPreference != null) updateData['contactPreference'] = contactPreference.toString().split('.').last;
-      if (startDate != null) updateData['startDate'] = Timestamp.fromDate(startDate);
-      if (startTime != null) {
-        updateData['startTimeHour'] = startTime.hour;
-        updateData['startTimeMinute'] = startTime.minute;
-      }
-      if (deadline != null) updateData['deadline'] = Timestamp.fromDate(deadline);
-      if (imageUrl != null) updateData['imageUrl'] = imageUrl;
-      if (status != null) updateData['status'] = status.toString().split('.').last;
-
-      await _firestoreService.updateJob(
-        jobId: jobId,
-        updateData: updateData,
-      );
+      await _firestore.collection('jobs').doc(jobId).update(updateData);
     } catch (e) {
-      throw Exception('Failed to update job: $e');
+      throw Exception('Hitilafu katika kusasisha kazi: $e');
     }
   }
 
-  // Delete job
+  // Get Active Jobs Stream
+  Stream<List<JobModel>> getActiveJobs() {
+    return _firestore
+        .collection('jobs')
+        .where('status', isEqualTo: 'active')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  // Get Jobs by Provider Stream
+  Stream<List<JobModel>> getJobsByProvider(String providerId) {
+    return _firestore
+        .collection('jobs')
+        .where('providerId', isEqualTo: providerId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  // Update Job Status
+  Future<void> updateJobStatus(String jobId, String status) async {
+    try {
+      await _firestore.collection('jobs').doc(jobId).update({
+        'status': status,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Hitilafu katika kusasisha hali ya kazi: $e');
+    }
+  }
+
+  // Delete Job
   Future<void> deleteJob(String jobId) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-
-      // Delete the job directly
-      await _firestoreService.deleteJob(jobId);
+      await _firestore.collection('jobs').doc(jobId).delete();
     } catch (e) {
-      throw Exception('Failed to delete job: $e');
+      throw Exception('Hitilafu katika kufuta kazi: $e');
     }
   }
 
-  // Get job statistics for provider
+  // Apply for Job
+  Future<bool> applyForJob({
+    required String jobId,
+    required String seekerId,
+    required String message,
+  }) async {
+    try {
+      // Check if already applied
+      final existingApplication = await _firestore
+          .collection('applications')
+          .where('jobId', isEqualTo: jobId)
+          .where('seekerId', isEqualTo: seekerId)
+          .get();
+
+      if (existingApplication.docs.isNotEmpty) {
+        throw Exception('Umeshakwisha omba kazi hii');
+      }
+
+      // Create application
+      await _firestore.collection('applications').add({
+        'jobId': jobId,
+        'seekerId': seekerId,
+        'message': message,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update applications count
+      await _firestore.collection('jobs').doc(jobId).update({
+        'applicationsCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (e) {
+      throw Exception('Hitilafu katika kuomba kazi: $e');
+    }
+  }
+
+  // Get Job Statistics
   Future<Map<String, dynamic>> getJobStatistics(String providerId) async {
     try {
-      final jobs = await getJobsByProvider(providerId).first;
-      
-      int totalJobs = jobs.length;
-      int activeJobs = jobs.where((job) => job.status == JobStatus.active).length;
-      int completedJobs = jobs.where((job) => job.status == JobStatus.completed).length;
-      int totalApplications = jobs.fold(0, (sum, job) => sum + job.applicationsCount);
-      
+      final jobsSnapshot = await _firestore
+          .collection('jobs')
+          .where('providerId', isEqualTo: providerId)
+          .get();
+
+      int totalJobs = jobsSnapshot.docs.length;
+      int activeJobs = jobsSnapshot.docs
+          .where((doc) => doc.data()['status'] == 'active')
+          .length;
+      int completedJobs = jobsSnapshot.docs
+          .where((doc) => doc.data()['status'] == 'completed')
+          .length;
+
+      int totalApplications = 0;
+      for (final doc in jobsSnapshot.docs) {
+        totalApplications += (doc.data()['applicationsCount'] as int? ?? 0);
+      }
+
       return {
         'totalJobs': totalJobs,
         'activeJobs': activeJobs,
@@ -250,227 +260,108 @@ class JobService {
         'totalApplications': totalApplications,
       };
     } catch (e) {
-      throw Exception('Failed to get job statistics: $e');
+      throw Exception('Hitilafu katika kupata takwimu: $e');
     }
   }
 
-  // Get applications with user details
-  Stream<List<Map<String, dynamic>>> getJobApplicationsWithDetails(String jobId) {
-    return _firestoreService.getJobApplicationsWithUserDetails(jobId);
-  }
-
-  // Get all applications for a provider
+  // Get Provider Applications Stream
   Stream<List<Map<String, dynamic>>> getProviderApplications(String providerId) {
-    return _firestoreService.getProviderApplications(providerId);
-  }
-
-  // Send message to applicant
-  Future<void> sendMessageToApplicant({
-    required String jobId,
-    required String applicationId,
-    required String message,
-  }) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
+    return _firestore
+        .collection('jobs')
+        .where('providerId', isEqualTo: providerId)
+        .snapshots()
+        .asyncMap((jobsSnapshot) async {
+      List<Map<String, dynamic>> allApplications = [];
+      
+      for (final jobDoc in jobsSnapshot.docs) {
+        final applicationsSnapshot = await _firestore
+            .collection('applications')
+            .where('jobId', isEqualTo: jobDoc.id)
+            .orderBy('createdAt', descending: true)
+            .get();
+        
+        for (final appDoc in applicationsSnapshot.docs) {
+          final appData = appDoc.data();
+          appData['id'] = appDoc.id;
+          appData['jobTitle'] = jobDoc.data()['title'];
+          appData['jobId'] = jobDoc.id;
+          allApplications.add(appData);
+        }
       }
-
-      await _firestoreService.sendMessageToApplicant(
-        jobId: jobId,
-        applicationId: applicationId,
-        message: message,
-        senderId: user.uid,
-      );
-    } catch (e) {
-      throw Exception('Failed to send message: $e');
-    }
-  }
-
-  // Mark job as completed
-  Future<void> markJobAsCompleted(String jobId) async {
-    try {
-      await updateJobStatus(jobId, JobStatus.completed);
-    } catch (e) {
-      throw Exception('Failed to mark job as completed: $e');
-    }
-  }
-
-  // Pause job
-  Future<void> pauseJob(String jobId) async {
-    try {
-      await updateJobStatus(jobId, JobStatus.paused);
-    } catch (e) {
-      throw Exception('Failed to pause job: $e');
-    }
-  }
-
-  // Resume job
-  Future<void> resumeJob(String jobId) async {
-    try {
-      await updateJobStatus(jobId, JobStatus.active);
-    } catch (e) {
-      throw Exception('Failed to resume job: $e');
-    }
-  }
-
-  // Upload job image (placeholder - implement when needed)
-  Future<String?> uploadJobImage(String jobId, List<int> imageBytes) async {
-    try {
-      // TODO: Implement image upload functionality
-      print('Upload job image: $jobId');
-      return null;
-    } catch (e) {
-      throw Exception('Failed to upload job image: $e');
-    }
-  }
-
-  // Search jobs with filters
-  Stream<List<JobModel>> searchJobs({
-    String? query,
-    String? category,
-    String? location,
-    double? minPayment,
-    double? maxPayment,
-    String? duration,
-  }) {
-    return _firestoreService
-        .getJobs(
-          location: location,
-          jobType: 'temporary',
-          minSalary: minPayment,
-          maxSalary: maxPayment,
-          status: 'active',
-        )
-        .map((snapshot) => snapshot.docs
-            .map((doc) => JobModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .where((job) {
-              if (category != null && job.category != category) return false;
-              if (duration != null && job.duration != duration) return false;
-              return true;
-            })
-            .toList());
-  }
-
-  // Get job categories
-  List<Map<String, String>> getJobCategories() {
-    return [
-      {'value': 'usafi', 'label': 'Usafi', 'icon': '🧹'},
-      {'value': 'kufua', 'label': 'Kufua Nguo', 'icon': '👕'},
-      {'value': 'kubeba', 'label': 'Kubeba Mizigo', 'icon': '📦'},
-      {'value': 'kusafisha_gari', 'label': 'Kusafisha Gari', 'icon': '🚗'},
-      {'value': 'kupika', 'label': 'Kupika', 'icon': '🍳'},
-      {'value': 'kutunza_watoto', 'label': 'Kutunza Watoto', 'icon': '👶'},
-      {'value': 'kujenga', 'label': 'Kujenga', 'icon': '🏗️'},
-      {'value': 'kilimo', 'label': 'Kilimo', 'icon': '🌱'},
-      {'value': 'nyingine', 'label': 'Nyingine', 'icon': '🔧'},
-    ];
-  }
-
-  // Get payment types
-  List<Map<String, String>> getPaymentTypes() {
-    return [
-      {'value': 'per_job', 'label': 'Malipo ya Kazi Moja'},
-      {'value': 'per_hour', 'label': 'Malipo kwa Saa'},
-      {'value': 'per_day', 'label': 'Malipo kwa Siku'},
-    ];
-  }
-
-  // Format salary range for display
-  String formatSalaryRange(double minPayment, double maxPayment) {
-    if (minPayment == maxPayment) {
-      return 'TZS ${minPayment.toStringAsFixed(0)}';
-    }
-    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
-  }
-
-  // Get jobs by salary range
-  Stream<List<JobModel>> getJobsBySalaryRange(double minSalary, double maxSalary) {
-    return _firestoreService.getJobsSimple().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return JobModel.fromMap(data, doc.id);
-      }).where((job) => 
-        (job.minPayment >= minSalary && job.minPayment <= maxSalary) ||
-        (job.maxPayment >= minSalary && job.maxPayment <= maxSalary) ||
-        (job.minPayment <= minSalary && job.maxPayment >= maxSalary)
-      ).toList();
+      
+      return allApplications;
     });
   }
 
-  // Get duration options
-  List<Map<String, String>> getDurationOptions() {
-    return [
-      {'value': '1_hour', 'label': 'Saa 1'},
-      {'value': '2_hours', 'label': 'Saa 2'},
-      {'value': '4_hours', 'label': 'Saa 4'},
-      {'value': '6_hours', 'label': 'Saa 6'},
-      {'value': '8_hours', 'label': 'Saa 8'},
-      {'value': '1_day', 'label': 'Siku 1'},
-      {'value': '2_days', 'label': 'Siku 2'},
-      {'value': '1_week', 'label': 'Wiki 1'},
-    ];
-  }
-
-  // Application Management Methods
+  // Accept Application
   Future<void> acceptApplication(String jobId, String applicationId) async {
     try {
-      // Update application status in Firestore
-      await _firestoreService.updateJob(
-        jobId: jobId,
-        updateData: {
-          'applications.$applicationId.status': 'accepted',
-          'applications.$applicationId.updatedAt': DateTime.now(),
-        },
-      );
+      await _firestore.collection('applications').doc(applicationId).update({
+        'status': 'accepted',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      throw Exception('Failed to accept application: $e');
+      throw Exception('Hitilafu katika kukubali ombi: $e');
     }
   }
 
+  // Reject Application
   Future<void> rejectApplication(String jobId, String applicationId) async {
     try {
-      // Update application status in Firestore
-      await _firestoreService.updateJob(
-        jobId: jobId,
-        updateData: {
-          'applications.$applicationId.status': 'rejected',
-          'applications.$applicationId.updatedAt': DateTime.now(),
-        },
-      );
+      await _firestore.collection('applications').doc(applicationId).update({
+        'status': 'rejected',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      throw Exception('Failed to reject application: $e');
+      throw Exception('Hitilafu katika kukataa ombi: $e');
     }
   }
 
-  // Get applications for a specific job
-  Stream<List<Map<String, dynamic>>> getJobApplications(String jobId) {
-    return _firestoreService.getJobApplicationsWithUserDetails(jobId);
+  // Format Salary Range
+  String formatSalaryRange(double minSalary, double maxSalary) {
+    if (minSalary == maxSalary) {
+      return 'TSh ${_formatCurrency(minSalary)}';
+    } else {
+      return 'TSh ${_formatCurrency(minSalary)} - ${_formatCurrency(maxSalary)}';
+    }
   }
 
-  // Analytics tracking
-  Future<void> _trackJobPosting(String jobId, String category, double minPayment, double maxPayment, String location) async {
-    // This would integrate with your analytics service
-    final paymentRange = minPayment == maxPayment 
-        ? 'TZS $minPayment' 
-        : 'TZS $minPayment - $maxPayment';
-    print('Job posted: $jobId, Category: $category, Payment: $paymentRange, Location: $location');
+  String _formatCurrency(double amount) {
+    if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(1)}K';
+    } else {
+      return amount.toStringAsFixed(0);
+    }
   }
 
-  // Validate job data
-  bool validateJobData({
-    required String title,
-    required String description,
-    required String location,
-    required double minPayment,
-    required double maxPayment,
-  }) {
-    if (title.trim().isEmpty) return false;
-    if (description.trim().isEmpty) return false;
-    if (location.trim().isEmpty) return false;
-    if (minPayment <= 0) return false;
-    if (maxPayment <= 0) return false;
-    if (maxPayment < minPayment) return false;
-    return true;
+  // Get Job by ID
+  Future<JobModel?> getJob(String jobId) async {
+    try {
+      final doc = await _firestore.collection('jobs').doc(jobId).get();
+      if (doc.exists) {
+        return JobModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Hitilafu katika kupata kazi: $e');
+    }
   }
-} 
+
+  // Get Job Applications with Details
+  Stream<List<Map<String, dynamic>>> getJobApplicationsWithDetails(String jobId) {
+    return _firestore
+        .collection('applications')
+        .where('jobId', isEqualTo: jobId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return data;
+            })
+            .toList());
+  }
+}

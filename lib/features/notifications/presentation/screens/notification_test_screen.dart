@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/notification_service.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/services/job_service.dart';
+import '../../../../core/services/wallet_service.dart';
+import '../../../../core/services/verification_service.dart';
+import '../../../../core/services/chat_service.dart';
 
 class NotificationTestScreen extends StatefulWidget {
   const NotificationTestScreen({super.key});
@@ -11,7 +14,10 @@ class NotificationTestScreen extends StatefulWidget {
 
 class _NotificationTestScreenState extends State<NotificationTestScreen> {
   final NotificationService _notificationService = NotificationService();
-  bool _isLoading = false;
+  final JobService _jobService = JobService();
+  final WalletService _walletService = WalletService();
+  final VerificationService _verificationService = VerificationService();
+  final ChatService _chatService = ChatService();
 
   @override
   Widget build(BuildContext context) {
@@ -20,359 +26,278 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
         title: const Text('Test Notifications'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: ThemeConstants.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.notifications_active,
-                    size: 48,
-                    color: ThemeConstants.primaryColor,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Test Push Notifications',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bofya notification type ili kuona jinsi inavyofanya kazi',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Notification Types
-            const Text(
-              'Aina za Notifications',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildNotificationTestCard(
-                    '💼 Job Application',
-                    'Test notification ya ombi jipya la kazi',
-                    Icons.work,
-                    Colors.blue,
-                    () => _testJobApplication(),
-                  ),
-                  _buildNotificationTestCard(
-                    '💰 Payment',
-                    'Test notification ya malipo',
-                    Icons.payment,
-                    Colors.orange,
-                    () => _testPayment(),
-                  ),
-                  _buildNotificationTestCard(
-                    '🆔 Verification',
-                    'Test notification ya uthibitishaji',
-                    Icons.verified_user,
-                    Colors.purple,
-                    () => _testVerification(),
-                  ),
-                  _buildNotificationTestCard(
-                    '💬 Chat Message',
-                    'Test notification ya ujumbe',
-                    Icons.chat,
-                    Colors.cyan,
-                    () => _testChatMessage(),
-                  ),
-                  _buildNotificationTestCard(
-                    '✅ Job Accepted',
-                    'Test notification ya kazi iliyokubaliwa',
-                    Icons.check_circle,
-                    Colors.green,
-                    () => _testJobAccepted(),
-                  ),
-                  _buildNotificationTestCard(
-                    '❌ Job Rejected',
-                    'Test notification ya kazi iliyokataliwa',
-                    Icons.cancel,
-                    Colors.red,
-                    () => _testJobRejected(),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Bulk Test Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _testAllNotifications,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.send),
-                label: Text(
-                  _isLoading ? 'Testing...' : 'Test All Notifications',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        children: [
+          _buildSectionHeader('Job Notifications'),
+          _buildTestButton(
+            'Test Job Application',
+            'Send a job application notification',
+            Icons.work,
+            () => _testJobApplication(),
+          ),
+          _buildTestButton(
+            'Test Job Accepted',
+            'Send a job accepted notification',
+            Icons.check_circle,
+            () => _testJobAccepted(),
+          ),
+          _buildTestButton(
+            'Test Job Rejected',
+            'Send a job rejected notification',
+            Icons.cancel,
+            () => _testJobRejected(),
+          ),
+          
+          const SizedBox(height: 24),
+          _buildSectionHeader('Payment Notifications'),
+          _buildTestButton(
+            'Test Payment Received',
+            'Send a payment received notification',
+            Icons.payment,
+            () => _testPaymentReceived(),
+          ),
+          _buildTestButton(
+            'Test Payment Sent',
+            'Send a payment sent notification',
+            Icons.send,
+            () => _testPaymentSent(),
+          ),
+          _buildTestButton(
+            'Test Bonus Received',
+            'Send a bonus received notification',
+            Icons.card_giftcard,
+            () => _testBonusReceived(),
+          ),
+          
+          const SizedBox(height: 24),
+          _buildSectionHeader('Verification Notifications'),
+          _buildTestButton(
+            'Test Verification Approved',
+            'Send a verification approved notification',
+            Icons.verified_user,
+            () => _testVerificationApproved(),
+          ),
+          _buildTestButton(
+            'Test Verification Rejected',
+            'Send a verification rejected notification',
+            Icons.block,
+            () => _testVerificationRejected(),
+          ),
+          
+          const SizedBox(height: 24),
+          _buildSectionHeader('Chat Notifications'),
+          _buildTestButton(
+            'Test Chat Message',
+            'Send a chat message notification',
+            Icons.chat,
+            () => _testChatMessage(),
+          ),
+          
+          const SizedBox(height: 24),
+          _buildSectionHeader('System Notifications'),
+          _buildTestButton(
+            'Test System Notification',
+            'Send a system notification',
+            Icons.info,
+            () => _testSystemNotification(),
+          ),
+          
+          const SizedBox(height: 24),
+          _buildSectionHeader('Real Actions'),
+          _buildTestButton(
+            'Apply for Job (Real)',
+            'Actually apply for a job and trigger notification',
+            Icons.work_outline,
+            () => _applyForJobReal(),
+          ),
+          _buildTestButton(
+            'Top Up Wallet (Real)',
+            'Actually top up wallet and trigger notification',
+            Icons.account_balance_wallet,
+            () => _topUpWalletReal(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
         ),
       ),
     );
   }
 
-  Widget _buildNotificationTestCard(
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+  Widget _buildTestButton(String title, String subtitle, IconData icon, VoidCallback onPressed) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Text(
-          description,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.send),
-          onPressed: onTap,
-          color: color,
-        ),
+        leading: Icon(icon, color: Colors.blue),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: onPressed,
       ),
     );
   }
 
-  void _testJobApplication() {
-    _notificationService.simulateJobApplication('Usafi wa Nyumba', 'John Doe');
-    _showSuccessSnackBar('Job Application notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
-  }
-
-  void _testPayment() {
-    _notificationService.simulatePaymentReceived(35000);
-    _showSuccessSnackBar('Payment notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
-  }
-
-  void _testVerification() {
-    _notificationService.simulateVerificationUpdate(true);
-    _showSuccessSnackBar('Verification notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
-  }
-
-  void _testChatMessage() {
-    _notificationService.simulateChatMessage('Sarah', 'Habari! Una kazi ya usafi?');
-    _showSuccessSnackBar('Chat notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
-  }
-
-  void _testJobAccepted() {
-    final notification = _notificationService.createNotification(
-      title: 'Kazi Imekubaliwa',
-      body: 'Ombi lako la kazi ya Usafi limekubaliwa.',
-      type: NotificationType.jobAccepted,
-      data: {'jobId': 'job_123'},
+  void _testJobApplication() async {
+    await _notificationService.sendJobApplicationNotification(
+      jobProviderId: 'provider123',
+      jobTitle: 'Usafi wa Nyumba',
+      applicantName: 'John Doe',
+      jobId: 'job_456',
     );
-    _notificationService.addNotification(notification);
-    _showSuccessSnackBar('Job Accepted notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
+    _showSuccessSnackBar('Job application notification sent!');
   }
 
-  void _testJobRejected() {
-    final notification = _notificationService.createNotification(
-      title: 'Kazi Imekataliwa',
-      body: 'Ombi lako la kazi ya Usafi limekataliwa.',
-      type: NotificationType.jobRejected,
-      data: {'jobId': 'job_123'},
+  void _testJobAccepted() async {
+    await _notificationService.sendJobStatusNotification(
+      jobSeekerId: 'seeker123',
+      jobTitle: 'Usafi wa Nyumba',
+      isAccepted: true,
+      jobId: 'job_456',
     );
-    _notificationService.addNotification(notification);
-    _showSuccessSnackBar('Job Rejected notification sent!');
-    
-    // Navigate to notification detail after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final notifications = _notificationService.notifications;
-      if (notifications.isNotEmpty) {
-        Navigator.pushNamed(
-          context,
-          '/notification-detail',
-          arguments: {'notificationId': notifications.first.id},
-        );
-      }
-    });
+    _showSuccessSnackBar('Job accepted notification sent!');
   }
 
-  Future<void> _testAllNotifications() async {
-    setState(() {
-      _isLoading = true;
-    });
+  void _testJobRejected() async {
+    await _notificationService.sendJobStatusNotification(
+      jobSeekerId: 'seeker123',
+      jobTitle: 'Usafi wa Nyumba',
+      isAccepted: false,
+      jobId: 'job_456',
+    );
+    _showSuccessSnackBar('Job rejected notification sent!');
+  }
 
-    // Test all notifications with delays
-    await Future.delayed(const Duration(milliseconds: 500));
-    _testJobApplication();
-    
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _testPayment();
-    
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _testVerification();
-    
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _testChatMessage();
-    
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _testJobAccepted();
-    
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _testJobRejected();
+  void _testPaymentReceived() async {
+    await _notificationService.sendPaymentNotification(
+      userId: 'user123',
+      amount: 25000,
+      transactionId: 'txn_789',
+      paymentType: 'received',
+    );
+    _showSuccessSnackBar('Payment received notification sent!');
+  }
 
-    setState(() {
-      _isLoading = false;
-    });
+  void _testPaymentSent() async {
+    await _notificationService.sendPaymentNotification(
+      userId: 'user123',
+      amount: 500,
+      transactionId: 'txn_790',
+      paymentType: 'sent',
+    );
+    _showSuccessSnackBar('Payment sent notification sent!');
+  }
 
-    _showSuccessSnackBar('All notifications sent successfully!');
+  void _testBonusReceived() async {
+    await _notificationService.sendPaymentNotification(
+      userId: 'user123',
+      amount: 1000,
+      transactionId: 'txn_791',
+      paymentType: 'bonus',
+    );
+    _showSuccessSnackBar('Bonus received notification sent!');
+  }
+
+  void _testVerificationApproved() async {
+    await _notificationService.sendVerificationNotification(
+      userId: 'user123',
+      isApproved: true,
+    );
+    _showSuccessSnackBar('Verification approved notification sent!');
+  }
+
+  void _testVerificationRejected() async {
+    await _notificationService.sendVerificationNotification(
+      userId: 'user123',
+      isApproved: false,
+    );
+    _showSuccessSnackBar('Verification rejected notification sent!');
+  }
+
+  void _testChatMessage() async {
+    await _notificationService.sendChatNotification(
+      receiverId: 'user123',
+      senderName: 'Jane Smith',
+      message: 'Hello! Are you available for the job?',
+      chatRoomId: 'chat_123',
+    );
+    _showSuccessSnackBar('Chat message notification sent!');
+  }
+
+  void _testSystemNotification() async {
+    await _notificationService.sendSystemNotification(
+      userId: 'user123',
+      title: 'Mfumo Mpya',
+      body: 'Tunaanza kutumia mfumo mpya wa malipo.',
+      data: {'type': 'system_update'},
+    );
+    _showSuccessSnackBar('System notification sent!');
+  }
+
+  void _applyForJobReal() async {
+    try {
+      final success = await _jobService.applyForJob(
+        jobId: 'job_test_123',
+        seekerId: 'user123',
+        message: 'I am interested in this job',
+      );
+
+      if (success) {
+        _showSuccessSnackBar('Job application submitted successfully!');
+      } else {
+        _showErrorSnackBar('Failed to submit job application');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: $e');
+    }
+  }
+
+  void _topUpWalletReal() async {
+    try {
+      final success = _walletService.topUpWallet(
+        10000,
+        'M-Pesa',
+        reference: 'TEST_TOPUP_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      if (success) {
+        _showSuccessSnackBar('Wallet topped up successfully!');
+      } else {
+        _showErrorSnackBar('Failed to top up wallet');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: $e');
+    }
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
-        ),
+        content: Text(message),
         backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/verification_service.dart';
+import '../../../../core/services/verification_service.dart' as verification_service;
 import '../../../../core/models/verification_model.dart';
 import '../../../../core/services/localization_service.dart';
 
@@ -12,7 +12,7 @@ class VerificationStatusScreen extends StatefulWidget {
 }
 
 class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
-  final _verificationService = VerificationService();
+  final _verificationService = verification_service.VerificationService();
   
   VerificationModel? _verification;
   bool _isLoading = true;
@@ -28,10 +28,12 @@ class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
     
     // Mock user ID - in real app, get from auth service
     const userId = 'user_123';
-    final verification = _verificationService.getVerificationStatus(userId);
+    final verificationData = await _verificationService.getVerificationStatus(userId);
     
     setState(() {
-      _verification = verification;
+      _verification = verificationData != null 
+          ? VerificationModel.fromMap(verificationData, verificationData['id'] ?? '')
+          : null;
       _isLoading = false;
     });
   }

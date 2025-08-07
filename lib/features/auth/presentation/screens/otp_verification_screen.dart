@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/localization_service.dart';
-import '../../../../core/services/firestore_service.dart';
 import 'role_selection_screen.dart';
 import 'dart:async';
 
@@ -202,28 +200,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       );
 
       if (userCredential != null) {
-        final profileDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+        print('🔐 ===== OTP VERIFICATION LOGIN =====');
+        print('🔐 User logged in: ${userCredential.user!.uid}');
+        print('🔐 User email: ${userCredential.user!.email}');
+        print('🔐 Navigating to main app - AuthWrapper will handle routing');
+        print('🔐 ===================================');
         
-        if (profileDoc.exists) {
-          final profile = profileDoc.data()!;
-          final role = profile['role'] ?? 'job_seeker';
-          if (role == 'job_seeker') {
-            Navigator.pushReplacementNamed(context, '/job_seeker_dashboard');
-          } else {
-            Navigator.pushReplacementNamed(context, '/job_provider_dashboard');
-          }
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RoleSelectionScreen(
-                phoneNumber: widget.phoneNumber,
-                password: widget.password,
-                name: userCredential.user!.displayName ?? '',
-              ),
-            ),
-          );
-        }
+        // Navigate to main app and let AuthWrapper handle the routing
+        // This prevents direct navigation and role confusion
+        Navigator.pushReplacementNamed(context, '/');
       } else {
         throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
       }

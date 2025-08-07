@@ -41,7 +41,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
 
   Future<void> _checkVerificationStatus() async {
     const userId = 'provider_123'; // Mock user ID
-    final isVerified = _verificationService.isUserVerified(userId);
+    final isVerified = await _verificationService.isUserVerified(userId);
     setState(() {
       _isVerified = isVerified;
     });
