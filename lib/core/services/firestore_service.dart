@@ -571,4 +571,143 @@ class FirestoreService {
       throw Exception('Hitilafu katika kusasisha salio: $e');
     }
   }
+
+  // Get completed jobs for a specific user (job seeker)
+  Future<List<Map<String, dynamic>>> getCompletedJobsForUser(String userId) async {
+    try {
+      // Get jobs where the user was hired and completed
+      QuerySnapshot jobsSnapshot = await _firestore
+          .collection(jobsCollection)
+          .where('hiredJobSeekerId', isEqualTo: userId)
+          .where('status', isEqualTo: 'completed')
+          .orderBy('completedAt', descending: true)
+          .limit(10)
+          .get();
+
+      List<Map<String, dynamic>> completedJobs = [];
+      
+      for (final doc in jobsSnapshot.docs) {
+        final jobData = doc.data() as Map<String, dynamic>;
+        
+        // Get job provider details
+        final providerId = jobData['jobProviderId'];
+        Map<String, dynamic>? providerData;
+        if (providerId != null) {
+          final providerDoc = await _firestore.collection(usersCollection).doc(providerId).get();
+          if (providerDoc.exists) {
+            providerData = providerDoc.data() as Map<String, dynamic>;
+          }
+        }
+
+        completedJobs.add({
+          'id': doc.id,
+          'title': jobData['title'] ?? 'Unknown Job',
+          'description': jobData['description'] ?? '',
+          'location': jobData['location'] ?? '',
+          'salary': jobData['salary'] ?? 0,
+          'completedAt': jobData['completedAt'],
+          'duration': jobData['duration'] ?? '',
+          'rating': jobData['rating'] ?? 0,
+          'review': jobData['review'] ?? '',
+          'providerName': providerData?['name'] ?? 'Unknown Provider',
+          'providerImage': providerData?['profileImageUrl'],
+          'jobType': jobData['jobType'] ?? '',
+          'category': jobData['category'] ?? '',
+        });
+      }
+      
+      return completedJobs;
+    } catch (e) {
+      throw Exception('Hitilafu katika kupata kazi zilizokamilika: $e');
+    }
+  }
+
+  // Get user's portfolio/showcase data
+  Future<Map<String, dynamic>> getUserShowcase(String userId) async {
+    try {
+      final userDoc = await _firestore.collection(usersCollection).doc(userId).get();
+      if (!userDoc.exists) {
+        throw Exception('Mtumiaji hajapatikana');
+      }
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      
+      // Get completed jobs
+      final completedJobs = await getCompletedJobsForUser(userId);
+      
+      // Calculate statistics
+      double totalEarnings = 0;
+      double totalRating = 0;
+      int ratedJobs = 0;
+      
+      for (final job in completedJobs) {
+        totalEarnings += (job['salary'] ?? 0).toDouble();
+        if ((job['rating'] ?? 0) > 0) {
+          totalRating += (job['rating'] ?? 0).toDouble();
+          ratedJobs++;
+        }
+      }
+      
+      final averageRating = ratedJobs > 0 ? totalRating / ratedJobs : 0.0;
+      
+      return {
+        'userId': userId,
+        'name': userData['name'] ?? '',
+        'profileImage': userData['profileImageUrl'],
+        'completedJobs': completedJobs,
+        'totalEarnings': totalEarnings,
+        'averageRating': averageRating,
+        'totalJobs': completedJobs.length,
+        'skills': userData['skills'] ?? [],
+        'experience': userData['experience'] ?? '',
+        'category': userData['category'] ?? '',
+        'verified': userData['verified'] ?? false,
+      };
+    } catch (e) {
+      throw Exception('Hitilafu katika kupata showcase: $e');
+    }
+  }
+
+  // Get showcase preview for multiple users (for search results)
+  Future<Map<String, Map<String, dynamic>>> getShowcasePreviewForUsers(List<String> userIds) async {
+    try {
+      Map<String, Map<String, dynamic>> showcaseData = {};
+      
+      // Get completed jobs for all users in batches
+      for (final userId in userIds) {
+        try {
+          final completedJobs = await getCompletedJobsForUser(userId);
+          
+          // Calculate quick stats
+          double totalEarnings = 0;
+          double totalRating = 0;
+          int ratedJobs = 0;
+          
+          for (final job in completedJobs) {
+            totalEarnings += (job['salary'] ?? 0).toDouble();
+            if ((job['rating'] ?? 0) > 0) {
+              totalRating += (job['rating'] ?? 0).toDouble();
+              ratedJobs++;
+            }
+          }
+          
+          final averageRating = ratedJobs > 0 ? totalRating / ratedJobs : 0.0;
+          
+          showcaseData[userId] = {
+            'totalJobs': completedJobs.length,
+            'totalEarnings': totalEarnings,
+            'averageRating': averageRating,
+            'recentJobs': completedJobs.take(3).toList(), // Show only 3 most recent
+          };
+        } catch (e) {
+          // Skip this user if there's an error
+          continue;
+        }
+      }
+      
+      return showcaseData;
+    } catch (e) {
+      throw Exception('Hitilafu katika kupata showcase preview: $e');
+    }
+  }
 } 

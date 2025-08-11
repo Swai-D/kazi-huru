@@ -12,7 +12,7 @@ class VerificationStatusScreen extends StatefulWidget {
 }
 
 class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
-  final _verificationService = verification_service.VerificationService();
+  // Verification service removed temporarily
   
   VerificationModel? _verification;
   bool _isLoading = true;
@@ -28,7 +28,9 @@ class _VerificationStatusScreenState extends State<VerificationStatusScreen> {
     
     // Mock user ID - in real app, get from auth service
     const userId = 'user_123';
-    final verificationData = await _verificationService.getVerificationStatus(userId);
+    // Mock verification data - temporarily disabled
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate loading
+    final verificationData = null; // No verification data for now
     
     setState(() {
       _verification = verificationData != null 

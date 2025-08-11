@@ -99,6 +99,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               _buildBasicInformation(),
               const SizedBox(height: 24),
               
+              // Job Seeker detailed profile sections (mirror of job giver view)
+              if (widget.userRole == 'job_seeker') ...[
+                _buildDoerAboutSection(context),
+                const SizedBox(height: 16),
+                _buildDoerSkillsSection(context),
+                const SizedBox(height: 16),
+                _buildDoerExperienceSection(context),
+                const SizedBox(height: 16),
+                _buildDoerRatesSection(context),
+                const SizedBox(height: 16),
+                _buildDoerAvailabilityLocationSection(context),
+                const SizedBox(height: 16),
+                _buildDoerStatsSection(context),
+                const SizedBox(height: 24),
+              ],
+              
               // Company Information (for job providers)
               if (widget.userRole == 'job_provider') ...[
                 _buildCompanyInformation(),
@@ -140,6 +156,581 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       ),
     );
+  }
+
+  // --- Job Doer mirrored sections ---
+  Widget _buildDoerAboutSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final description = (profile['description'] ?? _bioController.text).toString();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline, color: ThemeConstants.primaryColor),
+              const SizedBox(width: 8),
+              const Text('Kuhusu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                  onPressed: () => _editBio(context, auth, initial: description),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description.isEmpty ? 'Ongeza maelezo kukuhusu...' : description,
+            style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoerSkillsSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final skills = List<String>.from((profile['skills'] ?? const <String>[]) as List);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.psychology, color: ThemeConstants.primaryColor),
+              const SizedBox(width: 8),
+              const Text('Ujuzi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                  onPressed: () => _editSkills(context, auth, initial: skills),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (skills.isEmpty)
+            Text('Ongeza ujuzi wako...', style: TextStyle(fontSize: 14, color: Colors.grey[600]))
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: skills
+                  .map((s) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: ThemeConstants.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.3)),
+                        ),
+                        child: Text(s, style: TextStyle(fontSize: 12, color: ThemeConstants.primaryColor, fontWeight: FontWeight.w500)),
+                      ))
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoerExperienceSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final experience = (profile['experience'] ?? '').toString();
+    final category = (profile['category'] ?? '').toString();
+    final completed = (profile['completed_jobs'] ?? 0).toString();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.work_outline, color: ThemeConstants.primaryColor),
+              const SizedBox(width: 8),
+              const Text('Uzoefu wa Kazi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                  onPressed: () => _editExperience(context, auth, initialExperience: experience, initialCategory: category),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _experienceItem('Kazi Zilizokamilika', completed, Icons.check_circle_outline, Colors.green),
+          const SizedBox(height: 8),
+          _experienceItem('Miaka ya Uzoefu', experience.isEmpty ? '—' : experience, Icons.timer_outlined, Colors.blue),
+          const SizedBox(height: 8),
+          _experienceItem('Kategoria', category.isEmpty ? '—' : category, Icons.category_outlined, Colors.orange),
+        ],
+      ),
+    );
+  }
+
+  Widget _experienceItem(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDoerRatesSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final rate = profile['hourly_rate'];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.attach_money, color: ThemeConstants.primaryColor),
+          const SizedBox(width: 8),
+          const Text('Bei ya Kazi (kwa saa): ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              rate == null ? 'Weka kiwango chako' : 'TZS $rate',
+              textAlign: TextAlign.end,
+              style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            ),
+          ),
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+              onPressed: () => _editRate(context, auth, initial: rate?.toString() ?? ''),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoerAvailabilityLocationSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final availability = (profile['availability'] ?? '').toString();
+    final location = (profile['location'] ?? _locationController.text).toString();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.place, color: ThemeConstants.primaryColor),
+              const SizedBox(width: 8),
+              const Text('Upatikanaji & Eneo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                  onPressed: () => _editAvailabilityLocation(context, auth, initialAvailability: availability, initialLocation: location),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            const Icon(Icons.access_time, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text('Upatikanaji: ${availability.isEmpty ? '—' : availability}', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text('Eneo: ${location.isEmpty ? '—' : location}', style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDoerStatsSection(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: true);
+    final profile = auth.userProfile ?? {};
+    final rating = (profile['rating'] ?? 0).toDouble();
+    final completed = (profile['completed_jobs'] ?? 0).toString();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.star_outline, color: Colors.amber),
+          const SizedBox(width: 8),
+          Text('$rating', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber)),
+          const SizedBox(width: 16),
+          Text('(${completed} kazi)', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  // --- Edit flows ---
+  Future<void> _editBio(BuildContext context, AuthProvider auth, {required String initial}) async {
+    final controller = TextEditingController(text: initial);
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Hariri Kuhusu (Bio)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                maxLines: 5,
+                decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Andika kuhusu wewe...'),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Hifadhi'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (saved == true) {
+      await auth.updateUserProfile(additionalData: {'description': controller.text.trim()});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bio imehifadhiwa')));
+      }
+    }
+  }
+
+  Future<void> _editSkills(BuildContext context, AuthProvider auth, {required List<String> initial}) async {
+    final input = TextEditingController();
+    final result = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final skills = List<String>.from(initial);
+        return StatefulBuilder(builder: (ctx, setState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+              top: 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Hariri Ujuzi', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: skills
+                      .map((s) => InputChip(
+                            label: Text(s),
+                            onDeleted: () => setState(() => skills.remove(s)),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(
+                    child: TextField(
+                      controller: input,
+                      decoration: const InputDecoration(hintText: 'Ongeza ujuzi', border: OutlineInputBorder()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      final v = input.text.trim();
+                      if (v.isNotEmpty && !skills.contains(v)) {
+                        setState(() => skills.add(v));
+                        input.clear();
+                      }
+                    },
+                    child: const Icon(Icons.add),
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, skills),
+                    child: const Text('Hifadhi'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        });
+      },
+    );
+    if (result != null) {
+      await auth.updateUserProfile(additionalData: {'skills': result});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ujuzi umehifadhiwa')));
+      }
+    }
+  }
+
+  Future<void> _editExperience(BuildContext context, AuthProvider auth, {required String initialExperience, required String initialCategory}) async {
+    final expController = TextEditingController(text: initialExperience);
+    final catController = TextEditingController(text: initialCategory);
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Hariri Uzoefu', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: expController,
+                decoration: const InputDecoration(labelText: 'Miaka ya Uzoefu (mf: 3 years)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: catController,
+                decoration: const InputDecoration(labelText: 'Kategoria', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Hifadhi'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (saved == true) {
+      await auth.updateUserProfile(additionalData: {
+        'experience': expController.text.trim(),
+        'category': catController.text.trim(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Uzoefu umehifadhiwa')));
+      }
+    }
+  }
+
+  Future<void> _editRate(BuildContext context, AuthProvider auth, {required String initial}) async {
+    final controller = TextEditingController(text: initial);
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Hariri Bei kwa Saa (TZS)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: 'Mf: 10000', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Hifadhi'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (saved == true) {
+      final value = int.tryParse(controller.text.trim());
+      if (value != null && value >= 0) {
+        await auth.updateUserProfile(additionalData: {'hourly_rate': value});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bei imehifadhiwa')));
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Weka namba sahihi')));
+      }
+    }
+  }
+
+  Future<void> _editAvailabilityLocation(BuildContext context, AuthProvider auth, {required String initialAvailability, required String initialLocation}) async {
+    String availability = initialAvailability;
+    final locController = TextEditingController(text: initialLocation);
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: StatefulBuilder(builder: (ctx, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Hariri Upatikanaji & Eneo', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: availability.isEmpty ? null : availability,
+                  items: const [
+                    DropdownMenuItem(value: 'Available', child: Text('Available')),
+                    DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
+                    DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
+                    DropdownMenuItem(value: 'On-call', child: Text('On-call')),
+                  ],
+                  onChanged: (v) => setState(() => availability = v ?? ''),
+                  decoration: const InputDecoration(labelText: 'Upatikanaji', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locController,
+                  decoration: const InputDecoration(labelText: 'Eneo (mji/eneo)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Hifadhi'),
+                  ),
+                ),
+              ],
+            );
+          }),
+        );
+      },
+    );
+    if (saved == true) {
+      await auth.updateUserProfile(additionalData: {
+        'availability': availability,
+        'location': locController.text.trim(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upatikanaji na eneo vimehifadhiwa')));
+      }
+    }
   }
 
   Widget _buildProfileHeader() {

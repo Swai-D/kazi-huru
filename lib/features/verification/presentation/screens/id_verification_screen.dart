@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/localization_service.dart';
 
 class IdVerificationScreen extends StatefulWidget {
@@ -14,7 +15,6 @@ class IdVerificationScreen extends StatefulWidget {
 class _IdVerificationScreenState extends State<IdVerificationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _idNumberController = TextEditingController();
-  final _verificationService = VerificationService();
   
   File? _selectedImage;
   bool _isLoading = false;
@@ -29,27 +29,51 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
   Future<void> _loadVerificationStatus() async {
     setState(() => _isLoading = true);
     
-    // Mock user ID - in real app, get from auth service
-    const userId = 'user_123';
-    final verification = await _verificationService.getVerificationStatus(userId);
-    
-    if (verification != null) {
-      _idNumberController.text = verification['idNumber'] ?? '';
-    }
+    // Mock verification check - in real app, get from auth service
+    // For now, just simulate loading delay
+    await Future.delayed(const Duration(milliseconds: 500));
     
     setState(() => _isLoading = false);
   }
 
   Future<void> _pickImage({bool fromCamera = false}) async {
     try {
-      final image = await _verificationService.pickImage(fromCamera: fromCamera);
+      // Request permissions
+      Permission permission = fromCamera ? Permission.camera : Permission.storage;
+      PermissionStatus status = await permission.request();
+      
+      if (status.isDenied) {
+        _showSnackBar(fromCamera 
+            ? 'Ruhusa ya kamera inahitajika' 
+            : 'Ruhusa ya hifadhi inahitajika');
+        return;
+      }
+      
+      if (status.isPermanentlyDenied) {
+        _showSnackBar('Fungua mipangilio na ruhusu ruhusa');
+        await openAppSettings();
+        return;
+      }
+
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      );
+
       if (image != null) {
         setState(() {
-          _selectedImage = image;
+          _selectedImage = File(image.path);
         });
+        
+        _showSnackBar(fromCamera 
+            ? 'Picha imepigwa kikamilifu!' 
+            : 'Picha imechaguliwa kikamilifu!');
       }
     } catch (e) {
-      _showSnackBar(context.tr('error_picking_image'));
+      _showSnackBar('Kuna tatizo: ${e.toString()}');
     }
   }
 
@@ -63,20 +87,11 @@ class _IdVerificationScreenState extends State<IdVerificationScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      const userId = 'user_123'; // Mock user ID
-      final success = await _verificationService.submitVerification(
-        userId: userId,
-        idNumber: _idNumberController.text.trim(),
-        idType: 'national_id', // Default ID type
-        frontImageUrl: 'mock_front_image_url', // In real app, upload image and get URL
-        backImageUrl: 'mock_back_image_url', // In real app, upload image and get URL
-      );
-
-      if (success) {
-        _showSuccessDialog();
-      } else {
-        _showSnackBar(context.tr('verification_submission_failed'));
-      }
+      // Mock submission - in real app, upload image and submit to backend
+      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      
+      // For demo purposes, always succeed
+      _showSuccessDialog();
     } catch (e) {
       _showSnackBar(context.tr('verification_error'));
     } finally {

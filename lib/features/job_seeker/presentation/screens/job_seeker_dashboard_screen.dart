@@ -32,7 +32,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   final WalletService _walletService = WalletService();
   final AnalyticsService _analyticsService = AnalyticsService();
   final LocationService _locationService = LocationService();
-  final VerificationService _verificationService = VerificationService();
+  // Verification service removed temporarily
   final NotificationService _notificationService = NotificationService();
   final JobService _jobService = JobService();
   bool _isLocationEnabled = false;
@@ -107,10 +107,9 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   }
 
   Future<void> _checkVerificationStatus() async {
-    const userId = 'user_123'; // Mock user ID
-    final isVerified = await _verificationService.isUserVerified(userId);
+    // Mock verification check - temporarily disabled
     setState(() {
-      _isVerified = isVerified;
+      _isVerified = false; // Default to false for now
     });
   }
 

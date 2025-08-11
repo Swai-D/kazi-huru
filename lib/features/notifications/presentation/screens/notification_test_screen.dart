@@ -16,7 +16,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
   final NotificationService _notificationService = NotificationService();
   final JobService _jobService = JobService();
   final WalletService _walletService = WalletService();
-  final VerificationService _verificationService = VerificationService();
+  // Verification service removed temporarily
   final ChatService _chatService = ChatService();
 
   @override

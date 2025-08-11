@@ -28,7 +28,7 @@ class JobProviderDashboardScreen extends StatefulWidget {
 
 class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen> {
   int _selectedIndex = 0;
-  final VerificationService _verificationService = VerificationService();
+  // Verification service removed temporarily
   final NotificationService _notificationService = NotificationService();
   final WalletService _walletService = WalletService();
   bool _isVerified = false;
@@ -40,10 +40,9 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
   }
 
   Future<void> _checkVerificationStatus() async {
-    const userId = 'provider_123'; // Mock user ID
-    final isVerified = await _verificationService.isUserVerified(userId);
+    // Mock verification check - temporarily disabled
     setState(() {
-      _isVerified = isVerified;
+      _isVerified = false; // Default to false for now
     });
   }
 

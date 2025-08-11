@@ -12,16 +12,16 @@ class JobService {
   // Job Categories
   List<Map<String, String>> getJobCategories() {
     return [
-      {'value': 'usafi', 'label': 'Usafi (Cleaning)'},
-      {'value': 'kufua', 'label': 'Kufua (Laundry)'},
-      {'value': 'kubeba', 'label': 'Kubeba (Moving/Carrying)'},
-      {'value': 'uongozi', 'label': 'Uongozi (Management)'},
-      {'value': 'utumishi', 'label': 'Utumishi (Service)'},
-      {'value': 'ujenzi', 'label': 'Ujenzi (Construction)'},
-      {'value': 'kilimo', 'label': 'Kilimo (Agriculture)'},
-      {'value': 'biashara', 'label': 'Biashara (Business)'},
-      {'value': 'teknolojia', 'label': 'Teknolojia (Technology)'},
-      {'value': 'mengine', 'label': 'Mengine (Other)'},
+      {'value': 'usafi', 'label': 'Usafi (Cleaning)', 'icon': '🧹'},
+      {'value': 'kufua', 'label': 'Kufua (Laundry)', 'icon': '👕'},
+      {'value': 'kubeba', 'label': 'Kubeba (Moving/Carrying)', 'icon': '📦'},
+      {'value': 'uongozi', 'label': 'Uongozi (Management)', 'icon': '👔'},
+      {'value': 'utumishi', 'label': 'Utumishi (Service)', 'icon': '🤝'},
+      {'value': 'ujenzi', 'label': 'Ujenzi (Construction)', 'icon': '🔨'},
+      {'value': 'kilimo', 'label': 'Kilimo (Agriculture)', 'icon': '🌾'},
+      {'value': 'biashara', 'label': 'Biashara (Business)', 'icon': '💼'},
+      {'value': 'teknolojia', 'label': 'Teknolojia (Technology)', 'icon': '💻'},
+      {'value': 'mengine', 'label': 'Mengine (Other)', 'icon': '⚡'},
     ];
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/verification_service.dart';
@@ -28,7 +30,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _minPaymentController = TextEditingController();
   final _maxPaymentController = TextEditingController();
   final _requirementsController = TextEditingController();
-  final VerificationService _verificationService = VerificationService();
+  // Verification service removed temporarily
   final JobService _jobService = JobService();
   final LocationService _locationService = LocationService();
   bool _isVerified = false;
@@ -101,10 +103,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
   }
 
   Future<void> _checkVerificationStatus() async {
-    const userId = 'provider_123'; // Mock user ID
-    final isVerified = await _verificationService.isUserVerified(userId);
+    // Mock verification check - temporarily disabled
     setState(() {
-      _isVerified = isVerified;
+      _isVerified = false; // Default to false for now
     });
   }
 
@@ -179,20 +180,214 @@ class _PostJobScreenState extends State<PostJobScreen> {
   }
 
   Future<void> _pickImage() async {
-    // For now, we'll simulate image picking
-    // In a real app, you'd use image_picker package
-    setState(() {
-      _hasImage = true;
-      // Simulate selected image
-    });
-    
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.tr('image_selected')),
-        backgroundColor: Colors.green,
+    // Show bottom sheet with camera and gallery options
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Chagua Picha ya Kazi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Chagua njia ya kupata picha ya kazi',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Gallery Option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library_outlined,
+                    color: ThemeConstants.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                title: const Text(
+                  'Chagua kutoka Gallery',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Chagua picha iliyopo kwenye simu yako',
+                  style: TextStyle(fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(ImageSource.gallery);
+                },
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Camera Option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt_outlined,
+                    color: ThemeConstants.primaryColor,
+                    size: 24,
+                  ),
+                ),
+                title: const Text(
+                  'Piga Picha Mpya',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Tumia kamera kupiga picha mpya',
+                  style: TextStyle(fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromSource(ImageSource.camera);
+                },
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Cancel Button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey[400]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Ghairi',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source) async {
+    try {
+      // Request permissions
+      Permission permission = source == ImageSource.camera 
+          ? Permission.camera 
+          : Permission.storage;
+      
+      PermissionStatus status = await permission.request();
+      
+      if (status.isDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              source == ImageSource.camera 
+                ? 'Ruhusa ya kamera inahitajika' 
+                : 'Ruhusa ya hifadhi inahitajika',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      
+      if (status.isPermanentlyDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fungua mipangilio na ruhusu ruhusa'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        await openAppSettings();
+        return;
+      }
+
+      // Close the modal first
+      Navigator.pop(context);
+
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _hasImage = true;
+        });
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              source == ImageSource.camera 
+                ? 'Picha imepigwa kikamilifu!' 
+                : 'Picha imechaguliwa kikamilifu!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kuna tatizo: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _removeImage() {
@@ -652,6 +847,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
@@ -662,22 +859,30 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                            category['icon']!,
+                            category['icon'] ?? '📋',
                                     style: const TextStyle(fontSize: 20),
                           ),
                                 ),
-                                const SizedBox(height: 8),
-                                                     Text(
-                                  category['label']!,
-                             style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    color: isSelected ? ThemeConstants.primaryColor : Colors.grey[700],
-                             ),
-                             textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                           ),
+                                const SizedBox(height: 6),
+                                Flexible(
+                                  fit: FlexFit.loose,
+                                  child: Text(
+                                    category['label'] ?? 'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      height: 1.2,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? ThemeConstants.primaryColor : Colors.grey[700],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textHeightBehavior: const TextHeightBehavior(
+                                      applyHeightToFirstAscent: false,
+                                      applyHeightToLastDescent: false,
+                                    ),
+                                  ),
+                                ),
                         ],
                       ),
                     ),
@@ -882,6 +1087,53 @@ class _PostJobScreenState extends State<PostJobScreen> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
+                        ),
+                      ),
+                    
+                    // Display Selected Image
+                    if (_hasImage && _selectedImage != null)
+                      Container(
+                        width: double.infinity,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                _selectedImage!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: IconButton(
+                                  onPressed: _removeImage,
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],

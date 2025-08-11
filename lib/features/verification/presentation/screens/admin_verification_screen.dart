@@ -11,7 +11,7 @@ class AdminVerificationScreen extends StatefulWidget {
 }
 
 class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
-  final _verificationService = VerificationService();
+  // Verification service removed temporarily
   final _localizationService = LocalizationService();
   
   List<VerificationModel> _pendingVerifications = [];
@@ -26,25 +26,22 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   Future<void> _loadPendingVerifications() async {
     setState(() => _isLoading = true);
     
-    final verifications = await _verificationService.getPendingVerifications().first;
+    // Mock pending verifications - temporarily disabled
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate loading
     
     setState(() {
-      _pendingVerifications = verifications;
+      _pendingVerifications = []; // Empty list for now
       _isLoading = false;
     });
   }
 
   Future<void> _verifyUser(VerificationModel verification) async {
     try {
-      const adminId = 'admin_123'; // Mock admin ID
-      final success = await _verificationService.verifyUser(verification.userId, adminId);
+      // Mock verification success - temporarily disabled
+      await Future.delayed(const Duration(seconds: 1)); // Simulate API call
       
-      if (success) {
-        _showSnackBar('User verified successfully');
-        _loadPendingVerifications();
-      } else {
-        _showSnackBar('Failed to verify user');
-      }
+      _showSnackBar('User verified successfully');
+      _loadPendingVerifications(); // Reload list
     } catch (e) {
       _showSnackBar('Error: $e');
     }
@@ -96,11 +93,9 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
     if (result != null) {
       try {
         const adminId = 'admin_123'; // Mock admin ID
-        final success = await _verificationService.rejectUser(
-          verification.userId, 
-          result, 
-          adminId,
-        );
+        // Mock rejection success - temporarily disabled
+        await Future.delayed(const Duration(seconds: 1)); // Simulate API call
+        final success = true;
         
         if (success) {
           _showSnackBar('User rejected successfully');

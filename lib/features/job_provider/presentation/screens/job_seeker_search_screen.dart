@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/location_service.dart';
@@ -15,6 +18,13 @@ class JobSeekerSearchScreen extends StatefulWidget {
 
 class _JobSeekerSearchScreenState extends State<JobSeekerSearchScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  final ScrollController _scrollController = ScrollController();
+  QueryDocumentSnapshot<Map<String, dynamic>>? _lastDoc;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  final Set<String> _availableCategories = {'all'};
+  final Set<String> _favoriteIds = {};
   String _selectedCategory = 'all';
   String _selectedLocation = 'all';
   String _selectedExperience = 'all';
@@ -24,112 +34,146 @@ class _JobSeekerSearchScreenState extends State<JobSeekerSearchScreen> {
   String? _currentLocation;
   final LocationService _locationService = LocationService();
 
-  // Mock job seeker data
-  final List<Map<String, dynamic>> _jobSeekers = [
-    {
-      'id': '1',
-      'name': 'John Mwambene',
-      'location': 'Dar es Salaam, Sala Sala',
-      'category': 'Transport',
-      'experience': '3 years',
-      'rating': 4.5,
-      'completed_jobs': 25,
-      'description': 'Experienced driver with clean record. Available for moving and delivery services.',
-      'skills': ['Driving', 'Customer Service', 'Navigation'],
-      'availability': 'Flexible',
-      'hourly_rate': 'TZS 8,000 - TZS 12,000',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': null,
-      'verified': true,
-    },
-    {
-      'id': '2',
-      'name': 'Sarah Mwangi',
-      'location': 'Dar es Salaam, Mbezi Beach',
-      'category': 'Cleaning',
-      'experience': '2 years',
-      'rating': 4.8,
-      'completed_jobs': 18,
-      'description': 'Professional cleaner with attention to detail. Specializes in residential cleaning.',
-      'skills': ['Cleaning', 'Organization', 'Time Management'],
-      'availability': 'Morning',
-      'hourly_rate': 'TZS 6,000 - TZS 10,000',
-      'latitude': -6.7924,
-      'longitude': 39.2083,
-      'distance': null,
-      'image': null,
-      'verified': true,
-    },
-    {
-      'id': '3',
-      'name': 'Michael Kimani',
-      'location': 'Dar es Salaam, Masaki',
-      'category': 'Events',
-      'experience': '4 years',
-      'rating': 4.2,
-      'completed_jobs': 32,
-      'description': 'Event coordinator with experience in weddings and corporate events.',
-      'skills': ['Event Planning', 'Coordination', 'Communication'],
-      'availability': 'Weekend',
-      'hourly_rate': 'TZS 10,000 - TZS 15,000',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': null,
-      'verified': false,
-    },
-    {
-      'id': '4',
-      'name': 'David Ochieng',
-      'location': 'Dar es Salaam, Oyster Bay',
-      'category': 'Construction',
-      'experience': '5 years',
-      'rating': 4.6,
-      'completed_jobs': 45,
-      'description': 'Skilled construction worker with safety certification. Available for various projects.',
-      'skills': ['Construction', 'Safety', 'Team Work'],
-      'availability': 'Daily',
-      'hourly_rate': 'TZS 12,000 - TZS 18,000',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': null,
-      'verified': true,
-    },
-    {
-      'id': '5',
-      'name': 'Grace Wanjiku',
-      'location': 'Dar es Salaam, Kinondoni',
-      'category': 'Cooking',
-      'experience': '3 years',
-      'rating': 4.9,
-      'completed_jobs': 28,
-      'description': 'Professional cook specializing in local and international cuisine.',
-      'skills': ['Cooking', 'Menu Planning', 'Food Safety'],
-      'availability': 'Flexible',
-      'hourly_rate': 'TZS 8,000 - TZS 12,000',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': null,
-      'verified': true,
-    },
-  ];
+  // Data from Firestore
+  final List<Map<String, dynamic>> _jobSeekers = [];
 
   List<Map<String, dynamic>> _filteredJobSeekers = [];
 
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      await _fetchJobSeekersFromFirestore(initial: true);
     _filteredJobSeekers = List.from(_jobSeekers);
-    _initializeLocation();
+      _performSearch();
+      await _initializeLocation();
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchJobSeekersFromFirestore({bool initial = false}) async {
+    try {
+      Query<Map<String, dynamic>> q = FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'job_seeker')
+          .orderBy('createdAt', descending: true)
+          .limit(30);
+      if (!initial && _lastDoc != null) {
+        q = q.startAfterDocument(_lastDoc!);
+      }
+      final query = await q.get();
+
+      final List<Map<String, dynamic>> loaded = [];
+      for (final doc in query.docs) {
+        final data = doc.data();
+        loaded.add({
+          'id': doc.id, // for sorting fallback
+          'uid': doc.id, // guaranteed uid for navigation
+          'name': data['name'] ?? '—',
+          'location': data['location'] ?? '—',
+          'category': data['category'] ?? 'all',
+          'experience': data['experience']?.toString() ?? '—',
+          'rating': (data['rating'] ?? 0).toDouble(),
+          'completed_jobs': data['completed_jobs'] ?? 0,
+          'description': data['description'] ?? data['bio'] ?? '',
+          'skills': List<String>.from((data['skills'] ?? const <String>[]) as List),
+          'availability': data['availability'] ?? '',
+          'hourly_rate': data['hourly_rate'] ?? '',
+          'latitude': data['latitude'],
+          'longitude': data['longitude'],
+          'distance': null,
+          'image': data['profileImageUrl'],
+          'verified': data['verified'] ?? data['isVerified'] ?? false,
+          'createdAt': data['createdAt'],
+        });
+        if (data['category'] != null && data['category'].toString().isNotEmpty) {
+          _availableCategories.add(data['category']);
+        }
+      }
+      setState(() {
+        if (initial) {
+          _jobSeekers
+            ..clear()
+            ..addAll(loaded);
+        } else {
+          _jobSeekers.addAll(loaded);
+        }
+        if (query.docs.isNotEmpty) {
+          _lastDoc = query.docs.last;
+        }
+        if (query.docs.length < 30) {
+          _hasMore = false;
+        }
+      });
+    } catch (e) {
+      debugPrint('Error fetching job seekers: $e');
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+    try {
+      await _fetchJobSeekersFromFirestore(initial: false);
+      _performSearch();
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<void> _loadFavorites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      final favoritesQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('favorites')
+          .get();
+      
+      setState(() {
+        _favoriteIds.clear();
+        _favoriteIds.addAll(favoritesQuery.docs.map((doc) => doc.id));
+      });
+    } catch (e) {
+      debugPrint('Error loading favorites: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(String jobSeekerId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('favorites')
+          .doc(jobSeekerId);
+      
+      if (_favoriteIds.contains(jobSeekerId)) {
+        await docRef.delete();
+        setState(() => _favoriteIds.remove(jobSeekerId));
+      } else {
+        await docRef.set({'addedAt': FieldValue.serverTimestamp()});
+        setState(() => _favoriteIds.add(jobSeekerId));
+      }
+    } catch (e) {
+      debugPrint('Error toggling favorite: $e');
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -240,27 +284,22 @@ class _JobSeekerSearchScreenState extends State<JobSeekerSearchScreen> {
 
   void _performSearch() {
     final query = _searchController.text.toLowerCase();
-    
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () {
     setState(() {
       _filteredJobSeekers = _jobSeekers.where((jobSeeker) {
-        final matchesSearch = jobSeeker['name'].toLowerCase().contains(query) ||
-                            jobSeeker['description'].toLowerCase().contains(query) ||
-                            jobSeeker['skills'].join(' ').toLowerCase().contains(query);
-        
-        final matchesCategory = _selectedCategory == 'all' || 
-                              jobSeeker['category'].toLowerCase() == _selectedCategory.toLowerCase();
-        
-        final matchesLocation = _selectedLocation == 'all' || 
-                              jobSeeker['location'].toLowerCase().contains(_selectedLocation.toLowerCase());
-        
-        final matchesExperience = _selectedExperience == 'all' || 
-                                jobSeeker['experience'] == _selectedExperience;
-        
+          final name = (jobSeeker['name'] ?? '').toString().toLowerCase();
+          final desc = (jobSeeker['description'] ?? '').toString().toLowerCase();
+          final skills = (jobSeeker['skills'] as List).map((e) => e.toString().toLowerCase()).join(' ');
+          final matchesSearch = name.contains(query) || desc.contains(query) || skills.contains(query);
+          final matchesCategory = _selectedCategory == 'all' || (jobSeeker['category'] ?? '').toString().toLowerCase() == _selectedCategory.toLowerCase();
+          final matchesLocation = _selectedLocation == 'all' || (jobSeeker['location'] ?? '').toString().toLowerCase().contains(_selectedLocation.toLowerCase());
+          final matchesExperience = _selectedExperience == 'all' || (jobSeeker['experience'] ?? '').toString() == _selectedExperience;
         return matchesSearch && matchesCategory && matchesLocation && matchesExperience;
       }).toList();
     });
-
     _sortJobSeekers();
+    });
   }
 
   void _sortJobSeekers() {
@@ -680,6 +719,57 @@ class _JobSeekerSearchScreenState extends State<JobSeekerSearchScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 12),
+              // Showcase preview
+              if (jobSeeker['completed_jobs'] > 0) ...[
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to the job seeker profile to see full showcase
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JobSeekerProfileScreen(
+                          jobSeekerId: jobSeeker['uid'],
+                          jobSeeker: jobSeeker,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.work_history,
+                          size: 16,
+                          color: Colors.green[700],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${jobSeeker['completed_jobs']} kazi zilizokamilika - Tazama showcase',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: Colors.green[700],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

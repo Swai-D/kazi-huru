@@ -63,19 +63,38 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
       'duration': '5 days',
     },
   ];
+  List<Map<String, dynamic>> _filteredJobs = [];
+  String _selectedFilter = 'all'; // 'all', 'recent', 'high_rating', 'high_earnings'
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredJobs = List.from(_completedJobs);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ThemeConstants.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(context.tr('completed_jobs')),
+        title: const Text('Kazi Zilizokamilika - Showcase'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ThemeConstants.primaryColor),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: ThemeConstants.primaryColor),
+            onPressed: () {
+              // TODO: Share showcase functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Sharing functionality coming soon!')),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -95,30 +114,59 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Total Completed',
-                    '${_completedJobs.length}',
-                    Icons.check_circle_outline,
-                    Colors.green,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSummaryItem(
+                        'Jumla ya Kazi',
+                        '${_filteredJobs.length}',
+                        Icons.check_circle_outline,
+                        Colors.green,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSummaryItem(
+                        'Mapato Jumla',
+                        'TZS ${_calculateTotalEarnings()}',
+                        Icons.attach_money,
+                        Colors.green,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSummaryItem(
+                        'Ukadiriaji Mwanya',
+                        _calculateAverageRating(),
+                        Icons.star,
+                        Colors.orange,
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Total Earnings',
-                    'TZS ${_calculateTotalEarnings()}',
-                    Icons.attach_money,
-                    Colors.green,
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Avg Rating',
-                    _calculateAverageRating(),
-                    Icons.star,
-                    Colors.orange,
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Hizi ni kazi zote ulizokamilisha. Unaweza kuzitumia kama portfolio/showcase yako.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -129,9 +177,9 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _completedJobs.length,
+              itemCount: _filteredJobs.length,
               itemBuilder: (context, index) {
-                final job = _completedJobs[index];
+                final job = _filteredJobs[index];
                 return _buildJobCard(job);
               },
             ),
@@ -143,7 +191,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
 
   String _calculateTotalEarnings() {
     int total = 0;
-    for (var job in _completedJobs) {
+    for (var job in _filteredJobs) {
       String earnings = job['earnings'].toString().replaceAll('TZS ', '').replaceAll(',', '');
       total += int.parse(earnings);
     }
@@ -154,11 +202,12 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
   }
 
   String _calculateAverageRating() {
+    if (_filteredJobs.isEmpty) return '0.0';
     double total = 0;
-    for (var job in _completedJobs) {
+    for (var job in _filteredJobs) {
       total += job['rating'];
     }
-    return (total / _completedJobs.length).toStringAsFixed(1);
+    return (total / _filteredJobs.length).toStringAsFixed(1);
   }
 
   Widget _buildSummaryItem(String title, String value, IconData icon, Color color) {
@@ -316,37 +365,39 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: () {
                     // View job details
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${context.tr('viewing')} ${job['title']}')),
+                      SnackBar(content: Text('Tazama maelezo ya ${job['title']}')),
                     );
                   },
+                  icon: const Icon(Icons.visibility, size: 16),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: ThemeConstants.primaryColor),
                   ),
-                  child: Text(
-                    context.tr('view_details'),
-                    style: TextStyle(color: ThemeConstants.primaryColor),
+                  label: const Text(
+                    'Tazama Maelezo',
+                    style: TextStyle(fontSize: 12),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
-                    // Add to portfolio
+                    // Share this job
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${context.tr('added_to_portfolio')} ${job['title']}')),
+                      SnackBar(content: Text('Sharing ${job['title']}...')),
                     );
                   },
+                  icon: const Icon(Icons.share, size: 16),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ThemeConstants.primaryColor,
                   ),
-                  child: Text(
-                    context.tr('add_to_portfolio'),
-                    style: const TextStyle(color: Colors.white),
+                  label: const Text(
+                    'Shiriki',
+                    style: TextStyle(fontSize: 12, color: Colors.white),
                   ),
                 ),
               ),
