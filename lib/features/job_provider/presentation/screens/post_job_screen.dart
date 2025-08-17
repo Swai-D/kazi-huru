@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
-import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/job_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/models/job_model.dart';
@@ -12,11 +11,8 @@ import '../../../../core/utils/image_placeholders.dart';
 
 class PostJobScreen extends StatefulWidget {
   final JobModel? jobToEdit;
-  
-  const PostJobScreen({
-    super.key,
-    this.jobToEdit,
-  });
+
+  const PostJobScreen({super.key, this.jobToEdit});
 
   @override
   State<PostJobScreen> createState() => _PostJobScreenState();
@@ -34,7 +30,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final JobService _jobService = JobService();
   final LocationService _locationService = LocationService();
   bool _isVerified = false;
-  
+
   String _selectedCategory = 'usafi';
   String _selectedSalaryType = 'per_job';
   String _selectedDuration = '1_hour';
@@ -43,19 +39,22 @@ class _PostJobScreenState extends State<PostJobScreen> {
   DateTime _startDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   DateTime _deadline = DateTime.now().add(const Duration(days: 1));
-  
+
   // Requirements list
   List<String> _requirements = [];
-  
+
   bool _isLoading = false;
   File? _selectedImage;
   bool _hasImage = false;
   bool _isEditMode = false;
 
   // Get categories, payment types, and durations from service
-  late final List<Map<String, String>> _categories = _jobService.getJobCategories();
-  late final List<Map<String, String>> _salaryTypes = _jobService.getPaymentTypes();
-  late final List<Map<String, String>> _durations = _jobService.getDurationOptions();
+  late final List<Map<String, String>> _categories =
+      _jobService.getJobCategories();
+  late final List<Map<String, String>> _salaryTypes =
+      _jobService.getPaymentTypes();
+  late final List<Map<String, String>> _durations =
+      _jobService.getDurationOptions();
 
   @override
   void initState() {
@@ -78,24 +77,24 @@ class _PostJobScreenState extends State<PostJobScreen> {
     _locationController.text = job.location;
     _minPaymentController.text = job.minPayment.toString();
     _maxPaymentController.text = job.maxPayment.toString();
-    
+
     // Populate dropdowns
     _selectedCategory = job.category;
     _selectedSalaryType = job.paymentType.toString().split('.').last;
     _selectedDuration = job.duration;
     _selectedWorkers = job.workersNeeded.toString();
     _contactPreference = job.contactPreference.toString().split('.').last;
-    
+
     // Populate dates
     _startDate = job.startDate;
     _startTime = job.startTime;
     _deadline = job.deadline;
-    
+
     // Populate requirements
     if (job.requirements.isNotEmpty) {
       _requirements = job.requirements.split(',').map((e) => e.trim()).toList();
     }
-    
+
     // Set image if exists
     if (job.imageUrl != null && job.imageUrl!.isNotEmpty) {
       _hasImage = true;
@@ -152,15 +151,18 @@ class _PostJobScreenState extends State<PostJobScreen> {
         _isLoading = true;
       });
 
-      final locationData = await _locationService.getCurrentLocationWithAddress();
+      final locationData =
+          await _locationService.getCurrentLocationWithAddress();
       if (locationData != null) {
         setState(() {
-          _locationController.text = locationData['address'] ?? '${locationData['latitude']}, ${locationData['longitude']}';
+          _locationController.text =
+              locationData['address'] ??
+              '${locationData['latitude']}, ${locationData['longitude']}';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Location updated successfully!'),
+          SnackBar(
+            content: Text(context.tr('location_updated_successfully')),
             backgroundColor: Colors.green,
           ),
         );
@@ -168,7 +170,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to get location: ${e.toString()}'),
+          content: Text(
+            '${context.tr('failed_to_get_location')}: ${e.toString()}',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -213,13 +217,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
               const SizedBox(height: 8),
               Text(
                 'Chagua njia ya kupata picha ya kazi',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
-              
+
               // Gallery Option
               ListTile(
                 leading: Container(
@@ -236,10 +237,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 title: const Text(
                   'Chagua kutoka Gallery',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
                   'Chagua picha iliyopo kwenye simu yako',
@@ -247,12 +245,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImageFromSource(ImageSource.gallery);
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    _pickImageFromSource(ImageSource.gallery);
+                  });
                 },
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Camera Option
               ListTile(
                 leading: Container(
@@ -269,10 +269,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 title: const Text(
                   'Piga Picha Mpya',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 subtitle: const Text(
                   'Tumia kamera kupiga picha mpya',
@@ -280,12 +277,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImageFromSource(ImageSource.camera);
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    _pickImageFromSource(ImageSource.camera);
+                  });
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Cancel Button
               SizedBox(
                 width: double.infinity,
@@ -300,14 +299,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ),
                   child: const Text(
                     'Ghairi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),
@@ -318,40 +314,53 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
   Future<void> _pickImageFromSource(ImageSource source) async {
     try {
-      // Request permissions
-      Permission permission = source == ImageSource.camera 
-          ? Permission.camera 
-          : Permission.storage;
-      
-      PermissionStatus status = await permission.request();
-      
-      if (status.isDenied) {
+      // Request permissions based on source
+      List<Permission> permissions = [];
+
+      if (source == ImageSource.camera) {
+        permissions.add(Permission.camera);
+      } else {
+        // For gallery, request storage permissions
+        permissions.add(Permission.storage);
+        permissions.add(Permission.photos);
+      }
+
+      // Request all permissions
+      Map<Permission, PermissionStatus> statuses = await permissions.request();
+
+      // Check if any permission is denied
+      bool hasDeniedPermission = statuses.values.any(
+        (status) => status.isDenied || status.isPermanentlyDenied,
+      );
+
+      if (hasDeniedPermission) {
+        String permissionName =
+            source == ImageSource.camera ? 'kamera' : 'hifadhi';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              source == ImageSource.camera 
-                ? 'Ruhusa ya kamera inahitajika' 
-                : 'Ruhusa ya hifadhi inahitajika',
+              'Ruhusa ya $permissionName inahitajika. Fungua mipangilio na ruhusu ruhusa.',
             ),
             backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Mipangilio',
+              onPressed: () => openAppSettings(),
+            ),
           ),
         );
-        return;
-      }
-      
-      if (status.isPermanentlyDenied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Fungua mipangilio na ruhusu ruhusa'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        await openAppSettings();
         return;
       }
 
-      // Close the modal first
-      Navigator.pop(context);
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
 
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -361,32 +370,44 @@ class _PostJobScreenState extends State<PostJobScreen> {
         imageQuality: 85,
       );
 
-      if (image != null) {
+      // Hide loading indicator
+      Navigator.of(context).pop();
+
+      if (image != null && mounted) {
         setState(() {
           _selectedImage = File(image.path);
           _hasImage = true;
         });
-        
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              source == ImageSource.camera 
-                ? 'Picha imepigwa kikamilifu!' 
-                : 'Picha imechaguliwa kikamilifu!',
+              source == ImageSource.camera
+                  ? 'Picha imepigwa kikamilifu!'
+                  : 'Picha imechaguliwa kikamilifu!',
             ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      // Hide loading indicator if it's still showing
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Kuna tatizo: ${e.toString()}'),
+          content: Text('${context.tr('error')}: ${e.toString()}'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
       );
+
+      print('Image picker error: $e');
     }
   }
 
@@ -429,11 +450,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
             color: ThemeConstants.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: ThemeConstants.primaryColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: ThemeConstants.primaryColor, size: 20),
         ),
         const SizedBox(width: 12),
         Text(
@@ -483,7 +500,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       // Validate job data
       final minSalary = double.tryParse(_minPaymentController.text) ?? 0;
       final maxSalary = double.tryParse(_maxPaymentController.text) ?? 0;
-      
+
       // Validate required fields
       if (_titleController.text.trim().isEmpty ||
           _descriptionController.text.trim().isEmpty ||
@@ -500,7 +517,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
       }
 
       if (maxSalary < minSalary) {
-        throw Exception('Maximum salary must be greater than or equal to minimum salary');
+        throw Exception(
+          'Maximum salary must be greater than or equal to minimum salary',
+        );
       }
 
       if (_isEditMode && widget.jobToEdit != null) {
@@ -516,20 +535,24 @@ class _PostJobScreenState extends State<PostJobScreen> {
           paymentType: _selectedSalaryType,
           duration: _selectedDuration,
           workersNeeded: int.parse(_selectedWorkers),
-          requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
+          requirements:
+              _requirements.isNotEmpty ? _requirements.join(', ') : '',
           contactPreference: _contactPreference,
           startDate: _startDate,
-          startTime: '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
+          startTime:
+              '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
           deadline: _deadline,
           imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
         );
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-            content: Text('Job updated successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}'),
-            backgroundColor: Colors.green,
-          ),
+            SnackBar(
+              content: Text(
+                'Job updated successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}',
+              ),
+              backgroundColor: Colors.green,
+            ),
           );
           Navigator.pop(context);
         }
@@ -546,20 +569,24 @@ class _PostJobScreenState extends State<PostJobScreen> {
           paymentType: _selectedSalaryType,
           duration: _selectedDuration,
           workersNeeded: int.parse(_selectedWorkers),
-          requirements: _requirements.isNotEmpty ? _requirements.join(', ') : '',
+          requirements:
+              _requirements.isNotEmpty ? _requirements.join(', ') : '',
           contactPreference: _contactPreference,
           startDate: _startDate,
-          startTime: '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
+          startTime:
+              '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
           deadline: _deadline,
           imageUrl: _hasImage ? _getCategoryImage(_selectedCategory) : null,
         );
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-            content: Text('Job posted successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}'),
-            backgroundColor: Colors.green,
-          ),
+            SnackBar(
+              content: Text(
+                'Job posted successfully! Salary range: ${_jobService.formatSalaryRange(minSalary, maxSalary)}',
+              ),
+              backgroundColor: Colors.green,
+            ),
           );
           Navigator.pop(context);
         }
@@ -568,7 +595,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to ${_isEditMode ? 'update' : 'post'} job: ${e.toString()}'),
+            content: Text(
+              'Failed to ${_isEditMode ? 'update' : 'post'} job: ${e.toString()}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -592,14 +621,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF222B45),
+            color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF222B45)),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -629,7 +659,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         ),
                         child: Icon(
                           Icons.verified_user_outlined,
-                        color: Colors.orange,
+                          color: Colors.orange,
                           size: 20,
                         ),
                       ),
@@ -667,11 +697,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
                         child: const Text(
                           'Verify Now',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -707,9 +743,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       ),
                       child: Icon(
                         Icons.add_circle_outline,
-                      color: ThemeConstants.primaryColor,
-                      size: 24,
-                    ),
+                        color: ThemeConstants.primaryColor,
+                        size: 24,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -726,9 +762,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _isEditMode 
-                              ? 'Update the job details below'
-                              : 'Fill in the details below to find the perfect worker. Set a salary range to allow negotiation.',
+                            _isEditMode
+                                ? 'Update the job details below'
+                                : 'Fill in the details below to find the perfect worker. Set a salary range to allow negotiation.',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -759,8 +795,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
+                  controller: _titleController,
+                  decoration: InputDecoration(
                     hintText: 'e.g., Kusafisha Office, Kubeba Mizigo',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -773,14 +809,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.work_outline,
                       color: ThemeConstants.primaryColor,
                     ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
                       return 'Please enter a job title';
-                  }
-                  return null;
-                },
-              ),
+                    }
+                    return null;
+                  },
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -804,64 +840,69 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              Text(
+                    Text(
                       'Select the type of work you need',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                        childAspectRatio: 1.1,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                ),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final isSelected = _selectedCategory == category['value'];
-                  
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = category['value']!;
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isSelected 
-                                  ? ThemeConstants.primaryColor.withOpacity(0.15)
-                                  : Colors.grey[50],
-                        border: Border.all(
-                          color: isSelected 
-                              ? ThemeConstants.primaryColor
-                                    : Colors.grey[200]!,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 1.1,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                      itemCount: _categories.length,
+                      itemBuilder: (context, index) {
+                        final category = _categories[index];
+                        final isSelected =
+                            _selectedCategory == category['value'];
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = category['value']!;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                                  isSelected
+                                      ? ThemeConstants.primaryColor.withOpacity(
+                                        0.15,
+                                      )
+                                      : Colors.grey[50],
+                              border: Border.all(
+                                color:
+                                    isSelected
+                                        ? ThemeConstants.primaryColor
+                                        : Colors.grey[200]!,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: isSelected 
-                                        ? ThemeConstants.primaryColor.withOpacity(0.2)
-                                        : Colors.white,
+                                    color:
+                                        isSelected
+                                            ? ThemeConstants.primaryColor
+                                                .withOpacity(0.2)
+                                            : Colors.white,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                            category['icon'] ?? '📋',
+                                    category['icon'] ?? '📋',
                                     style: const TextStyle(fontSize: 20),
-                          ),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Flexible(
@@ -871,31 +912,41 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       height: 1.2,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? ThemeConstants.primaryColor : Colors.grey[700],
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                      color:
+                                          isSelected
+                                              ? ThemeConstants.primaryColor
+                                              : Colors.grey[700],
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    textHeightBehavior: const TextHeightBehavior(
-                                      applyHeightToFirstAscent: false,
-                                      applyHeightToLastDescent: false,
-                                    ),
+                                    textHeightBehavior:
+                                        const TextHeightBehavior(
+                                          applyHeightToFirstAscent: false,
+                                          applyHeightToLastDescent: false,
+                                        ),
                                   ),
                                 ),
-                        ],
-                      ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
               // Job Description Section
-              _buildSectionHeader('Job Description', Icons.description_outlined),
+              _buildSectionHeader(
+                'Job Description',
+                Icons.description_outlined,
+              ),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -913,7 +964,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 child: TextFormField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    hintText: 'Describe the work in detail...\n\n• What needs to be done?\n• Any specific requirements?\n• Location details?\n• Working conditions?',
+                    hintText:
+                        'Describe the work in detail...\n\n• What needs to be done?\n• Any specific requirements?\n• Location details?\n• Working conditions?',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -973,7 +1025,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.grey.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -989,7 +1044,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Image Preview or Placeholder
                     Container(
                       width: double.infinity,
@@ -999,79 +1054,85 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: _hasImage
-                          ? Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    _getCategoryImage(_selectedCategory),
-                                    width: double.infinity,
-                                    height: 200,
-                                    fit: BoxFit.cover,
+                      child:
+                          _hasImage
+                              ? Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.asset(
+                                      _getCategoryImage(_selectedCategory),
+                                      width: double.infinity,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: GestureDetector(
-                                    onTap: _removeImage,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: GestureDetector(
+                                      onTap: _removeImage,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Template preview based on category
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: ThemeConstants.primaryColor.withOpacity(0.1),
+                                ],
+                              )
+                              : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Template preview based on category
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: ThemeConstants.primaryColor
+                                          .withOpacity(0.1),
+                                    ),
+                                    child: JobImagePlaceholders.getJobImage(
+                                      null,
+                                      _getCategoryDisplayName(
+                                        _selectedCategory,
+                                      ),
+                                    ),
                                   ),
-                                  child: JobImagePlaceholders.getJobImage(
-                                    null,
-                                    _getCategoryDisplayName(_selectedCategory),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    context.tr('add_job_image'),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  context.tr('add_job_image'),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    context.tr('image_optional_desc'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[500],
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  context.tr('image_optional_desc'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[500],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Add Image Button
                     if (!_hasImage)
                       SizedBox(
@@ -1081,7 +1142,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           icon: const Icon(Icons.add_photo_alternate_outlined),
                           label: Text(context.tr('add_image')),
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: ThemeConstants.primaryColor),
+                            side: BorderSide(
+                              color: ThemeConstants.primaryColor,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -1089,7 +1152,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                         ),
                       ),
-                    
+
                     // Display Selected Image
                     if (_hasImage && _selectedImage != null)
                       Container(
@@ -1158,9 +1221,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: TextFormField(
-                controller: _locationController,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_location'),
+                  controller: _locationController,
+                  decoration: InputDecoration(
+                    labelText: context.tr('job_location'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1172,19 +1235,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.location_on_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.my_location),
-                    onPressed: _getCurrentLocation,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.my_location),
+                      onPressed: _getCurrentLocation,
+                    ),
+                    hintText: context.tr('location_hint'),
                   ),
-                  hintText: context.tr('location_hint'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return context.tr('please_enter_location');
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return context.tr('please_enter_location');
-                  }
-                  return null;
-                },
-              ),
               ),
               const SizedBox(height: 24),
 
@@ -1205,68 +1268,72 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.tr('start_date'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectDate(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('start_date'),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_startDate.day}/${_startDate.month}/${_startDate.year}',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_startDate.day}/${_startDate.month}/${_startDate.year}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.tr('start_time'),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectTime(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.tr('start_time'),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _startTime.format(context),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                _startTime.format(context),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -1287,9 +1354,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: DropdownButtonFormField<String>(
-                value: _selectedDuration,
-                decoration: InputDecoration(
-                  labelText: context.tr('job_duration'),
+                  value: _selectedDuration,
+                  decoration: InputDecoration(
+                    labelText: context.tr('job_duration'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1301,19 +1368,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.schedule_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
+                  ),
+                  items:
+                      _durations.map((duration) {
+                        return DropdownMenuItem(
+                          value: duration['value'],
+                          child: Text(context.tr(duration['value'] ?? '')),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDuration = value!;
+                    });
+                  },
                 ),
-                items: _durations.map((duration) {
-                  return DropdownMenuItem(
-                    value: duration['value'],
-                    child: Text(context.tr(duration['value'] ?? '')),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDuration = value!;
-                  });
-                },
-              ),
               ),
               const SizedBox(height: 24),
 
@@ -1339,7 +1407,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          Icon(Icons.payment_outlined, color: ThemeConstants.primaryColor),
+                          Icon(
+                            Icons.payment_outlined,
+                            color: ThemeConstants.primaryColor,
+                          ),
                           const SizedBox(width: 12),
                           Text(
                             'Salary Range (TZS)',
@@ -1350,7 +1421,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.grey.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -1416,7 +1490,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           if (int.tryParse(value) == null) {
                             return 'Please enter valid amount';
                           }
-                          final minSalary = double.tryParse(_minPaymentController.text) ?? 0;
+                          final minSalary =
+                              double.tryParse(_minPaymentController.text) ?? 0;
                           final maxSalary = double.tryParse(value) ?? 0;
                           if (maxSalary < minSalary) {
                             return 'Maximum must be greater than minimum';
@@ -1448,32 +1523,33 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
                 child: DropdownButtonFormField<String>(
                   value: _selectedSalaryType,
-                        decoration: InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Salary Type',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
                     fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.all(16),
+                    contentPadding: const EdgeInsets.all(16),
                     prefixIcon: Icon(
                       Icons.attach_money_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
                   ),
-                  items: _salaryTypes.map((type) {
-                    return DropdownMenuItem(
-                      value: type['value'],
-                      child: Text(type['label'] ?? ''),
-                    );
-                  }).toList(),
+                  items:
+                      _salaryTypes.map((type) {
+                        return DropdownMenuItem(
+                          value: type['value'],
+                          child: Text(type['label'] ?? ''),
+                        );
+                      }).toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedSalaryType = value!;
                     });
                   },
-              ),
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -1494,9 +1570,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: DropdownButtonFormField<String>(
-                value: _selectedWorkers,
-                decoration: InputDecoration(
-                  labelText: context.tr('workers_needed'),
+                  value: _selectedWorkers,
+                  decoration: InputDecoration(
+                    labelText: context.tr('workers_needed'),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -1508,24 +1584,28 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.people_outlined,
                       color: ThemeConstants.primaryColor,
                     ),
+                  ),
+                  items:
+                      ['1', '2', '3', '4', '5+'].map((workers) {
+                        return DropdownMenuItem(
+                          value: workers,
+                          child: Text('$workers ${context.tr('person')}'),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedWorkers = value!;
+                    });
+                  },
                 ),
-                items: ['1', '2', '3', '4', '5+'].map((workers) {
-                  return DropdownMenuItem(
-                    value: workers,
-                    child: Text('$workers ${context.tr('person')}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedWorkers = value!;
-                  });
-                },
-              ),
               ),
               const SizedBox(height: 24),
 
               // Special Requirements (Optional)
-              _buildSectionHeader('Special Requirements', Icons.checklist_outlined),
+              _buildSectionHeader(
+                'Special Requirements',
+                Icons.checklist_outlined,
+              ),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -1547,17 +1627,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                child: TextFormField(
-                controller: _requirementsController,
-                decoration: InputDecoration(
+                            child: TextFormField(
+                              controller: _requirementsController,
+                              decoration: InputDecoration(
                                 labelText: 'Add Requirement',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
                                 fillColor: Colors.grey[50],
-                    contentPadding: const EdgeInsets.all(16),
+                                contentPadding: const EdgeInsets.all(16),
                                 hintText: 'Enter a requirement...',
                               ),
                             ),
@@ -1571,9 +1651,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                             ),
-                            child: const Text('Add'),
+                            child: Text(context.tr('add')),
                           ),
                         ],
                       ),
@@ -1613,24 +1696,31 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                       ),
                                     ),
                                     IconButton(
-                                      onPressed: () => _removeRequirement(index),
-                                      icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                      onPressed:
+                                          () => _removeRequirement(index),
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.red,
+                                      ),
                                       iconSize: 20,
                                     ),
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
                   ],
-              ),
+                ),
               ),
               const SizedBox(height: 24),
 
               // Contact Preference
-              _buildSectionHeader('Contact Preference', Icons.chat_bubble_outline),
+              _buildSectionHeader(
+                'Contact Preference',
+                Icons.chat_bubble_outline,
+              ),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
@@ -1646,34 +1736,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ],
                 ),
                 child: Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                         title: const Text('Chat'),
-                         subtitle: const Text('In-app messaging'),
-                      value: 'in_app',
-                      groupValue: _contactPreference,
-                      onChanged: (value) {
-                        setState(() {
-                          _contactPreference = value!;
-                        });
-                      },
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Chat'),
+                        subtitle: const Text('In-app messaging'),
+                        value: 'in_app',
+                        groupValue: _contactPreference,
+                        onChanged: (value) {
+                          setState(() {
+                            _contactPreference = value!;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String>(
-                         title: const Text('Call'),
-                         subtitle: const Text('Phone call'),
-                      value: 'phone',
-                      groupValue: _contactPreference,
-                      onChanged: (value) {
-                        setState(() {
-                          _contactPreference = value!;
-                        });
-                      },
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Call'),
+                        subtitle: const Text('Phone call'),
+                        value: 'phone',
+                        groupValue: _contactPreference,
+                        onChanged: (value) {
+                          setState(() {
+                            _contactPreference = value!;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -1691,22 +1781,27 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : Text(
+                          _isEditMode
+                              ? context.tr('update_job')
+                              : context.tr('post_job'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      )
-                    : Text(
-                        _isEditMode ? context.tr('update_job') : context.tr('post_job'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
               ),
             ],
           ),
@@ -1714,4 +1809,4 @@ class _PostJobScreenState extends State<PostJobScreen> {
       ),
     );
   }
-} 
+}

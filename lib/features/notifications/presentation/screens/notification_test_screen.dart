@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/job_service.dart';
 import '../../../../core/services/wallet_service.dart';
-import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/chat_service.dart';
 
 class NotificationTestScreen extends StatefulWidget {

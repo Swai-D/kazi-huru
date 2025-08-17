@@ -23,7 +23,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late ChatService _chatService;
-  bool _isLoading = true;
+  final bool _isLoading = true;
   bool _isSending = false;
 
   @override

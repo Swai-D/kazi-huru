@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/notification_model.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/localization_service.dart';
 import '../../../../core/constants/theme_constants.dart';
 import 'notification_settings_screen.dart';
 import 'notification_test_screen.dart';
@@ -26,25 +27,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Arifa Zako'),
+        title: Text(context.tr('notifications')),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.bug_report),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const NotificationTestScreen()),
-            ),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationTestScreen(),
+                  ),
+                ),
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationSettingsScreen(),
-              ),
-            ),
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationSettingsScreen(),
+                  ),
+                ),
           ),
         ],
       ),
@@ -52,23 +57,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           // Filter Chips
           _buildFilterChips(),
-          
+
           // Notifications List
           Expanded(
             child: ListenableBuilder(
               listenable: _notificationService,
               builder: (context, child) {
                 final notifications = _getFilteredNotifications();
-                
+
                 if (notifications.isEmpty) {
                   return _buildEmptyState();
                 }
-                
+
                 return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: notifications.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
+                  padding: const EdgeInsets.all(16),
+                  itemCount: notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
                     return _buildNotificationTile(notifications[index]);
                   },
                 );
@@ -77,7 +82,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-
     );
   }
 
@@ -88,15 +92,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterChip('Zote', null),
+            _buildFilterChip(context.tr('all'), null),
             const SizedBox(width: 8),
-            _buildFilterChip('💼 Kazi', NotificationType.jobApplication),
+            _buildFilterChip(
+              '💼 ${context.tr('jobs')}',
+              NotificationType.jobApplication,
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip('💰 Malipo', NotificationType.payment),
+            _buildFilterChip(
+              '💰 ${context.tr('payments')}',
+              NotificationType.payment,
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip('🆔 Uthibitishaji', NotificationType.verification),
+            _buildFilterChip(
+              '🆔 ${context.tr('verification')}',
+              NotificationType.verification,
+            ),
             const SizedBox(width: 8),
-            _buildFilterChip('💬 Ujumbe', NotificationType.chat),
+            _buildFilterChip(
+              '💬 ${context.tr('messages')}',
+              NotificationType.chat,
+            ),
           ],
         ),
       ),
@@ -150,19 +166,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _getNotificationColor(notification.type).withOpacity(0.1),
+                  color: _getNotificationColor(
+                    notification.type,
+                  ).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Center(
                   child: Text(
                     notification.icon,
                     style: const TextStyle(fontSize: 16),
-            ),
+                  ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Notification Content
               Expanded(
                 child: Column(
@@ -172,14 +190,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         Expanded(
                           child: Text(
-              notification.title,
-              style: TextStyle(
-                              fontWeight: notification.isRead 
-                                ? FontWeight.normal 
-                                : FontWeight.bold,
+                            notification.title,
+                            style: TextStyle(
+                              fontWeight:
+                                  notification.isRead
+                                      ? FontWeight.normal
+                                      : FontWeight.bold,
                               fontSize: 16,
-              ),
-            ),
+                            ),
+                          ),
                         ),
                         if (!notification.isRead)
                           Container(
@@ -202,7 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-              _formatTime(notification.timestamp),
+                      _formatTime(notification.timestamp),
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: 12,
@@ -211,34 +230,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ],
                 ),
               ),
-              
+
               // Action Menu
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onSelected: (value) => _handleNotificationAction(value, notification),
-                itemBuilder: (context) => [
-                  if (!notification.isRead)
-                    const PopupMenuItem(
-                      value: 'mark_read',
-                      child: Row(
-                        children: [
-                          Icon(Icons.check, size: 16),
-                          SizedBox(width: 8),
-                          Text('Soma'),
-                        ],
+                onSelected:
+                    (value) => _handleNotificationAction(value, notification),
+                itemBuilder:
+                    (context) => [
+                      if (!notification.isRead)
+                        const PopupMenuItem(
+                          value: 'mark_read',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check, size: 16),
+                              SizedBox(width: 8),
+                              Text('Soma'),
+                            ],
+                          ),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 16, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Futa', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
                       ),
-                    ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 16, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Futa', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
+                    ],
               ),
             ],
           ),
@@ -252,11 +273,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.notifications_none,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.notifications_none, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'Hakuna Arifa',
@@ -265,13 +282,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade600,
             ),
-            ),
+          ),
           const SizedBox(height: 8),
           Text(
             'Hakuna arifa mpya kwa sasa',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -302,7 +317,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!notification.isRead) {
       _notificationService.markAsRead(notification.id);
     }
-    
+
     // Navigate to notification detail screen
     Navigator.pushNamed(
       context,
@@ -311,7 +326,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  void _handleNotificationAction(String action, NotificationModel notification) {
+  void _handleNotificationAction(
+    String action,
+    NotificationModel notification,
+  ) {
     switch (action) {
       case 'mark_read':
         _notificationService.markAsRead(notification.id);
@@ -325,51 +343,55 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _showTestNotificationDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Test Arifa'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.work),
-              title: const Text('Ombi la Kazi'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulateJobApplication('Usafi', 'John Doe');
-              },
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Test Arifa'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.work),
+                  title: const Text('Ombi la Kazi'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _notificationService.simulateJobApplication(
+                      'Usafi',
+                      'John Doe',
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.payment),
+                  title: const Text('Malipo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _notificationService.simulatePaymentReceived(25000);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.verified_user),
+                  title: const Text('Uthibitishaji'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _notificationService.simulateVerificationUpdate(true);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.payment),
-              title: const Text('Malipo'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulatePaymentReceived(25000);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.verified_user),
-              title: const Text('Uthibitishaji'),
-              onTap: () {
-                Navigator.pop(context);
-                _notificationService.simulateVerificationUpdate(true);
-        },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Funga'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Funga'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
-    
+
     if (diff.inMinutes < 60) {
       return '${diff.inMinutes}m iliyopita';
     } else if (diff.inHours < 24) {
@@ -380,4 +402,4 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return '${time.day}/${time.month}/${time.year}';
     }
   }
-} 
+}

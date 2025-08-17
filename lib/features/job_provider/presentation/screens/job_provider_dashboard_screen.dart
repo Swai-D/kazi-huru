@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
-import '../../../../core/services/verification_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/wallet_service.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
 import '../../../wallet/presentation/screens/wallet_screen.dart';
-import '../../../auth/presentation/screens/user_profile_screen.dart';
 import 'company_profile_screen.dart';
+import 'job_provider_profile_screen.dart';
 import 'dart:async';
 import '../../../../core/services/job_service.dart';
-import '../../../../core/models/job_model.dart';
 import 'post_job_screen.dart';
 import 'applications_screen.dart';
 import 'posted_jobs_screen.dart';
@@ -23,10 +21,12 @@ class JobProviderDashboardScreen extends StatefulWidget {
   const JobProviderDashboardScreen({super.key});
 
   @override
-  State<JobProviderDashboardScreen> createState() => _JobProviderDashboardScreenState();
+  State<JobProviderDashboardScreen> createState() =>
+      _JobProviderDashboardScreenState();
 }
 
-class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen> {
+class _JobProviderDashboardScreenState
+    extends State<JobProviderDashboardScreen> {
   int _selectedIndex = 0;
   // Verification service removed temporarily
   final NotificationService _notificationService = NotificationService();
@@ -50,13 +50,16 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        final userName = authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider';
-        
+        final userName =
+            authProvider.userProfile?['name'] ??
+            authProvider.currentUser?.displayName ??
+            'Job Provider';
+
         return PopScope(
           canPop: false,
           onPopInvoked: (didPop) {
             if (didPop) return;
-            
+
             // Prevent going back to login/register pages
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -68,13 +71,14 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             appBar: AppBar(
-              backgroundColor: Colors.white,
+              backgroundColor: ThemeConstants.primaryColor,
               elevation: 0,
               surfaceTintColor: Colors.transparent,
+              iconTheme: const IconThemeData(color: Colors.white),
               leading: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Padding(
@@ -94,14 +98,14 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: Colors.white,
                     ),
                   ),
                   Text(
-                    'Karibu tena! 👋',
-                    style: TextStyle(
+                    context.tr('welcome_message'),
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Colors.white70,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -112,26 +116,28 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Colors.grey[200]!,
+                      color: Colors.white.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
                   child: IconButton(
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.chat_bubble_outline,
-                      color: Colors.grey[700],
+                      color: Colors.white,
                       size: 20,
                     ),
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ChatListScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const ChatListScreen(),
+                        ),
                       );
                     },
-                    tooltip: 'Messages',
+                    tooltip: context.tr('messages'),
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(
                       minWidth: 36,
@@ -139,7 +145,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                     ),
                   ),
                 ),
-                
+
                 // Notifications Button
                 ListenableBuilder(
                   listenable: _notificationService,
@@ -148,28 +154,31 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                     return Container(
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.grey[200]!,
+                          color: Colors.white.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
                       child: Stack(
                         children: [
                           IconButton(
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.notifications_outlined,
-                              color: Colors.grey[700],
+                              color: Colors.white,
                               size: 20,
                             ),
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => const NotificationsScreen(),
+                                ),
                               );
                             },
-                            tooltip: 'Notifications',
+                            tooltip: context.tr('notifications'),
                             padding: const EdgeInsets.all(8),
                             constraints: const BoxConstraints(
                               minWidth: 36,
@@ -181,7 +190,10 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                               right: 6,
                               top: 6,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.red[500],
                                   borderRadius: BorderRadius.circular(8),
@@ -198,7 +210,9 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                                   minHeight: 14,
                                 ),
                                 child: Text(
-                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                  unreadCount > 99
+                                      ? '99+'
+                                      : unreadCount.toString(),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 9,
@@ -230,18 +244,23 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
             ),
             bottomNavigationBar: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                color: ThemeConstants.primaryColor,
+                border: Border(
+                  top: BorderSide(color: Colors.white.withOpacity(0.2)),
+                ),
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _BottomNavItem(
                         icon: Icons.dashboard_outlined,
-                        label: context.tr('dashboard'),
+                        label: context.tr('Home'),
                         selected: _selectedIndex == 0,
                         onTap: () => setState(() => _selectedIndex = 0),
                       ),
@@ -268,7 +287,8 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const CompanyProfileScreen(),
+                              builder:
+                                  (context) => const JobProviderProfileScreen(),
                             ),
                           );
                         },
@@ -288,9 +308,7 @@ class _JobProviderDashboardScreenState extends State<JobProviderDashboardScreen>
 class _DashboardContent extends StatefulWidget {
   final WalletService walletService;
 
-  const _DashboardContent({
-    required this.walletService,
-  });
+  const _DashboardContent({required this.walletService});
 
   @override
   State<_DashboardContent> createState() => _DashboardContentState();
@@ -317,7 +335,7 @@ class _DashboardContentState extends State<_DashboardContent> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final providerId = authProvider.currentUser?.uid ?? '';
-      
+
       final stats = await _jobService.getJobStatistics(providerId);
       if (mounted) {
         setState(() {
@@ -348,7 +366,9 @@ class _DashboardContentState extends State<_DashboardContent> {
             decoration: BoxDecoration(
               color: ThemeConstants.primaryColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: ThemeConstants.primaryColor.withOpacity(0.15)),
+              border: Border.all(
+                color: ThemeConstants.primaryColor.withOpacity(0.15),
+              ),
             ),
             child: Column(
               children: [
@@ -363,11 +383,17 @@ class _DashboardContentState extends State<_DashboardContent> {
                 const SizedBox(height: 12),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: ThemeConstants.primaryColor, width: 2),
+                    side: const BorderSide(
+                      color: ThemeConstants.primaryColor,
+                      width: 2,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(32),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
@@ -390,9 +416,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             ),
           ),
           const SizedBox(height: 24),
-          
 
-          
           // Quick Stats Section
           Text(
             'Takwimu Muhimu',
@@ -403,14 +427,17 @@ class _DashboardContentState extends State<_DashboardContent> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Quick Stats Grid - Only essential stats for MVP
           Row(
             children: [
               Expanded(
                 child: _QuickStatCard(
                   title: 'Maombi Mapya',
-                  value: _isLoadingStats ? '...' : '${_statistics['totalApplications']}',
+                  value:
+                      _isLoadingStats
+                          ? '...'
+                          : '${_statistics['totalApplications']}',
                   icon: Icons.people_outline,
                   color: Colors.blue,
                   onTap: () {
@@ -427,7 +454,8 @@ class _DashboardContentState extends State<_DashboardContent> {
               Expanded(
                 child: _QuickStatCard(
                   title: 'Kazi Zinazoendelea',
-                  value: _isLoadingStats ? '...' : '${_statistics['activeJobs']}',
+                  value:
+                      _isLoadingStats ? '...' : '${_statistics['activeJobs']}',
                   icon: Icons.play_circle_outline,
                   color: Colors.orange,
                   onTap: () {
@@ -448,7 +476,10 @@ class _DashboardContentState extends State<_DashboardContent> {
               Expanded(
                 child: _QuickStatCard(
                   title: 'Watumishi Walioonekana',
-                  value: _isLoadingStats ? '...' : '${_statistics['availableJobSeekers'] ?? 0}',
+                  value:
+                      _isLoadingStats
+                          ? '...'
+                          : '${_statistics['availableJobSeekers'] ?? 0}',
                   icon: Icons.people_outline,
                   color: Colors.teal,
                   onTap: () {
@@ -465,7 +496,10 @@ class _DashboardContentState extends State<_DashboardContent> {
               Expanded(
                 child: _QuickStatCard(
                   title: 'Kazi Zilizokamilika',
-                  value: _isLoadingStats ? '...' : '${_statistics['completedJobs']}',
+                  value:
+                      _isLoadingStats
+                          ? '...'
+                          : '${_statistics['completedJobs']}',
                   icon: Icons.check_circle_outline,
                   color: Colors.green,
                   onTap: () {
@@ -481,7 +515,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Quick Actions Section
           Text(
             'Vitendo Muhimu',
@@ -492,7 +526,7 @@ class _DashboardContentState extends State<_DashboardContent> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Quick Actions Grid - Only essential actions for MVP
           Row(
             children: [
@@ -619,11 +653,7 @@ class _QuickStatCard extends StatelessWidget {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
                 const Spacer(),
                 Icon(
@@ -645,10 +675,7 @@ class _QuickStatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -701,11 +728,7 @@ class _QuickActionCard extends StatelessWidget {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
                 const Spacer(),
                 Icon(
@@ -727,10 +750,7 @@ class _QuickActionCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -759,17 +779,13 @@ class _BottomNavItem extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: selected ? ThemeConstants.primaryColor : Colors.grey,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
+          Icon(icon, color: selected ? Colors.white : Colors.white70, size: 28),
+          const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              color: selected ? ThemeConstants.primaryColor : Colors.grey,
-              fontSize: 12,
+              color: selected ? Colors.white : Colors.white70,
+              fontSize: 13,
               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -777,4 +793,4 @@ class _BottomNavItem extends StatelessWidget {
       ),
     );
   }
-} 
+}

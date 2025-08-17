@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/providers/auth_provider.dart';
-import '../../../../core/constants/theme_constants.dart';
 
 class AuthTestScreen extends StatefulWidget {
   const AuthTestScreen({super.key});

@@ -17,18 +17,25 @@ class WalletScreen extends StatefulWidget {
 class _WalletScreenState extends State<WalletScreen> {
   final WalletService _walletService = WalletService();
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(context.tr('wallet')),
-        backgroundColor: Colors.white,
+        title: Text(
+          context.tr('wallet'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -48,8 +55,6 @@ class _WalletScreenState extends State<WalletScreen> {
             // Transaction History
             _buildTransactionHistory(),
             const SizedBox(height: 24),
-            
-
           ],
         ),
       ),
@@ -58,7 +63,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildBalanceCard() {
     final balance = _walletService.currentBalance;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -84,10 +89,7 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Text(
             context.tr('current_balance'),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
@@ -168,10 +170,7 @@ class _WalletScreenState extends State<WalletScreen> {
         children: [
           Text(
             context.tr('quick_actions'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -237,7 +236,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildTransactionHistory() {
     final recentTransactions = _walletService.getRecentTransactions(limit: 5);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -260,10 +259,10 @@ class _WalletScreenState extends State<WalletScreen> {
             children: [
               Expanded(
                 child: Text(
-                context.tr('recent_transactions'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  context.tr('recent_transactions'),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -281,27 +280,21 @@ class _WalletScreenState extends State<WalletScreen> {
             Center(
               child: Column(
                 children: [
-                  Icon(
-                    Icons.receipt_long,
-                    size: 48,
-                    color: Colors.grey[400],
-                  ),
+                  Icon(Icons.receipt_long, size: 48, color: Colors.grey[400]),
                   const SizedBox(height: 8),
                   Text(
                     context.tr('no_transactions'),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   ),
                 ],
               ),
             )
           else
             Column(
-              children: recentTransactions.map((transaction) {
-                return _TransactionItem(transaction: transaction);
-              }).toList(),
+              children:
+                  recentTransactions.map((transaction) {
+                    return _TransactionItem(transaction: transaction);
+                  }).toList(),
             ),
         ],
       ),
@@ -322,46 +315,46 @@ class _WalletScreenState extends State<WalletScreen> {
   void _showHelpDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('wallet_help')),
-        content: Text(context.tr('wallet_help_message')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('ok')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(context.tr('wallet_help')),
+            content: Text(context.tr('wallet_help_message')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('ok')),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _showWalletInfo() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('wallet_info')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('• ${context.tr('application_fee_info')}'),
-            const SizedBox(height: 8),
-            Text('• ${context.tr('top_up_info')}'),
-            const SizedBox(height: 8),
-            Text('• ${context.tr('bonus_info')}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('ok')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(context.tr('wallet_info')),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('• ${context.tr('application_fee_info')}'),
+                const SizedBox(height: 8),
+                Text('• ${context.tr('top_up_info')}'),
+                const SizedBox(height: 8),
+                Text('• ${context.tr('bonus_info')}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('ok')),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
-
-
 }
 
 class _ActionCard extends StatelessWidget {
@@ -390,27 +383,17 @@ class _ActionCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: ThemeConstants.primaryColor,
-              size: 24,
-            ),
+            Icon(icon, color: ThemeConstants.primaryColor, size: 24),
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -434,17 +417,11 @@ class _TransactionItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          Icon(icon, color: color, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -452,27 +429,19 @@ class _TransactionItem extends StatelessWidget {
               children: [
                 Text(
                   transaction.description,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 Text(
                   _formatDate(transaction.timestamp),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
               ],
             ),
           ),
           Flexible(
             child: Text(
-            '${isCredit ? '+' : ''}TZS ${transaction.amount.abs().toStringAsFixed(0)}',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              ),
+              '${isCredit ? '+' : ''}TZS ${transaction.amount.abs().toStringAsFixed(0)}',
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -507,46 +476,49 @@ class _TransactionDetailsSheet extends StatelessWidget {
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.9,
-      builder: (context, scrollController) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+      builder:
+          (context, scrollController) => Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Text(
+                  context.tr('transaction_history'),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: allTransactions.length,
+                    itemBuilder: (context, index) {
+                      return _TransactionItem(
+                        transaction: allTransactions[index],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text(
-              context.tr('transaction_history'),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: allTransactions.length,
-                itemBuilder: (context, index) {
-                  return _TransactionItem(transaction: allTransactions[index]);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
-} 
+}

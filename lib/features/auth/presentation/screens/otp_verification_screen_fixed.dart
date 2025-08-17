@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/localization_service.dart';
-import '../../../../core/services/firestore_service.dart';
 import 'role_selection_screen.dart';
 import 'dart:async';
 
@@ -48,7 +46,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     super.initState();
     _currentOTP = widget.otp; // Initialize with widget OTP
     _startResendTimer();
-    
+
     // Request focus after a short delay to ensure widget is built
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
@@ -98,61 +96,63 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
     try {
       print('Verifying OTP...');
-      
+
       final enteredOTP = _otpController.text.trim();
-      
+
       // Use current OTP if available, otherwise use widget.otp
       String expectedOTP = _currentOTP.isNotEmpty ? _currentOTP : widget.otp;
-      
+
       print('🔍 OTP Verification Debug:');
       print('   Entered OTP: $enteredOTP');
       print('   Expected OTP: $expectedOTP');
       print('   OTP Length: ${enteredOTP.length}');
       print('   Expected Length: ${expectedOTP.length}');
-      
+
       if (enteredOTP != expectedOTP) {
         print('❌ OTP mismatch!');
         throw Exception('OTP si sahihi. Tafadhali jaribu tena.');
       }
-      
+
       print('✅ OTP verified successfully!');
 
       if (widget.isNewUser) {
         // Create new user account with email format
         final userCredential = await _authService.createUserWithEmailAndPassword(
-          email: widget.email, // This is already in format: +255767265780@kazihuru.com
+          email:
+              widget
+                  .email, // This is already in format: +255767265780@kazihuru.com
           password: widget.password,
         );
 
-        if (userCredential != null) {
-          // Create user profile
-          await _firestore.collection('users').doc(userCredential.user!.uid).set({
-            'name': widget.name,
-            'phoneNumber': widget.phoneNumber.replaceAll('+', ''), // Store without +
-            'role': widget.role,
-            'email': widget.email,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+        // Create user profile
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'name': widget.name,
+          'phoneNumber': widget.phoneNumber.replaceAll(
+            '+',
+            '',
+          ), // Store without +
+          'role': widget.role,
+          'email': widget.email,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
-          // Update display name
-          await userCredential.user!.updateDisplayName(widget.name);
+        // Update display name
+        await userCredential.user!.updateDisplayName(widget.name);
 
-          if (mounted) {
-            // Navigate to role selection for new users
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RoleSelectionScreen(
-                  phoneNumber: widget.phoneNumber,
-                  password: widget.password,
-                  name: widget.name,
-                ),
-              ),
-            );
-          }
-        } else {
-          throw Exception('Imeshindwa kuunda akaunti. Tafadhali jaribu tena.');
+        if (mounted) {
+          // Navigate to role selection for new users
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => RoleSelectionScreen(
+                    phoneNumber: widget.phoneNumber,
+                    password: widget.password,
+                    name: widget.name,
+                  ),
+            ),
+          );
         }
       } else {
         // Login existing user
@@ -161,22 +161,22 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           password: widget.password,
         );
 
-        if (userCredential != null) {
-          // Check if user has profile
-          final profileDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
-          
-          print('🔐 ===== OTP VERIFICATION FIXED LOGIN =====');
-          print('🔐 User logged in: ${userCredential.user!.uid}');
-          print('🔐 User email: ${userCredential.user!.email}');
-          print('🔐 Navigating to main app - AuthWrapper will handle routing');
-          print('🔐 ==========================================');
-          
-          // Navigate to main app and let AuthWrapper handle the routing
-          // This prevents direct navigation and role confusion
-          Navigator.pushReplacementNamed(context, '/');
-        } else {
-          throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
-        }
+        // Check if user has profile
+        final profileDoc =
+            await _firestore
+                .collection('users')
+                .doc(userCredential.user!.uid)
+                .get();
+
+        print('🔐 ===== OTP VERIFICATION FIXED LOGIN =====');
+        print('🔐 User logged in: ${userCredential.user!.uid}');
+        print('🔐 User email: ${userCredential.user!.email}');
+        print('🔐 Navigating to main app - AuthWrapper will handle routing');
+        print('🔐 ==========================================');
+
+        // Navigate to main app and let AuthWrapper handle the routing
+        // This prevents direct navigation and role confusion
+        Navigator.pushReplacementNamed(context, '/');
       }
     } catch (e) {
       print('Error verifying OTP: $e');
@@ -263,10 +263,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             const SizedBox(height: 10),
             Text(
               'Namba ya uthibitishaji imetumwa kwenye ${widget.phoneNumber}',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
@@ -291,7 +288,13 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                 ),
               ),
               maxLength: 6,
-              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+              buildCounter:
+                  (
+                    context, {
+                    required currentLength,
+                    required isFocused,
+                    maxLength,
+                  }) => null,
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -305,28 +308,31 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Thibitisha',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                child:
+                    _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'Thibitisha',
+                          style: TextStyle(fontSize: 18),
+                        ),
               ),
             ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Haujapokea? ',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                Text('Haujapokea? ', style: TextStyle(color: Colors.grey[600])),
                 TextButton(
                   onPressed: _canResend ? _resendOTP : null,
                   child: Text(
-                    _canResend ? 'Tuma tena' : 'Tuma tena (${_resendCountdown}s)',
+                    _canResend
+                        ? 'Tuma tena'
+                        : 'Tuma tena (${_resendCountdown}s)',
                     style: TextStyle(
-                      color: _canResend ? ThemeConstants.primaryColor : Colors.grey,
+                      color:
+                          _canResend
+                              ? ThemeConstants.primaryColor
+                              : Colors.grey,
                     ),
                   ),
                 ),
@@ -353,4 +359,4 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       ),
     );
   }
-} 
+}

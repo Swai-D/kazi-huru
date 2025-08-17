@@ -47,9 +47,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           elevation: 0,
           centerTitle: true,
         ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -76,26 +74,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[400],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading messages',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.red[600],
-                    ),
+                    context.tr('error_loading_messages'),
+                    style: TextStyle(fontSize: 18, color: Colors.red[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Please try again later',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    context.tr('please_try_again'),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -107,7 +95,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
 
           final chatRoomsDocs = snapshot.data!.docs;
-          
+
           if (chatRoomsDocs.isEmpty) {
             return Center(
               child: Column(
@@ -121,39 +109,41 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   const SizedBox(height: 16),
                   Text(
                     context.tr('no_messages_yet'),
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     context.tr('start_conversation'),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
                       // Get user role from AuthProvider
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final userRole = authProvider.userProfile?['role'] ?? 'job_seeker';
-                      
+                      final authProvider = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
+                      final userRole =
+                          authProvider.userProfile?['role'] ?? 'job_seeker';
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ChatUsersScreen(userRole: userRole),
+                          builder:
+                              (context) => ChatUsersScreen(userRole: userRole),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ThemeConstants.primaryColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
-                    child: const Text('Find People to Chat'),
+                    child: Text(context.tr('find_people_to_chat')),
                   ),
                 ],
               ),
@@ -165,7 +155,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemCount: chatRoomsDocs.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
-              final chatRoomData = chatRoomsDocs[index].data() as Map<String, dynamic>;
+              final chatRoomData =
+                  chatRoomsDocs[index].data() as Map<String, dynamic>;
               final chatRoom = ChatRoom(
                 id: chatRoomsDocs[index].id,
                 participant1Id: chatRoomData['participants'][0] ?? '',
@@ -175,12 +166,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 participant1Avatar: chatRoomData['participantAvatars']?[0],
                 participant2Avatar: chatRoomData['participantAvatars']?[1],
                 lastMessage: chatRoomData['lastMessage'] ?? '',
-                lastMessageTime: (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+                lastMessageTime:
+                    (chatRoomData['lastMessageTime'] as Timestamp?)?.toDate() ??
+                    DateTime.now(),
                 unreadCount: chatRoomData['unreadCount'] ?? 0,
                 isActive: chatRoomData['isActive'] ?? true,
               );
-              final otherUserName = chatRoom.getOtherParticipantName(_currentUserId!);
-              final otherUserAvatar = chatRoom.getOtherParticipantAvatar(_currentUserId!);
+              final otherUserName = chatRoom.getOtherParticipantName(
+                _currentUserId!,
+              );
+              final otherUserAvatar = chatRoom.getOtherParticipantAvatar(
+                _currentUserId!,
+              );
               final hasUnread = chatRoom.unreadCount > 0;
 
               return GestureDetector(
@@ -188,24 +185,27 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ChatDetailScreen(
-                        chatRoom: chatRoom,
-                        currentUserId: _currentUserId!,
-                      ),
+                      builder:
+                          (context) => ChatDetailScreen(
+                            chatRoom: chatRoom,
+                            currentUserId: _currentUserId!,
+                          ),
                     ),
                   );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: hasUnread 
-                        ? ThemeConstants.primaryColor.withOpacity(0.1)
-                        : Colors.white,
+                    color:
+                        hasUnread
+                            ? ThemeConstants.primaryColor.withOpacity(0.1)
+                            : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: hasUnread 
-                          ? ThemeConstants.primaryColor.withOpacity(0.3)
-                          : Colors.grey.shade200,
+                      color:
+                          hasUnread
+                              ? ThemeConstants.primaryColor.withOpacity(0.3)
+                              : Colors.grey.shade200,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -220,15 +220,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     children: [
                       CircleAvatar(
                         backgroundColor: ThemeConstants.primaryColor,
-                        backgroundImage: otherUserAvatar != null 
-                            ? NetworkImage(otherUserAvatar) 
-                            : null,
-                        child: otherUserAvatar == null
-                            ? Text(
-                                otherUserName.isNotEmpty ? otherUserName[0].toUpperCase() : '?',
-                                style: const TextStyle(color: Colors.white),
-                              )
-                            : null,
+                        backgroundImage:
+                            otherUserAvatar != null
+                                ? NetworkImage(otherUserAvatar)
+                                : null,
+                        child:
+                            otherUserAvatar == null
+                                ? Text(
+                                  otherUserName.isNotEmpty
+                                      ? otherUserName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(color: Colors.white),
+                                )
+                                : null,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -242,9 +246,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                   child: Text(
                                     otherUserName,
                                     style: TextStyle(
-                                      fontWeight: hasUnread 
-                                          ? FontWeight.bold 
-                                          : FontWeight.normal,
+                                      fontWeight:
+                                          hasUnread
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                       fontSize: 16,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -263,12 +268,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             Text(
                               chatRoom.lastMessage,
                               style: TextStyle(
-                                color: hasUnread 
-                                    ? Colors.black87 
-                                    : Colors.grey,
-                                fontWeight: hasUnread 
-                                    ? FontWeight.w500 
-                                    : FontWeight.normal,
+                                color: hasUnread ? Colors.black87 : Colors.grey,
+                                fontWeight:
+                                    hasUnread
+                                        ? FontWeight.w500
+                                        : FontWeight.normal,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -306,9 +310,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Get user role from AuthProvider
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
           final userRole = authProvider.userProfile?['role'] ?? 'job_seeker';
-          
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -333,4 +340,4 @@ class _ChatListScreenState extends State<ChatListScreen> {
       return '${diff.inDays}d';
     }
   }
-} 
+}

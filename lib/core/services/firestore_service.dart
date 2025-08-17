@@ -267,7 +267,7 @@ class FirestoreService {
             
             // Get user details
             final userDoc = await _firestore.collection(usersCollection).doc(applicantId).get();
-            final userData = userDoc.data() as Map<String, dynamic>?;
+            final userData = userDoc.data();
             
             applicationsWithDetails.add({
               'id': doc.id,
@@ -305,7 +305,7 @@ class FirestoreService {
               
               // Get user details
               final userDoc = await _firestore.collection(usersCollection).doc(applicantId).get();
-              final userData = userDoc.data() as Map<String, dynamic>?;
+              final userData = userDoc.data();
               
               allApplications.add({
                 'id': appDoc.id,
@@ -334,7 +334,7 @@ class FirestoreService {
   }) async {
     try {
       // Create or get chat room
-      final chatRoomId = '${jobId}_${applicationId}';
+      final chatRoomId = '${jobId}_$applicationId';
       
       // Add message to chat
       await _firestore

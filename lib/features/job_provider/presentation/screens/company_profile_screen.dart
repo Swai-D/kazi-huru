@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -19,7 +20,7 @@ class CompanyProfileScreen extends StatefulWidget {
 class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   String _selectedLanguage = 'sw';
   final JobService _jobService = JobService();
-  
+
   List<JobModel> _recentJobs = [];
   List<Map<String, dynamic>> _recentApplications = [];
   Map<String, dynamic> _statistics = {
@@ -50,7 +51,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final providerId = authProvider.currentUser?.uid ?? '';
-      
+
       final stats = await _jobService.getJobStatistics(providerId);
       if (mounted) {
         setState(() {
@@ -71,8 +72,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final providerId = authProvider.currentUser?.uid ?? '';
-      
-      final jobsSnapshot = await _jobService.getJobsByProvider(providerId).first;
+
+      final jobsSnapshot =
+          await _jobService.getJobsByProvider(providerId).first;
       if (mounted) {
         setState(() {
           _recentJobs = jobsSnapshot.take(3).toList(); // Get latest 3 jobs
@@ -92,11 +94,13 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final providerId = authProvider.currentUser?.uid ?? '';
-      
-      final applications = await _jobService.getProviderApplications(providerId).first;
+
+      final applications =
+          await _jobService.getProviderApplications(providerId).first;
       if (mounted) {
         setState(() {
-          _recentApplications = applications.take(3).toList(); // Get latest 3 applications
+          _recentApplications =
+              applications.take(3).toList(); // Get latest 3 applications
           _isLoadingApplications = false;
         });
       }
@@ -112,13 +116,89 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
     } else if (difference.inHours > 0) {
       return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
     } else {
       return 'Just now';
+    }
+  }
+
+  String _formatPriceRange(dynamic price) {
+    if (price == null || price.toString().isEmpty) return 'TZS 5,000 - 50,000';
+
+    try {
+      final priceStr = price.toString();
+      if (priceStr.contains('-')) {
+        // Already a range
+        final parts = priceStr.split('-');
+        if (parts.length == 2) {
+          final min = int.tryParse(
+            parts[0].trim().replaceAll(RegExp(r'[^\d]'), ''),
+          );
+          final max = int.tryParse(
+            parts[1].trim().replaceAll(RegExp(r'[^\d]'), ''),
+          );
+          if (min != null && max != null) {
+            return 'TZS ${_formatNumber(min)} - ${_formatNumber(max)}';
+          }
+        }
+        return 'TZS $priceStr';
+      } else {
+        // Single price
+        final numPrice = int.tryParse(
+          priceStr.replaceAll(RegExp(r'[^\d]'), ''),
+        );
+        if (numPrice != null) {
+          return 'TZS ${_formatNumber(numPrice)}';
+        }
+        return 'TZS $priceStr';
+      }
+    } catch (e) {
+      return 'TZS 5,000 - 50,000';
+    }
+  }
+
+  String _formatNumber(dynamic number) {
+    final num = number is int ? number.toDouble() : (number ?? 0.0);
+    return num.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
+
+  String _formatJoinDate(dynamic date) {
+    if (date == null) return 'Hivi karibuni';
+
+    try {
+      if (date is Timestamp) {
+        final joinDate = date.toDate();
+        final months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
+
+        final day = joinDate.day.toString().padLeft(2, '0');
+        final month = months[joinDate.month - 1];
+        final year = joinDate.year;
+
+        return '$day $month $year';
+      }
+      return 'Hivi karibuni';
+    } catch (e) {
+      return 'Hivi karibuni';
     }
   }
 
@@ -149,23 +229,28 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         title: Text(
           context.tr('profile'),
           style: const TextStyle(
-            color: ThemeConstants.textColor,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ThemeConstants.textColor),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           // Debug button for profile refresh
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.blue),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () async {
-              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
               await authProvider.refreshUserProfile();
               await _loadData(); // Reload data
               ScaffoldMessenger.of(context).showSnackBar(
@@ -207,7 +292,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         radius: 50,
                         backgroundColor: ThemeConstants.primaryColor,
                         child: Text(
-                          (authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'J')[0].toUpperCase(),
+                          (authProvider.userProfile?['name'] ??
+                                  authProvider.currentUser?.displayName ??
+                                  'J')[0]
+                              .toUpperCase(),
                           style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -217,7 +305,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
+                        authProvider.userProfile?['name'] ??
+                            authProvider.currentUser?.displayName ??
+                            'Job Provider',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -238,15 +328,24 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         children: [
                           _StatItem(
                             title: context.tr('jobs_posted'),
-                            value: _isLoadingStats ? '...' : '${_statistics['totalJobs']}',
+                            value:
+                                _isLoadingStats
+                                    ? '...'
+                                    : '${_statistics['totalJobs']}',
                           ),
                           _StatItem(
                             title: context.tr('completed_jobs'),
-                            value: _isLoadingStats ? '...' : '${_statistics['completedJobs']}',
+                            value:
+                                _isLoadingStats
+                                    ? '...'
+                                    : '${_statistics['completedJobs']}',
                           ),
                           _StatItem(
                             title: context.tr('applications'),
-                            value: _isLoadingStats ? '...' : '${_statistics['totalApplications']}',
+                            value:
+                                _isLoadingStats
+                                    ? '...'
+                                    : '${_statistics['totalApplications']}',
                           ),
                         ],
                       ),
@@ -287,7 +386,10 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.edit, color: ThemeConstants.primaryColor),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: ThemeConstants.primaryColor,
+                            ),
                             onPressed: () {
                               // TODO: Navigate to edit profile screen
                             },
@@ -296,15 +398,50 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       _InfoRow(
-                        icon: Icons.email,
-                        label: context.tr('email'),
-                        value: authProvider.currentUser?.email ?? 'No email',
+                        icon: Icons.phone,
+                        label: 'Simu',
+                        value:
+                            authProvider.userProfile?['phoneNumber'] ??
+                            'No phone',
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(
-                        icon: Icons.phone,
-                        label: context.tr('phone'),
-                        value: authProvider.userProfile?['phoneNumber'] ?? 'No phone',
+                        icon: Icons.location_on,
+                        label: 'Mahali',
+                        value:
+                            authProvider.userProfile?['location'] ??
+                            'Haijabainishwa',
+                      ),
+                      const SizedBox(height: 12),
+                      _InfoRow(
+                        icon: Icons.business,
+                        label: 'Kampuni/Shirika',
+                        value:
+                            authProvider.userProfile?['company'] ?? 'Binafsi',
+                      ),
+                      const SizedBox(height: 12),
+                      _InfoRow(
+                        icon: Icons.attach_money,
+                        label: 'Bei ya Siku',
+                        value: _formatPriceRange(
+                          authProvider.userProfile?['dailyRate'],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _InfoRow(
+                        icon: Icons.work,
+                        label: 'Bei ya Kazi',
+                        value: _formatPriceRange(
+                          authProvider.userProfile?['jobRate'],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _InfoRow(
+                        icon: Icons.calendar_today,
+                        label: 'Alijiunga',
+                        value: _formatJoinDate(
+                          authProvider.userProfile?['createdAt'],
+                        ),
                       ),
                     ],
                   ),
@@ -347,7 +484,8 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const PostedJobsScreen(),
+                                  builder:
+                                      (context) => const PostedJobsScreen(),
                                 ),
                               );
                             },
@@ -368,7 +506,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.work_outline, size: 48, color: Colors.grey[400]),
+                              Icon(
+                                Icons.work_outline,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 'No jobs posted yet',
@@ -382,18 +524,25 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                           ),
                         )
                       else
-                        ..._recentJobs.map((job) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _JobCard(
-                            title: job.title,
-                            company: authProvider.userProfile?['name'] ?? authProvider.currentUser?.displayName ?? 'Job Provider',
-                            location: job.location,
-                            salary: job.formattedPayment,
-                            status: job.status.toString().split('.').last,
-                            statusColor: _getStatusColor(job.status.toString().split('.').last),
-                            postedDate: _formatDate(job.createdAt),
+                        ..._recentJobs.map(
+                          (job) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _JobCard(
+                              title: job.title,
+                              company:
+                                  authProvider.userProfile?['name'] ??
+                                  authProvider.currentUser?.displayName ??
+                                  'Job Provider',
+                              location: job.location,
+                              salary: job.formattedPayment,
+                              status: job.status.toString().split('.').last,
+                              statusColor: _getStatusColor(
+                                job.status.toString().split('.').last,
+                              ),
+                              postedDate: _formatDate(job.createdAt),
+                            ),
                           ),
-                        )),
+                        ),
                     ],
                   ),
                 ),
@@ -435,7 +584,8 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ApplicationsScreen(),
+                                  builder:
+                                      (context) => const ApplicationsScreen(),
                                 ),
                               );
                             },
@@ -456,7 +606,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         Center(
                           child: Column(
                             children: [
-                              Icon(Icons.people_outline, size: 48, color: Colors.grey[400]),
+                              Icon(
+                                Icons.people_outline,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 'No applications yet',
@@ -470,16 +624,27 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                           ),
                         )
                       else
-                        ..._recentApplications.map((application) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _ApplicationCard(
-                            applicantName: application['applicantName'] ?? 'Unknown',
-                            jobTitle: application['jobTitle'] ?? 'Unknown Job',
-                            appliedDate: _formatDate(DateTime.parse(application['appliedAt'] ?? DateTime.now().toIso8601String())),
-                            status: application['status'] ?? 'pending',
-                            statusColor: _getStatusColor(application['status'] ?? 'pending'),
+                        ..._recentApplications.map(
+                          (application) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _ApplicationCard(
+                              applicantName:
+                                  application['applicantName'] ?? 'Unknown',
+                              jobTitle:
+                                  application['jobTitle'] ?? 'Unknown Job',
+                              appliedDate: _formatDate(
+                                DateTime.parse(
+                                  application['appliedAt'] ??
+                                      DateTime.now().toIso8601String(),
+                                ),
+                              ),
+                              status: application['status'] ?? 'pending',
+                              statusColor: _getStatusColor(
+                                application['status'] ?? 'pending',
+                              ),
+                            ),
                           ),
-                        )),
+                        ),
                     ],
                   ),
                 ),
@@ -524,7 +689,8 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                                 });
                                 // Change language
                               },
-                              selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+                              selectedColor: ThemeConstants.primaryColor
+                                  .withOpacity(0.2),
                               checkmarkColor: ThemeConstants.primaryColor,
                             ),
                           ),
@@ -539,7 +705,8 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                                 });
                                 // Change language
                               },
-                              selectedColor: ThemeConstants.primaryColor.withOpacity(0.2),
+                              selectedColor: ThemeConstants.primaryColor
+                                  .withOpacity(0.2),
                               checkmarkColor: ThemeConstants.primaryColor,
                             ),
                           ),
@@ -555,10 +722,17 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                      final authProvider = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
                       await authProvider.signOut();
                       if (mounted) {
-                        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/login',
+                          (route) => false,
+                        );
                       }
                     },
                     icon: const Icon(Icons.logout),
@@ -586,10 +760,7 @@ class _StatItem extends StatelessWidget {
   final String title;
   final String value;
 
-  const _StatItem({
-    required this.title,
-    required this.value,
-  });
+  const _StatItem({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -606,10 +777,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
           textAlign: TextAlign.center,
         ),
       ],
@@ -639,17 +807,11 @@ class _InfoRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -727,10 +889,7 @@ class _JobCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   location,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -744,20 +903,14 @@ class _JobCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   salary,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 postedDate,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ],
           ),
@@ -823,10 +976,7 @@ class _ApplicationCard extends StatelessWidget {
                     ),
                     Text(
                       jobTitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -856,10 +1006,7 @@ class _ApplicationCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 appliedDate,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ],
           ),
@@ -867,4 +1014,4 @@ class _ApplicationCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

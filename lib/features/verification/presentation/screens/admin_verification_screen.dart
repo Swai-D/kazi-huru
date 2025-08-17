@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/services/verification_service.dart';
 import '../../../../core/models/verification_model.dart';
 import '../../../../core/services/localization_service.dart';
 

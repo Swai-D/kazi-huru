@@ -6,10 +6,12 @@ class ApplicationsReceivedScreen extends StatefulWidget {
   const ApplicationsReceivedScreen({super.key});
 
   @override
-  State<ApplicationsReceivedScreen> createState() => _ApplicationsReceivedScreenState();
+  State<ApplicationsReceivedScreen> createState() =>
+      _ApplicationsReceivedScreenState();
 }
 
-class _ApplicationsReceivedScreenState extends State<ApplicationsReceivedScreen> {
+class _ApplicationsReceivedScreenState
+    extends State<ApplicationsReceivedScreen> {
   String _selectedFilter = 'all';
 
   @override
@@ -20,15 +22,17 @@ class _ApplicationsReceivedScreenState extends State<ApplicationsReceivedScreen>
         title: Text(
           context.tr('applications_received'),
           style: const TextStyle(
-            color: ThemeConstants.textColor,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ThemeConstants.textColor),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -83,7 +87,7 @@ class _ApplicationsReceivedScreenState extends State<ApplicationsReceivedScreen>
               ],
             ),
           ),
-          
+
           // Applications List
           Expanded(
             child: ListView(
@@ -239,18 +243,11 @@ class _ApplicationCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(
-                Icons.phone,
-                size: 16,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.phone, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
               Text(
                 applicantPhone,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],
           ),
@@ -276,11 +273,7 @@ class _ApplicationCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
+                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -307,40 +300,23 @@ class _ApplicationCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                Icons.star,
-                size: 16,
-                color: Colors.amber[600],
-              ),
+              Icon(Icons.star, size: 16, color: Colors.amber[600]),
               const SizedBox(width: 4),
               Text(
                 '$rating',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(width: 16),
-              Icon(
-                Icons.work,
-                size: 16,
-                color: Colors.grey[600],
-              ),
+              Icon(Icons.work, size: 16, color: Colors.grey[600]),
               const SizedBox(width: 4),
               Text(
                 '$completedJobs ${context.tr('completed_jobs')}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const Spacer(),
               Text(
                 appliedDate,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -422,4 +398,4 @@ class _ApplicationCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

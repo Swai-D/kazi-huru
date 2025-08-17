@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 
 class PhoneNumberValidator {
   /// Validates and formats Tanzanian phone numbers

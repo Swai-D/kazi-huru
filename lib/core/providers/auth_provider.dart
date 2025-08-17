@@ -135,7 +135,7 @@ class AuthProvider extends ChangeNotifier {
           print('📱 Phone: ${_userProfile!['phoneNumber']}');
           print('🎭 Role: ${_userProfile!['role']}');
           print('📅 Created: ${_userProfile!['createdAt']}');
-          print('✅ Profile complete: ${hasCompleteProfile}');
+          print('✅ Profile complete: $hasCompleteProfile');
           print('🔐 =================================================');
         } else {
           print('🔐 ❌ No user profile found for user: ${_currentUser!.uid}');
@@ -447,6 +447,7 @@ class AuthProvider extends ChangeNotifier {
     String? email,
     String? profileImageUrl,
     Map<String, dynamic>? additionalData,
+    Map<String, dynamic>? updateData,
   }) async {
     if (_currentUser == null) {
       _setError('Hakuna mtumiaji wa sasa');
@@ -457,22 +458,61 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      Map<String, dynamic> updateData = {};
+      Map<String, dynamic> dataToUpdate = {};
       
-      if (name != null) updateData['name'] = name;
-      if (phoneNumber != null) updateData['phoneNumber'] = phoneNumber;
-      if (email != null) updateData['email'] = email;
-      if (profileImageUrl != null) updateData['profileImageUrl'] = profileImageUrl;
-      if (additionalData != null) updateData.addAll(additionalData);
+      // If updateData is provided, use it directly
+      if (updateData != null) {
+        dataToUpdate = updateData;
+      } else {
+        // Otherwise, build from individual parameters
+        if (name != null) dataToUpdate['name'] = name;
+        if (phoneNumber != null) dataToUpdate['phoneNumber'] = phoneNumber;
+        if (email != null) dataToUpdate['email'] = email;
+        if (profileImageUrl != null) dataToUpdate['profileImageUrl'] = profileImageUrl;
+        if (additionalData != null) dataToUpdate.addAll(additionalData);
+      }
 
+      await _firestoreService.updateUserProfile(
+        userId: _currentUser!.uid,
+        updateData: dataToUpdate,
+      );
+
+      // Update Firebase Auth display name if name is provided
+      if (dataToUpdate['name'] != null) {
+        await _authService.updateUserProfile(displayName: dataToUpdate['name']);
+      }
+
+      // Reload user profile
+      await _loadUserProfile();
+
+      return true;
+    } catch (e) {
+      _setError('Hitilafu katika kusasisha wasifu: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update user profile with Map data (for inline editing)
+  Future<bool> updateUserProfileWithMap(Map<String, dynamic> updateData) async {
+    if (_currentUser == null) {
+      _setError('Hakuna mtumiaji wa sasa');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
       await _firestoreService.updateUserProfile(
         userId: _currentUser!.uid,
         updateData: updateData,
       );
 
       // Update Firebase Auth display name if name is provided
-      if (name != null) {
-        await _authService.updateUserProfile(displayName: name);
+      if (updateData['name'] != null) {
+        await _authService.updateUserProfile(displayName: updateData['name']);
       }
 
       // Reload user profile

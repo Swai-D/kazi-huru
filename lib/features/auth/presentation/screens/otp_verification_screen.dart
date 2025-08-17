@@ -157,34 +157,30 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         password: widget.password,
       );
 
-      if (userCredential != null) {
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'name': widget.name,
-          'phoneNumber': widget.phoneNumber.replaceAll('+', ''),
-          'role': widget.role,
-          'email': widget.email,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'name': widget.name,
+        'phoneNumber': widget.phoneNumber.replaceAll('+', ''),
+        'role': widget.role,
+        'email': widget.email,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-        await userCredential.user!.updateDisplayName(widget.name);
+      await userCredential.user!.updateDisplayName(widget.name);
 
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => RoleSelectionScreen(
-                phoneNumber: widget.phoneNumber,
-                password: widget.password,
-                name: widget.name,
-              ),
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoleSelectionScreen(
+              phoneNumber: widget.phoneNumber,
+              password: widget.password,
+              name: widget.name,
             ),
-          );
-        }
-      } else {
-        throw Exception('Imeshindwa kuunda akaunti. Tafadhali jaribu tena.');
+          ),
+        );
       }
-    } catch (e) {
+        } catch (e) {
       print('❌ Error creating new user: $e');
       setState(() {
         _errorMessage = e.toString();
@@ -199,20 +195,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         password: widget.password,
       );
 
-      if (userCredential != null) {
-        print('🔐 ===== OTP VERIFICATION LOGIN =====');
-        print('🔐 User logged in: ${userCredential.user!.uid}');
-        print('🔐 User email: ${userCredential.user!.email}');
-        print('🔐 Navigating to main app - AuthWrapper will handle routing');
-        print('🔐 ===================================');
-        
-        // Navigate to main app and let AuthWrapper handle the routing
-        // This prevents direct navigation and role confusion
-        Navigator.pushReplacementNamed(context, '/');
-      } else {
-        throw Exception('Imeshindwa kuingia. Tafadhali jaribu tena.');
-      }
-    } catch (e) {
+      print('🔐 ===== OTP VERIFICATION LOGIN =====');
+      print('🔐 User logged in: ${userCredential.user!.uid}');
+      print('🔐 User email: ${userCredential.user!.email}');
+      print('🔐 Navigating to main app - AuthWrapper will handle routing');
+      print('🔐 ===================================');
+      
+      // Navigate to main app and let AuthWrapper handle the routing
+      // This prevents direct navigation and role confusion
+      Navigator.pushReplacementNamed(context, '/');
+        } catch (e) {
       print('❌ Error logging in existing user: $e');
       setState(() {
         _errorMessage = e.toString();

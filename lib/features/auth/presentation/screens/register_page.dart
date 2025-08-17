@@ -56,46 +56,56 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       // Validate and format phone number
       String phoneNumber = _phoneController.text.trim();
-      
+
       if (!PhoneNumberValidator.isValidTanzanianPhoneNumber(phoneNumber)) {
-        throw FormatException('Namba ya simu si sahihi. Tafadhali weka namba sahihi ya Tanzania');
+        throw FormatException(
+          'Namba ya simu si sahihi. Tafadhali weka namba sahihi ya Tanzania',
+        );
       }
-      
-      phoneNumber = PhoneNumberValidator.formatTanzanianPhoneNumber(phoneNumber);
+
+      phoneNumber = PhoneNumberValidator.formatTanzanianPhoneNumber(
+        phoneNumber,
+      );
       print('📱 Formatted phone number: $phoneNumber');
 
       // Check if user already exists
       final userExists = await _authService.checkUserExists(phoneNumber);
-      
+
       if (userExists) {
         setState(() {
-          _errorMessage = AuthErrorHandler.getLocalizedErrorMessage('user-exists');
+          _errorMessage = AuthErrorHandler.getLocalizedErrorMessage(
+            'user-exists',
+          );
         });
         return;
       }
 
       // Send OTP for phone verification
       final otp = await _authService.sendOTP(phoneNumber);
-      
+
       if (otp != null) {
         if (mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OTPVerificationScreen(
-                phoneNumber: phoneNumber,
-                otp: otp,
-                email: '$phoneNumber@kazihuru.com', // Convert to email format
-                password: _passwordController.text,
-                isNewUser: true,
-                name: _nameController.text.trim(),
-                role: 'job_seeker',
-              ),
+              builder:
+                  (context) => OTPVerificationScreen(
+                    phoneNumber: phoneNumber,
+                    otp: otp,
+                    email:
+                        '$phoneNumber@kazihuru.com', // Convert to email format
+                    password: _passwordController.text,
+                    isNewUser: true,
+                    name: _nameController.text.trim(),
+                    role: 'job_seeker',
+                  ),
             ),
           );
         }
       } else {
-        throw Exception(AuthErrorHandler.getLocalizedErrorMessage('sms-send-failed'));
+        throw Exception(
+          AuthErrorHandler.getLocalizedErrorMessage('sms-send-failed'),
+        );
       }
     } catch (e) {
       setState(() {
@@ -174,11 +184,8 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tengeneza akaunti yako',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                context.tr('create_your_account'),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 32),
               TextFormField(
@@ -187,7 +194,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: context.tr('full_name'),
                   prefixIcon: const Icon(Icons.person),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.borderRadiusMedium,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -209,7 +218,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   hintText: '0712345678',
                   prefixIcon: const Icon(Icons.phone),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.borderRadiusMedium,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -224,7 +235,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   labelText: context.tr('password'),
                   prefixIcon: const Icon(Icons.lock),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.borderRadiusMedium,
+                    ),
                   ),
                 ),
                 validator: (value) {
@@ -242,18 +255,20 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Thibitisha Password',
+                  labelText: context.tr('confirm_password_label'),
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ThemeConstants.borderRadiusMedium),
+                    borderRadius: BorderRadius.circular(
+                      ThemeConstants.borderRadiusMedium,
+                    ),
                   ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Tafadhali thibitisha password';
+                    return context.tr('please_confirm_password');
                   }
                   if (value != _passwordController.text) {
-                    return 'Password hazifanani';
+                    return context.tr('passwords_mismatch');
                   }
                   return null;
                 },
@@ -264,12 +279,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _register,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          'Endelea',
-                          style: const TextStyle(fontSize: 16),
-                        ),
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                            context.tr('continue'),
+                            style: const TextStyle(fontSize: 16),
+                          ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -312,4 +328,4 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
-} 
+}

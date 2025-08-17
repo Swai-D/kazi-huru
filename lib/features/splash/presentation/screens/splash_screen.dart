@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/screens/login_page.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/services/localization_service.dart';
 import '../../../job_seeker/presentation/screens/job_seeker_dashboard_screen.dart';
 import '../../../job_provider/presentation/screens/job_provider_dashboard_screen.dart';
 
@@ -21,28 +22,20 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animations
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     // Start animation
     _animationController.forward();
@@ -54,28 +47,34 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _checkAuthAndNavigate() async {
     // Wait for animation to complete
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
 
     // Get auth provider
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     // Wait a bit more for auth state to be determined
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (!mounted) return;
 
     if (authProvider.isLoggedIn && authProvider.userProfile != null) {
       // User is authenticated and has profile - navigate to appropriate dashboard
       final userRole = authProvider.userRole;
-      
+
       if (userRole == 'job_seeker') {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                const JobSeekerDashboardScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            pageBuilder:
+                (context, animation, secondaryAnimation) =>
+                    const JobSeekerDashboardScreen(),
+            transitionsBuilder: (
+              context,
+              animation,
+              secondaryAnimation,
+              child,
+            ) {
               return FadeTransition(opacity: animation, child: child);
             },
             transitionDuration: const Duration(milliseconds: 500),
@@ -85,9 +84,15 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                const JobProviderDashboardScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            pageBuilder:
+                (context, animation, secondaryAnimation) =>
+                    const JobProviderDashboardScreen(),
+            transitionsBuilder: (
+              context,
+              animation,
+              secondaryAnimation,
+              child,
+            ) {
               return FadeTransition(opacity: animation, child: child);
             },
             transitionDuration: const Duration(milliseconds: 500),
@@ -99,23 +104,24 @@ class _SplashScreenState extends State<SplashScreen>
       }
     } else {
       // User is not authenticated - go to login
-    _navigateToLogin();
+      _navigateToLogin();
     }
   }
 
   Future<void> _navigateToLogin() async {
     if (!mounted) return;
-    
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const LoginPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => const LoginPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 500),
+      ),
+    );
   }
 
   @override
@@ -194,7 +200,7 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // App Name
                             Text(
                               'Kazi Huru',
@@ -207,10 +213,10 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 8),
-                            
+
                             // Tagline
                             Text(
-                              'Kazi Huru - Kazi Huru',
+                              context.tr('app_tagline'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
@@ -224,9 +230,9 @@ class _SplashScreenState extends State<SplashScreen>
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 60),
-                
+
                 // Loading Indicator
                 AnimatedBuilder(
                   animation: _animationController,
@@ -249,10 +255,10 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Loading text
                           Text(
-                            'Inapakia...',
+                            context.tr('loading'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
@@ -272,4 +278,4 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-} 
+}

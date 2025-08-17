@@ -9,10 +9,7 @@ import '../../../../core/services/notification_service.dart';
 class JobDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> job;
   
-  const JobDetailsScreen({
-    super.key,
-    required this.job,
-  });
+  const JobDetailsScreen({super.key, required this.job});
 
   @override
   State<JobDetailsScreen> createState() => _JobDetailsScreenState();
@@ -28,15 +25,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: Text(context.tr('job_details')),
-        backgroundColor: Colors.transparent,
+        title: Text(
+          context.tr('job_details'),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(
               _isSaved ? Icons.bookmark : Icons.bookmark_border,
-              color: _isSaved ? ThemeConstants.primaryColor : null,
+              color: _isSaved ? Colors.amber : Colors.white,
+              size: 24,
             ),
             onPressed: () {
               setState(() {
@@ -44,19 +51,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(_isSaved 
+                  content: Text(
+                    _isSaved
                     ? context.tr('job_saved') 
-                    : context.tr('job_removed_from_saved')),
+                        : context.tr('job_removed_from_saved'),
+                  ),
+                  backgroundColor: _isSaved ? Colors.green : Colors.orange,
                 ),
               );
             },
           ),
           IconButton(
-            icon: const Icon(Icons.share_outlined),
+            icon: const Icon(Icons.share_outlined, size: 24),
             onPressed: () {
-              // Share job functionality
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.tr('job_shared'))),
+                SnackBar(
+                  content: Text(context.tr('job_shared')),
+                  backgroundColor: ThemeConstants.primaryColor,
+                ),
               );
             },
           ),
@@ -66,12 +78,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Job Header
+            // Job Header with Hero Image
             _buildJobHeader(),
             
             // Job Details
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,6 +109,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   
                   // Similar Jobs
                   _buildSimilarJobs(),
+                  const SizedBox(height: 100), // Space for bottom bar
                 ],
               ),
             ),
@@ -108,19 +121,27 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Widget _buildJobHeader() {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      height: 300,
+      height: 280,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            ThemeConstants.primaryColor,
+            ThemeConstants.primaryColor.withOpacity(0.8),
+          ],
+        ),
+      ),
       child: Stack(
         children: [
-          // Full width background image
-          SizedBox(
-            width: double.infinity,
-            height: 300,
+          // Background Image with Overlay
+          Positioned.fill(
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
               ),
               child: Image.asset(
                 widget.job['image'] ?? 'assets/images/image_1.jpg',
@@ -131,8 +152,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     child: Center(
                       child: Icon(
                         Icons.work,
-                        color: ThemeConstants.primaryColor,
-                        size: 64,
+                        color: Colors.white.withOpacity(0.3),
+                        size: 80,
                       ),
                     ),
                   );
@@ -141,30 +162,34 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             ),
           ),
           
-          // Gradient overlay for better text readability
-          Container(
-            width: double.infinity,
-            height: 300,
+          // Gradient Overlay
+          Positioned.fill(
+            child: Container(
             decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.4),
+                    Colors.black.withOpacity(0.8),
                 ],
+                ),
               ),
             ),
           ),
           
-          // Content overlay
+          // Content
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -172,83 +197,81 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   Text(
                     widget.job['title'] ?? 'Job Title',
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   
-                  // Location and job type
+                  // Location
                   Row(
                     children: [
-                      Icon(
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
                         Icons.location_on_outlined,
                         color: Colors.white,
-                        size: 20,
+                          size: 18,
                       ),
-                      const SizedBox(width: 4),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           widget.job['location'] ?? 'Location',
                           style: const TextStyle(
                             fontSize: 16,
                             color: Colors.white,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   
                   // Category and type badges
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: ThemeConstants.primaryColor.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        child: Text(
-                          widget.job['category'] ?? 'General',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          widget.job['type'] ?? 'Full-time',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      // Payment amount
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          widget.job['payment'] ?? 'TZS 0',
-                          style: const TextStyle(
+                          widget.job['category'] ?? 'General',
+                          style: TextStyle(
                             color: ThemeConstants.primaryColor,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Active',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -264,57 +287,131 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Widget _buildJobDescription() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.description,
+                  color: ThemeConstants.primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
         Text(
           context.tr('job_description'),
           style: const TextStyle(
-            fontSize: 18,
+                  fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
+            ],
+          ),
+          const SizedBox(height: 16),
         Text(
           widget.job['description'] ?? 'No description available',
           style: const TextStyle(
             fontSize: 16,
-            height: 1.5,
+              height: 1.6,
+              color: Colors.grey,
           ),
         ),
       ],
+      ),
     );
   }
 
   Widget _buildRequirements() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.checklist,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
         Text(
           context.tr('requirements'),
           style: const TextStyle(
-            fontSize: 18,
+                  fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
+            ],
+          ),
+          const SizedBox(height: 16),
         ...List.generate(
           (widget.job['requirements'] as List?)?.length ?? 0,
           (index) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.check_circle_outline,
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
                   color: ThemeConstants.primaryColor,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     widget.job['requirements'][index],
-                    style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.4,
+                      ),
                   ),
                 ),
               ],
@@ -322,32 +419,62 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 
     Widget _buildProviderInfo() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.blue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
         Text(
           context.tr('about_provider'),
           style: const TextStyle(
-            fontSize: 18,
+                  fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
               children: [
                 CircleAvatar(
-                  radius: 25,
+                radius: 30,
                   backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
                   child: Icon(
                     Icons.person,
                     color: ThemeConstants.primaryColor,
+                  size: 30,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -358,7 +485,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       Text(
                         widget.job['provider_name'] ?? 'John Doe',
                         style: const TextStyle(
-                          fontSize: 16,
+                        fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -371,17 +498,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             color: Colors.grey[600],
                           ),
                           const SizedBox(width: 4),
-                          Text(
+                        Expanded(
+                          child: Text(
                             widget.job['provider_location'] ?? 'Dar es Salaam',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      // Rating stars
+                    const SizedBox(height: 8),
                       Row(
                         children: [
                           ...List.generate(5, (index) {
@@ -391,12 +520,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               color: index < 4 ? Colors.amber : Colors.grey[400],
                             );
                           }),
-                          const SizedBox(width: 4),
+                        const SizedBox(width: 8),
                           Text(
                             '4.2',
                             style: TextStyle(
-                              fontSize: 12,
+                            fontSize: 14,
                               color: Colors.grey[600],
+                            fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -404,50 +534,76 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios),
-                  onPressed: () {
-                    // Navigate to provider profile
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Opening ${widget.job['provider_name'] ?? 'Provider'}\'s profile...'),
-                      ),
-                    );
-                  },
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  color: ThemeConstants.primaryColor,
+                  size: 16,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildLocationAndSchedule() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
         Text(
           context.tr('location_and_schedule'),
           style: const TextStyle(
-            fontSize: 18,
+                  fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
+            ],
+          ),
+          const SizedBox(height: 16),
                 _buildLocationRow(),
-                const Divider(),
+          const Divider(height: 32),
                 _buildInfoRow(
                   Icons.schedule_outlined,
                   context.tr('schedule'),
                   widget.job['schedule'] ?? 'Flexible',
                 ),
-                const Divider(),
+          const Divider(height: 32),
                 _buildInfoRow(
                   Icons.calendar_today_outlined,
                   context.tr('start_date'),
@@ -455,19 +611,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 ),
               ],
             ),
-          ),
-        ),
-      ],
     );
   }
 
   Widget _buildLocationRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+    return Row(
         children: [
-          Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 20),
-          const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: ThemeConstants.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.location_on_outlined,
+            color: ThemeConstants.primaryColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,41 +639,38 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                   ),
                 ),
+              const SizedBox(height: 4),
                 Text(
                   widget.job['location'] ?? 'Not specified',
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          // Navigation Button
           Container(
+          padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: ThemeConstants.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: IconButton(
-              icon: const Icon(
+          child: Icon(
                 Icons.directions_outlined,
                 color: ThemeConstants.primaryColor,
-              ),
-              onPressed: () => _openNavigation(),
-              tooltip: context.tr('get_directions'),
+            size: 20,
             ),
           ),
         ],
-      ),
     );
   }
 
   Future<void> _openNavigation() async {
-    // Mock coordinates for demo - in real app, get from job data
-    const double jobLat = -6.8235; // Dar es Salaam coordinates
+    const double jobLat = -6.8235;
     const double jobLng = 39.2695;
     
     final success = await MapsService.openNavigation(
@@ -531,12 +690,21 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+    return Row(
         children: [
-          Icon(icon, color: Colors.grey[600], size: 20),
-          const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: ThemeConstants.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: ThemeConstants.primaryColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,76 +714,136 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
                   ),
                 ),
+              const SizedBox(height: 4),
                 Text(
                   value,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
         ],
-      ),
     );
   }
 
   Widget _buildPaymentDetails() {
-    return Column(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.payment,
+                  color: Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
         Text(
           context.tr('payment_details'),
           style: const TextStyle(
-            fontSize: 18,
+                  fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ThemeConstants.primaryColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ThemeConstants.primaryColor.withOpacity(0.1),
+              ),
+            ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       context.tr('payment_amount'),
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                     ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       widget.job['payment'] ?? 'TZS 0',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: ThemeConstants.primaryColor,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(height: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       context.tr('payment_method'),
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    Text(
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
                       widget.job['payment_method'] ?? 'Cash',
-                      style: const TextStyle(fontSize: 16),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ],
-            ),
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -623,26 +851,47 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.work_outline,
+                color: Colors.purple,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
         Text(
           context.tr('similar_jobs'),
           style: const TextStyle(
-            fontSize: 18,
+                fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
+          ],
+        ),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 120,
+          height: 140,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 3,
             itemBuilder: (context, index) {
               return Container(
-                width: 200,
-                margin: const EdgeInsets.only(right: 12),
+                width: 220,
+                margin: const EdgeInsets.only(right: 16),
                 child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -650,22 +899,34 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           'Similar Job ${index + 1}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
                         Text(
-                          'Location',
+                              'Dar es Salaam',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         Text(
                           'TZS 15,000',
                           style: TextStyle(
                             color: ThemeConstants.primaryColor,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                       ],
@@ -682,14 +943,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
             spreadRadius: 1,
-            blurRadius: 5,
+            blurRadius: 10,
             offset: const Offset(0, -2),
           ),
         ],
@@ -698,25 +959,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         child: Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
                 onPressed: () {
-                  // Contact provider functionality
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('contacting_provider'))),
+                    SnackBar(
+                      content: Text(context.tr('contacting_provider')),
+                      backgroundColor: ThemeConstants.primaryColor,
+                    ),
                   );
                 },
+                icon: const Icon(Icons.message_outlined),
+                label: Text(
+                  context.tr('contact_provider'),
+                  style: const TextStyle(fontSize: 16),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: ThemeConstants.primaryColor),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  context.tr('contact_provider'),
-                  style: TextStyle(
-                    color: ThemeConstants.primaryColor,
-                    fontWeight: FontWeight.w600,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -724,17 +985,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             const SizedBox(width: 16),
             Expanded(
               flex: 2,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 onPressed: _isApplying ? null : _applyForJob,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: _isApplying
+                icon: _isApplying
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -743,11 +996,17 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : Text(
-                        context.tr('apply_now'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                    : const Icon(Icons.work_outline),
+                label: Text(
+                  _isApplying ? 'Applying...' : context.tr('apply_now'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ThemeConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                         ),
                       ),
               ),
@@ -759,7 +1018,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   Future<void> _applyForJob() async {
-    // Check if user has enough balance
     if (!_walletService.hasEnoughBalanceForApplication()) {
       showDialog(
         context: context,
@@ -775,7 +1033,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Navigate to wallet screen
                   Navigator.pushNamed(context, '/wallet');
                 },
                 child: Text(context.tr('top_up')),
@@ -787,7 +1044,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       return;
     }
 
-    // Confirm application fee
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -815,7 +1071,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     });
 
     try {
-      // Deduct application fee
       final success = _walletService.deductApplicationFee(
         widget.job['title'],
         widget.job['id'],
@@ -828,11 +1083,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         return;
       }
 
-      // Apply for the job using the job service
       final applicationSuccess = await _jobService.applyForJob(
         jobId: widget.job['id'],
-        seekerId: 'user123', // This should come from current user
-        message: 'I am interested in this job', // Default message
+        seekerId: 'user123',
+        message: 'I am interested in this job',
       );
 
       if (mounted) {
@@ -841,7 +1095,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         });
 
         if (applicationSuccess) {
-          // Show success dialog
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -852,7 +1105,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.of(context).pop(); // Go back to job list
+                      Navigator.of(context).pop();
                     },
                     child: Text(context.tr('ok')),
                   ),
@@ -861,13 +1114,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             },
           );
         } else {
-          // Show error dialog
           showDialog(
             context: context,
             builder: (BuildContext context) {
               return AlertDialog(
-                title: Text('Error'),
-                content: Text('Failed to apply for job. Please try again.'),
+                title: const Text('Error'),
+                content: const Text('Failed to apply for job. Please try again.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -885,13 +1137,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           _isApplying = false;
         });
 
-        // Show error dialog
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Error'),
-              content: Text('An error occurred while applying for the job. Please try again.'),
+              title: const Text('Error'),
+              content: const Text(
+                'An error occurred while applying for the job. Please try again.',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),

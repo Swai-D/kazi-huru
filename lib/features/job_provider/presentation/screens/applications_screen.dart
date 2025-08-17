@@ -4,7 +4,6 @@ import 'dart:async';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/job_service.dart';
-import '../../../../core/models/job_model.dart';
 import '../../../../core/providers/auth_provider.dart';
 
 class ApplicationsScreen extends StatefulWidget {
@@ -36,31 +35,43 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   void _loadApplications() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final providerId = authProvider.currentUser?.uid ?? '';
-    
-    _applicationsSubscription = _jobService.getProviderApplications(providerId).listen((applications) {
-      if (mounted) {
-        setState(() {
-          _allApplications = applications;
-          _isLoading = false;
+
+    _applicationsSubscription = _jobService
+        .getProviderApplications(providerId)
+        .listen((applications) {
+          if (mounted) {
+            setState(() {
+              _allApplications = applications;
+              _isLoading = false;
+            });
+          }
         });
-      }
-    });
   }
 
   List<Map<String, dynamic>> get _filteredApplications {
     switch (_selectedFilter) {
       case 'pending':
-        return _allApplications.where((app) => app['status'] == 'pending').toList();
+        return _allApplications
+            .where((app) => app['status'] == 'pending')
+            .toList();
       case 'accepted':
-        return _allApplications.where((app) => app['status'] == 'accepted').toList();
+        return _allApplications
+            .where((app) => app['status'] == 'accepted')
+            .toList();
       case 'rejected':
-        return _allApplications.where((app) => app['status'] == 'rejected').toList();
+        return _allApplications
+            .where((app) => app['status'] == 'rejected')
+            .toList();
       default:
         return _allApplications;
     }
   }
 
-  Future<void> _handleApplicationAction(String jobId, String applicationId, String action) async {
+  Future<void> _handleApplicationAction(
+    String jobId,
+    String applicationId,
+    String action,
+  ) async {
     try {
       setState(() {
         _isLoading = true;
@@ -101,182 +112,199 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: application['applicantProfileImage'] != null
-                      ? NetworkImage(application['applicantProfileImage'])
-                      : null,
-                  child: application['applicantProfileImage'] == null
-                      ? Text(
-                          application['applicantName']?.substring(0, 1).toUpperCase() ?? 'A',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundImage:
+                          application['applicantProfileImage'] != null
+                              ? NetworkImage(
+                                application['applicantProfileImage'],
+                              )
+                              : null,
+                      child:
+                          application['applicantProfileImage'] == null
+                              ? Text(
+                                application['applicantName']
+                                        ?.substring(0, 1)
+                                        .toUpperCase() ??
+                                    'A',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            application['applicantName'] ?? 'Unknown',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeConstants.textColor,
+                            ),
                           ),
-                        )
-                      : null,
+                          Text(
+                            application['applicantPhone'] ?? '',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          if (application['applicantEmail'] != null)
+                            Text(
+                              application['applicantEmail'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        application['applicantName'] ?? 'Unknown',
+                        'Job: ${application['jobTitle']}',
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: ThemeConstants.textColor,
                         ),
                       ),
                       Text(
-                        application['applicantPhone'] ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        'Location: ${application['jobLocation']}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
-                      if (application['applicantEmail'] != null)
-                        Text(
-                          application['applicantEmail'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Job: ${application['jobTitle']}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                if (application['message'] != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ThemeConstants.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  Text(
-                    'Location: ${application['jobLocation']}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Message from applicant:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          application['message'],
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-            if (application['message'] != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ThemeConstants.primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Message from applicant:',
+                const SizedBox(height: 16),
+                if (application['status'] == 'pending') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _handleApplicationAction(
+                              application['jobId'],
+                              application['id'],
+                              'reject',
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                          child: const Text('Reject'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _handleApplicationAction(
+                              application['jobId'],
+                              application['id'],
+                              'accept',
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Accept'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          application['status'] == 'accepted'
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color:
+                            application['status'] == 'accepted'
+                                ? Colors.green
+                                : Colors.red,
+                      ),
+                    ),
+                    child: Text(
+                      application['status'] == 'accepted'
+                          ? 'Accepted'
+                          : 'Rejected',
                       style: TextStyle(
-                        fontSize: 14,
+                        color:
+                            application['status'] == 'accepted'
+                                ? Colors.green
+                                : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      application['message'],
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (application['status'] == 'pending') ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _handleApplicationAction(
-                          application['jobId'],
-                          application['id'],
-                          'reject',
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                      child: const Text('Reject'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _handleApplicationAction(
-                          application['jobId'],
-                          application['id'],
-                          'accept',
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Accept'),
-                    ),
                   ),
                 ],
-              ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: application['status'] == 'accepted' 
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: application['status'] == 'accepted' ? Colors.green : Colors.red,
-                  ),
-                ),
-                child: Text(
-                  application['status'] == 'accepted' ? 'Accepted' : 'Rejected',
-                  style: TextStyle(
-                    color: application['status'] == 'accepted' ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
     );
   }
 
@@ -290,14 +318,15 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF222B45),
+            color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF222B45)),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -366,63 +395,66 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
               ],
             ),
           ),
-          
+
           // Applications List
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredApplications.isEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredApplications.isEmpty
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 64,
-                              color: Colors.grey[400],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No applications found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No applications found',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Applications will appear here when people apply to your jobs',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Applications will appear here when people apply to your jobs',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[500],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredApplications.length,
-                        itemBuilder: (context, index) {
-                          final application = _filteredApplications[index];
-                          return _ApplicationCard(
-                            application: application,
-                            onTap: () => _showApplicationDetails(application),
-                            onAccept: () => _handleApplicationAction(
-                              application['jobId'],
-                              application['id'],
-                              'accept',
-                            ),
-                            onReject: () => _handleApplicationAction(
-                              application['jobId'],
-                              application['id'],
-                              'reject',
-                            ),
-                          );
-                        },
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
+                    )
+                    : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredApplications.length,
+                      itemBuilder: (context, index) {
+                        final application = _filteredApplications[index];
+                        return _ApplicationCard(
+                          application: application,
+                          onTap: () => _showApplicationDetails(application),
+                          onAccept:
+                              () => _handleApplicationAction(
+                                application['jobId'],
+                                application['id'],
+                                'accept',
+                              ),
+                          onReject:
+                              () => _handleApplicationAction(
+                                application['jobId'],
+                                application['id'],
+                                'reject',
+                              ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),
@@ -487,19 +519,24 @@ class _ApplicationCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundImage: application['applicantProfileImage'] != null
-                        ? NetworkImage(application['applicantProfileImage'])
-                        : null,
-                    child: application['applicantProfileImage'] == null
-                        ? Text(
-                            application['applicantName']?.substring(0, 1).toUpperCase() ?? 'A',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
+                    backgroundImage:
+                        application['applicantProfileImage'] != null
+                            ? NetworkImage(application['applicantProfileImage'])
+                            : null,
+                    child:
+                        application['applicantProfileImage'] == null
+                            ? Text(
+                              application['applicantName']
+                                      ?.substring(0, 1)
+                                      .toUpperCase() ??
+                                  'A',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                            : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -525,7 +562,10 @@ class _ApplicationCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: _getStatusColor().withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -561,10 +601,7 @@ class _ApplicationCard extends StatelessWidget {
                     ),
                     Text(
                       'Location: ${application['jobLocation']}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -573,10 +610,7 @@ class _ApplicationCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   application['message'],
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -615,4 +649,4 @@ class _ApplicationCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

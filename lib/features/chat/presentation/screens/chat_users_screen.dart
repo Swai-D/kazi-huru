@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/models/chat_model.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/chat_service.dart';
 import 'chat_detail_screen.dart';
 

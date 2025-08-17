@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/localization_service.dart';
 
 class CompletedJobsScreen extends StatefulWidget {
   const CompletedJobsScreen({super.key});
@@ -64,7 +63,8 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
     },
   ];
   List<Map<String, dynamic>> _filteredJobs = [];
-  String _selectedFilter = 'all'; // 'all', 'recent', 'high_rating', 'high_earnings'
+  final String _selectedFilter =
+      'all'; // 'all', 'recent', 'high_rating', 'high_earnings'
 
   @override
   void initState() {
@@ -81,7 +81,10 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ThemeConstants.primaryColor),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: ThemeConstants.primaryColor,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -90,7 +93,9 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
             onPressed: () {
               // TODO: Share showcase functionality
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sharing functionality coming soon!')),
+                const SnackBar(
+                  content: Text('Sharing functionality coming soon!'),
+                ),
               );
             },
           ),
@@ -154,7 +159,11 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue[700],
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -172,7 +181,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
               ],
             ),
           ),
-          
+
           // Jobs List
           Expanded(
             child: ListView.builder(
@@ -192,7 +201,10 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
   String _calculateTotalEarnings() {
     int total = 0;
     for (var job in _filteredJobs) {
-      String earnings = job['earnings'].toString().replaceAll('TZS ', '').replaceAll(',', '');
+      String earnings = job['earnings']
+          .toString()
+          .replaceAll('TZS ', '')
+          .replaceAll(',', '');
       total += int.parse(earnings);
     }
     return total.toString().replaceAllMapped(
@@ -210,7 +222,12 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
     return (total / _filteredJobs.length).toStringAsFixed(1);
   }
 
-  Widget _buildSummaryItem(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -225,10 +242,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
         ),
         Text(
           title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
       ],
@@ -284,7 +298,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Company and location
           Row(
             children: [
@@ -292,10 +306,7 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
               const SizedBox(width: 8),
               Text(
                 job['company'],
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
             ],
           ),
@@ -306,15 +317,12 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
               const SizedBox(width: 8),
               Text(
                 job['location'],
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Earnings and completion date
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -335,15 +343,12 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
               ),
               Text(
                 'Completed: ${job['completedDate']}',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          
+
           // Duration
           Row(
             children: [
@@ -351,16 +356,13 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
               const SizedBox(width: 8),
               Text(
                 'Duration: ${job['duration']}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Action buttons
           Row(
             children: [
@@ -369,7 +371,9 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
                   onPressed: () {
                     // View job details
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Tazama maelezo ya ${job['title']}')),
+                      SnackBar(
+                        content: Text('Tazama maelezo ya ${job['title']}'),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.visibility, size: 16),
@@ -407,4 +411,4 @@ class _CompletedJobsScreenState extends State<CompletedJobsScreen> {
       ),
     );
   }
-} 
+}

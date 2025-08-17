@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/maps_service.dart';
+import '../../../../core/services/job_service.dart';
+import '../../../../core/services/firestore_service.dart';
+import '../../../../core/models/job_model.dart';
 import 'job_details_screen.dart';
 import 'location_permission_screen.dart';
 
@@ -15,120 +19,146 @@ class JobSearchScreen extends StatefulWidget {
 
 class _JobSearchScreenState extends State<JobSearchScreen> {
   final _searchController = TextEditingController();
+  final LocationService _locationService = LocationService();
+  final JobService _jobService = JobService();
+  final FirestoreService _firestoreService = FirestoreService();
+
   String _selectedCategory = 'all';
   String _selectedLocation = 'all';
   String _selectedSortBy = 'recent';
   bool _isLoading = false;
   bool _isLocationEnabled = false;
   String? _currentLocation;
-  final LocationService _locationService = LocationService();
 
-  // Mock job data with location coordinates
-  final List<Map<String, dynamic>> _jobs = [
-    {
-      'id': '1',
-      'title': 'Kumuhamisha Mtu',
-      'location': 'Dar es Salaam, Sala Sala',
-                      'payment': 'TZS 15,000 - TZS 20,000',
-      'category': 'Transport',
-      'type': 'Part-time',
-      'description': 'Need someone to help move furniture from one house to another.',
-      'requirements': ['Physical strength', 'Reliable transportation', 'Good communication'],
-      'provider_name': 'Moving Services Ltd',
-      'provider_location': 'Dar es Salaam',
-      'schedule': 'Flexible',
-      'start_date': 'Immediate',
-      'payment_method': 'M-Pesa',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': 'assets/images/image_1.jpg',
-    },
-    {
-      'id': '2',
-      'title': 'Kusafisha Compound',
-      'location': 'Dar es Salaam, Mbezi Beach',
-                      'payment': 'TZS 12,000 - TZS 15,000',
-      'category': 'Cleaning',
-      'type': 'One-time',
-      'description': 'Cleaning services needed for a residential compound.',
-      'requirements': ['Cleaning experience', 'Attention to detail', 'Reliable'],
-      'provider_name': 'Clean Pro Services',
-      'provider_location': 'Dar es Salaam',
-      'schedule': 'Morning',
-      'start_date': 'Tomorrow',
-      'payment_method': 'M-Pesa',
-      'latitude': -6.7924,
-      'longitude': 39.2083,
-      'distance': null,
-      'image': 'assets/images/image_2.jpg',
-    },
-    {
-      'id': '3',
-      'title': 'Kusaidia Kwenye Event',
-      'location': 'Dar es Salaam, Masaki',
-                      'payment': 'TZS 20,000 - TZS 25,000',
-      'category': 'Events',
-      'type': 'Part-time',
-      'description': 'Event assistance needed for a wedding ceremony.',
-      'requirements': ['Event experience', 'Good communication', 'Team player'],
-      'provider_name': 'Event Masters',
-      'provider_location': 'Dar es Salaam',
-      'schedule': 'Weekend',
-      'start_date': 'Next Saturday',
-      'payment_method': 'M-Pesa',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': 'assets/images/image_3.jpg',
-    },
-    {
-      'id': '4',
-      'title': 'Kusaidia Kwenye Construction',
-      'location': 'Dar es Salaam, Oyster Bay',
-                      'payment': 'TZS 25,000 - TZS 30,000',
-      'category': 'Construction',
-      'type': 'Full-time',
-      'description': 'Construction assistance needed for building project.',
-      'requirements': ['Construction experience', 'Safety awareness', 'Physical fitness'],
-      'provider_name': 'Build Pro Ltd',
-      'provider_location': 'Dar es Salaam',
-      'schedule': 'Daily',
-      'start_date': 'Next Monday',
-      'payment_method': 'M-Pesa',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': 'assets/images/image_1.jpg',
-    },
-    {
-      'id': '5',
-      'title': 'Kusambaza Vitu',
-      'location': 'Dar es Salaam, City Centre',
-                      'payment': 'TZS 15,000 - TZS 18,000',
-      'category': 'Delivery',
-      'type': 'Part-time',
-      'description': 'Delivery services needed for packages and documents.',
-      'requirements': ['Motorcycle license', 'Good navigation', 'Reliable'],
-      'provider_name': 'Quick Delivery',
-      'provider_location': 'Dar es Salaam',
-      'schedule': 'Flexible',
-      'start_date': 'Immediate',
-      'payment_method': 'M-Pesa',
-      'latitude': -6.8235,
-      'longitude': 39.2695,
-      'distance': null,
-      'image': 'assets/images/image_2.jpg',
-    },
-  ];
+  List<JobModel> _jobs = [];
+  List<JobModel> _filteredJobs = [];
+  Map<String, Map<String, dynamic>> _providerDetails = {};
+  bool _hasLoadedJobs = false;
 
-  List<Map<String, dynamic>> _filteredJobs = [];
+  // Real job data will be loaded from Firestore
 
   @override
   void initState() {
     super.initState();
-    _filteredJobs = _jobs;
+    _loadJobs();
     _initializeLocation();
+  }
+
+  @override
+  void dispose() {
+    // Cancel any ongoing operations if needed
+    super.dispose();
+  }
+
+  Future<void> _loadJobs() async {
+    if (_hasLoadedJobs && _jobs.isNotEmpty) {
+      return;
+    }
+
+    try {
+      if (mounted) setState(() => _isLoading = true);
+
+      final jobsStream = _jobService.getActiveJobs();
+      jobsStream
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: (sink) {
+              sink.addError(TimeoutException('Jobs loading timeout'));
+            },
+          )
+          .listen(
+            (jobs) async {
+              if (mounted) {
+                final recentJobs = jobs.toList();
+
+                // Load real application counts for each job
+                for (final job in recentJobs) {
+                  try {
+                    final applicationsSnapshot =
+                        await _firestoreService
+                            .getApplicationsForJob(job.id)
+                            .first;
+                    // The JobModel already has applicationsCount from Firestore
+                    // This is just to ensure we have the latest data
+                  } catch (e) {
+                    print('Error loading applications for job ${job.id}: $e');
+                  }
+                }
+
+                if (mounted) {
+                  setState(() {
+                    _jobs = recentJobs;
+                    _filteredJobs = recentJobs;
+                    _isLoading = false;
+                    _hasLoadedJobs = true;
+                  });
+                  _loadProviderDetailsInBackground();
+                }
+              }
+            },
+            onError: (error) {
+              if (mounted) {
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error loading jobs: $error')),
+                );
+              }
+            },
+          );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading jobs: $e')));
+      }
+    }
+  }
+
+  Future<void> _loadProviderDetailsInBackground() async {
+    final providerIds = _jobs.map((job) => job.providerId).toSet();
+
+    final futures = providerIds
+        .where((providerId) => !_providerDetails.containsKey(providerId))
+        .map((providerId) async {
+          try {
+            final providerData = await _firestoreService.getUserProfile(
+              providerId,
+            );
+            return {'id': providerId, 'data': providerData};
+          } catch (e) {
+            print('Error loading provider details for $providerId: $e');
+            return null;
+          }
+        });
+
+    final results = await Future.wait(futures);
+
+    if (mounted) {
+      setState(() {
+        for (final result in results) {
+          if (result != null && result['data'] != null) {
+            _providerDetails[result['id'] as String] =
+                result['data'] as Map<String, dynamic>;
+          }
+        }
+      });
+    }
+  }
+
+  String _formatTimeSinceCreation(DateTime createdAt) {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} siku zilizopita';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} saa zilizopita';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} dakika zilizopita';
+    } else {
+      return 'Hivi karibuni';
+    }
   }
 
   Future<void> _initializeLocation() async {
@@ -144,7 +174,8 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         bool hasPermission = await _locationService.requestLocationPermission();
         if (hasPermission) {
           // Get current location
-          var locationData = await _locationService.getCurrentLocationWithAddress();
+          var locationData =
+              await _locationService.getCurrentLocationWithAddress();
           if (locationData != null) {
             setState(() {
               _currentLocation = locationData['address'];
@@ -188,11 +219,12 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LocationPermissionScreen(
-          onPermissionGranted: () async {
-            await _initializeLocation();
-          },
-        ),
+        builder:
+            (context) => LocationPermissionScreen(
+              onPermissionGranted: () async {
+                await _initializeLocation();
+              },
+            ),
       ),
     );
   }
@@ -200,115 +232,68 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   void _showLocationServiceDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('location_services_disabled')),
-        content: Text(context.tr('enable_location_services_message')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(context.tr('location_services_disabled')),
+            content: Text(context.tr('enable_location_services_message')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('cancel')),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _initializeLocation();
+                },
+                child: Text(context.tr('enable')),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _initializeLocation();
-            },
-            child: Text(context.tr('enable')),
-          ),
-        ],
-      ),
     );
   }
 
   void _showLocationErrorDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('error')),
-        content: Text(context.tr('location_error_message')),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('ok')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(context.tr('error')),
+            content: Text(context.tr('location_error_message')),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.tr('ok')),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
+  // TODO: Implement distance calculation for JobModel
   Future<void> _calculateDistances() async {
-    if (!_isLocationEnabled) return;
-
-    // Get current location for distance calculation
-    final currentPosition = await MapsService.getCurrentLocation();
-    if (currentPosition == null) return;
-
-    for (int i = 0; i < _jobs.length; i++) {
-      try {
-        double distance = MapsService.calculateDistance(
-          currentPosition.latitude,
-          currentPosition.longitude,
-          _jobs[i]['latitude'],
-          _jobs[i]['longitude'],
-        );
-        
-        String formattedDistance = MapsService.formatDistance(distance);
-        String estimatedTime = MapsService.getEstimatedTravelTime(distance);
-        
-        setState(() {
-          _jobs[i]['distance'] = formattedDistance;
-          _jobs[i]['estimated_time'] = estimatedTime;
-        });
-      } catch (e) {
-        print('Error calculating distance for job ${_jobs[i]['id']}: $e');
-      }
-    }
-  }
-
-  void _sortJobsByDistance() {
-    _filteredJobs.sort((a, b) {
-      String? distanceA = a['distance'];
-      String? distanceB = b['distance'];
-      
-      if (distanceA == null && distanceB == null) return 0;
-      if (distanceA == null) return 1;
-      if (distanceB == null) return -1;
-      
-      // Extract numeric value from distance string (e.g., "2.5 km" -> 2.5)
-      double? valueA = _extractDistanceValue(distanceA);
-      double? valueB = _extractDistanceValue(distanceB);
-      
-      if (valueA == null && valueB == null) return 0;
-      if (valueA == null) return 1;
-      if (valueB == null) return -1;
-      
-      return valueA.compareTo(valueB);
-    });
-  }
-
-  double? _extractDistanceValue(String distance) {
-    try {
-      if (distance.contains('km')) {
-        return double.parse(distance.replaceAll(' km', ''));
-      } else if (distance.contains('m')) {
-        return double.parse(distance.replaceAll(' m', '')) / 1000;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+    // This will be implemented when we add location coordinates to JobModel
+    print('Distance calculation not yet implemented for JobModel');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('search_jobs')),
-        backgroundColor: Colors.transparent,
+        title: Text(
+          context.tr('search_jobs'),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.location_on),
+            icon: const Icon(Icons.location_on, color: Colors.white),
             onPressed: () {
               if (_isLocationEnabled) {
                 _initializeLocation();
@@ -318,7 +303,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.white),
             onPressed: () {
               _showFilterDialog();
             },
@@ -329,15 +314,16 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         children: [
           // Search Bar
           _buildSearchBar(),
-          
+
           // Filter Chips
           _buildFilterChips(),
-          
+
           // Job List
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredJobs.isEmpty
+            child:
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredJobs.isEmpty
                     ? _buildEmptyState()
                     : _buildJobList(),
           ),
@@ -352,32 +338,36 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       child: Column(
         children: [
           TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: context.tr('search_jobs_placeholder'),
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _searchController.clear();
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: context.tr('search_jobs_placeholder'),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                  _performSearch();
+                },
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            onChanged: (value) {
               _performSearch();
             },
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
-        onChanged: (value) {
-          _performSearch();
-        },
           ),
           if (_isLocationEnabled && _currentLocation != null) ...[
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.location_on, size: 16, color: ThemeConstants.primaryColor),
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: ThemeConstants.primaryColor,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -454,16 +444,55 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       itemCount: _filteredJobs.length,
       itemBuilder: (context, index) {
         final job = _filteredJobs[index];
-        return _JobCard(
-          job: job,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => JobDetailsScreen(job: job),
-              ),
-            );
-          },
+        final providerData = _providerDetails[job.providerId];
+        final providerName = providerData?['name'] ?? 'Unknown Provider';
+        final providerImage = providerData?['profileImageUrl'];
+
+        return Column(
+          children: [
+            _JobCard(
+              title: job.title,
+              location: job.location,
+              pay: job.formattedPayment,
+              distance: _isLocationEnabled ? '2.5 km' : null,
+              estimatedTime: _isLocationEnabled ? '12 min' : null,
+              image: job.imageUrl ?? 'assets/images/image_1.jpg',
+              category: job.categoryDisplayName,
+              providerName: providerName,
+              providerImage: providerImage,
+              description: job.description,
+              postedTime: _formatTimeSinceCreation(job.createdAt),
+              applicantsCount: job.applicationsCount,
+              onPressed: () {
+                final jobData = {
+                  'id': job.id,
+                  'title': job.title,
+                  'location': job.location,
+                  'payment': job.formattedPayment,
+                  'category': job.categoryDisplayName,
+                  'type': 'Temporary',
+                  'description': job.description,
+                  'requirements':
+                      job.requirements.split(',').map((e) => e.trim()).toList(),
+                  'provider_name': providerName,
+                  'provider_location': job.location,
+                  'schedule': 'Flexible',
+                  'start_date': job.formattedDate,
+                  'payment_method': 'Cash',
+                  'latitude': 0.0,
+                  'longitude': 0.0,
+                  'image': job.imageUrl ?? 'assets/images/image_1.jpg',
+                };
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => JobDetailsScreen(job: jobData),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         );
       },
     );
@@ -474,11 +503,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             context.tr('no_jobs_found'),
@@ -491,10 +516,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
           const SizedBox(height: 8),
           Text(
             context.tr('try_different_search'),
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -505,16 +527,17 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   void _performSearch() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredJobs = _jobs.where((job) {
-        final title = job['title'].toString().toLowerCase();
-        final location = job['location'].toString().toLowerCase();
-        final category = job['category'].toString().toLowerCase();
-        
-        return title.contains(query) ||
-               location.contains(query) ||
-               category.contains(query);
-      }).toList();
-      
+      _filteredJobs =
+          _jobs.where((job) {
+            final title = job.title.toLowerCase();
+            final location = job.location.toLowerCase();
+            final category = job.categoryDisplayName.toLowerCase();
+
+            return title.contains(query) ||
+                location.contains(query) ||
+                category.contains(query);
+          }).toList();
+
       _applyFilters();
     });
   }
@@ -525,42 +548,38 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     // Apply search filter
     final query = _searchController.text.toLowerCase();
     if (query.isNotEmpty) {
-      filtered = filtered.where((job) {
-        final title = job['title'].toString().toLowerCase();
-        final location = job['location'].toString().toLowerCase();
-        final category = job['category'].toString().toLowerCase();
-        
-        return title.contains(query) ||
-               location.contains(query) ||
-               category.contains(query);
-      }).toList();
+      filtered =
+          filtered.where((job) {
+            final title = job.title.toLowerCase();
+            final location = job.location.toLowerCase();
+            final category = job.categoryDisplayName.toLowerCase();
+
+            return title.contains(query) ||
+                location.contains(query) ||
+                category.contains(query);
+          }).toList();
     }
 
     // Apply category filter
     if (_selectedCategory != 'all') {
       if (_selectedCategory == 'nearby' && _isLocationEnabled) {
-        // Filter jobs within 10km
-        filtered = filtered.where((job) {
-          String? distance = job['distance'];
-          if (distance == null) return false;
-          
-          double? distanceValue = _extractDistanceValue(distance);
-          return distanceValue != null && distanceValue <= 10.0;
-        }).toList();
-        // Sort by distance
-        _sortJobsByDistance();
+        // Filter jobs within 10km - for now, show all jobs since we don't have distance calculation
+        // TODO: Implement distance calculation for JobModel
+        filtered = filtered.take(10).toList(); // Show first 10 jobs as nearby
       } else {
-      filtered = filtered.where((job) {
-        return job['category'].toString().toLowerCase() == _selectedCategory;
-      }).toList();
+        filtered =
+            filtered.where((job) {
+              return job.categoryDisplayName.toLowerCase() == _selectedCategory;
+            }).toList();
       }
     }
 
     // Apply location filter
     if (_selectedLocation != 'all') {
-      filtered = filtered.where((job) {
-        return job['location'].toString().toLowerCase() == _selectedLocation;
-      }).toList();
+      filtered =
+          filtered.where((job) {
+            return job.location.toLowerCase().contains(_selectedLocation);
+          }).toList();
     }
 
     // Apply sorting
@@ -570,18 +589,12 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
         break;
       case 'payment_high':
         filtered.sort((a, b) {
-          // Extract max payment from range (e.g., "15,000 - 20,000" -> 20000)
-          final aPayment = int.tryParse(a['payment'].toString().split('-').last.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          final bPayment = int.tryParse(b['payment'].toString().split('-').last.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          return bPayment.compareTo(aPayment);
+          return b.maxPayment.compareTo(a.maxPayment);
         });
         break;
       case 'payment_low':
         filtered.sort((a, b) {
-          // Extract min payment from range (e.g., "15,000 - 20,000" -> 15000)
-          final aPayment = int.tryParse(a['payment'].toString().split('-').first.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          final bPayment = int.tryParse(b['payment'].toString().split('-').first.trim().replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
-          return aPayment.compareTo(bPayment);
+          return a.minPayment.compareTo(b.minPayment);
         });
         break;
     }
@@ -598,63 +611,57 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _FilterBottomSheet(
-        selectedLocation: _selectedLocation,
-        selectedSortBy: _selectedSortBy,
-        onLocationChanged: (location) {
-          setState(() {
-            _selectedLocation = location;
-            _applyFilters();
-          });
-        },
-        onSortByChanged: (sortBy) {
-          setState(() {
-            _selectedSortBy = sortBy;
-            _applyFilters();
-          });
-        },
-      ),
+      builder:
+          (context) => _FilterBottomSheet(
+            selectedLocation: _selectedLocation,
+            selectedSortBy: _selectedSortBy,
+            onLocationChanged: (location) {
+              setState(() {
+                _selectedLocation = location;
+                _applyFilters();
+              });
+            },
+            onSortByChanged: (sortBy) {
+              setState(() {
+                _selectedSortBy = sortBy;
+                _applyFilters();
+              });
+            },
+          ),
     );
   }
 }
 
-class _JobCard extends StatefulWidget {
-  final Map<String, dynamic> job;
-  final VoidCallback onTap;
+class _JobCard extends StatelessWidget {
+  final String title;
+  final String location;
+  final String pay;
+  final String? distance;
+  final String? estimatedTime;
+  final String? image;
+  final String? category;
+  final String providerName;
+  final String? providerImage;
+  final String? description;
+  final String? postedTime;
+  final int? applicantsCount;
+  final VoidCallback onPressed;
 
   const _JobCard({
-    required this.job,
-    required this.onTap,
+    required this.title,
+    required this.location,
+    required this.pay,
+    this.distance,
+    this.estimatedTime,
+    this.image,
+    this.category,
+    required this.providerName,
+    this.providerImage,
+    this.description,
+    this.postedTime,
+    this.applicantsCount,
+    required this.onPressed,
   });
-
-  @override
-  State<_JobCard> createState() => _JobCardState();
-}
-
-class _JobCardState extends State<_JobCard> {
-  Future<void> _openNavigation() async {
-    if (widget.job['latitude'] == null || widget.job['longitude'] == null) {
-      return;
-    }
-
-    final success = await MapsService.openNavigation(
-      widget.job['latitude'] as double,
-      widget.job['longitude'] as double,
-      destinationName: widget.job['title'],
-    );
-
-    if (!success) {
-      // Show error message using the correct context
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('navigation_failed')),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -675,19 +682,26 @@ class _JobCardState extends State<_JobCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with user info and category
+          // Header with provider info and category
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 20,
+                  backgroundImage:
+                      providerImage != null
+                          ? NetworkImage(providerImage!)
+                          : null,
                   backgroundColor: ThemeConstants.primaryColor.withOpacity(0.1),
-                  child: Icon(
-                    Icons.business,
-                    color: ThemeConstants.primaryColor,
-                    size: 20,
-                  ),
+                  child:
+                      providerImage == null
+                          ? Icon(
+                            Icons.person,
+                            color: ThemeConstants.primaryColor,
+                            size: 20,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -695,31 +709,31 @@ class _JobCardState extends State<_JobCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Kazi Huru',
+                        providerName,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        widget.job['location'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        location,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                if (widget.job['category'] != null)
+                if (category != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: ThemeConstants.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      widget.job['category'],
+                      category!,
                       style: TextStyle(
                         fontSize: 12,
                         color: ThemeConstants.primaryColor,
@@ -730,17 +744,19 @@ class _JobCardState extends State<_JobCard> {
               ],
             ),
           ),
-          
+
           // Main image
           SizedBox(
             width: double.infinity,
             height: 200,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: InkWell(
-                onTap: widget.onTap,
+                onTap: onPressed,
                 child: Image.asset(
-                  widget.job['image'] ?? 'assets/images/image_1.jpg',
+                  image ?? 'assets/images/image_1.jpg',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -756,173 +772,218 @@ class _JobCardState extends State<_JobCard> {
               ),
             ),
           ),
-          
+
           // Content section
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Job title and payment
-                Row(
+                // Job title and payment - Fixed layout
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        widget.job['title'],
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                     Text(
-                      widget.job['payment'],
+                      title,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: ThemeConstants.primaryColor,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.attach_money,
+                          size: 16,
+                          color: ThemeConstants.primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          pay,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: ThemeConstants.primaryColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 8),
-                
-                // Location and distance
+
+                // Location and distance/time
                 Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        widget.job['location'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        location,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ),
-                    if (widget.job['distance'] != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: ThemeConstants.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          widget.job['distance'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: ThemeConstants.primaryColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (widget.job['estimated_time'] != null) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            widget.job['estimated_time'],
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.w500,
+                    if (distance != null || estimatedTime != null) ...[
+                      Row(
+                        children: [
+                          if (distance != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: ThemeConstants.primaryColor.withOpacity(
+                                  0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                distance!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: ThemeConstants.primaryColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                            const SizedBox(width: 8),
+                          ],
+                          if (estimatedTime != null) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                estimatedTime!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ],
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Description
-                Text(
-                  widget.job['description'],
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+                if (description != null && description!.isNotEmpty) ...[
+                  Text(
+                    description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
-                ),
-                
+                  const SizedBox(height: 8),
+                ],
+
                 const SizedBox(height: 12),
-                
+
+                // Posted time info
+                if (postedTime != null && postedTime!.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        postedTime!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                // Applicants count info
+                if (applicantsCount != null) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        size: 14,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Watu ${applicantsCount.toString()} walio omba',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                const SizedBox(height: 16),
+
                 // Action buttons
-                Column(
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: ThemeConstants.primaryColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(32),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Save job functionality
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Kazi imehifadhiwa'),
+                              backgroundColor: Colors.green,
                             ),
-                            onPressed: () {
-                              // Save/bookmark functionality
-                            },
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.bookmark_border, size: 18),
-                                const SizedBox(width: 4),
-                                Text('Save', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
+                          );
+                        },
+                        icon: Icon(Icons.bookmark_border, size: 18),
+                        label: Text('Hifadhi'),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: ThemeConstants.primaryColor),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: ThemeConstants.primaryColor),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(32),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            onPressed: _openNavigation,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.directions_outlined, size: 18),
-                                const SizedBox(width: 4),
-                                Text('Directions', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: onPressed,
+                        icon: Icon(Icons.work_outline, size: 18),
+                        label: Text('Omba'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ThemeConstants.primaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(32),
-                          ),
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onPressed: widget.onTap,
-                        child: Text(
-                          context.tr('apply'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -976,53 +1037,87 @@ class _FilterBottomSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Location Filter
           Text(
             context.tr('location'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             children: [
-              _buildFilterChip('all', context.tr('all_locations'), selectedLocation, onLocationChanged),
-              _buildFilterChip('dar_es_salaam', 'Dar es Salaam', selectedLocation, onLocationChanged),
-              _buildFilterChip('arusha', 'Arusha', selectedLocation, onLocationChanged),
-              _buildFilterChip('mwanza', 'Mwanza', selectedLocation, onLocationChanged),
+              _buildFilterChip(
+                'all',
+                context.tr('all_locations'),
+                selectedLocation,
+                onLocationChanged,
+              ),
+              _buildFilterChip(
+                'dar_es_salaam',
+                'Dar es Salaam',
+                selectedLocation,
+                onLocationChanged,
+              ),
+              _buildFilterChip(
+                'arusha',
+                'Arusha',
+                selectedLocation,
+                onLocationChanged,
+              ),
+              _buildFilterChip(
+                'mwanza',
+                'Mwanza',
+                selectedLocation,
+                onLocationChanged,
+              ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Sort By
           Text(
             context.tr('sort_by'),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
             children: [
-              _buildFilterChip('recent', context.tr('most_recent'), selectedSortBy, onSortByChanged),
-              _buildFilterChip('payment_high', context.tr('highest_payment'), selectedSortBy, onSortByChanged),
-              _buildFilterChip('payment_low', context.tr('lowest_payment'), selectedSortBy, onSortByChanged),
+              _buildFilterChip(
+                'recent',
+                context.tr('most_recent'),
+                selectedSortBy,
+                onSortByChanged,
+              ),
+              _buildFilterChip(
+                'payment_high',
+                context.tr('highest_payment'),
+                selectedSortBy,
+                onSortByChanged,
+              ),
+              _buildFilterChip(
+                'payment_low',
+                context.tr('lowest_payment'),
+                selectedSortBy,
+                onSortByChanged,
+              ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String value, String label, String selected, Function(String) onChanged) {
+  Widget _buildFilterChip(
+    String value,
+    String label,
+    String selected,
+    Function(String) onChanged,
+  ) {
     final isSelected = selected == value;
     return FilterChip(
       label: Text(label),
@@ -1035,4 +1130,4 @@ class _FilterBottomSheet extends StatelessWidget {
       checkmarkColor: ThemeConstants.primaryColor,
     );
   }
-} 
+}

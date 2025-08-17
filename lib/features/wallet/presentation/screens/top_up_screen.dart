@@ -16,7 +16,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   double _selectedAmount = 0;
   PaymentMethodModel? _selectedPaymentMethod;
   bool _isProcessing = false;
@@ -35,12 +35,20 @@ class _TopUpScreenState extends State<TopUpScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(context.tr('top_up_wallet')),
-        backgroundColor: Colors.white,
+        title: Text(
+          context.tr('top_up_wallet'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: ThemeConstants.primaryColor,
         elevation: 0,
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -78,7 +86,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
 
   Widget _buildCurrentBalance() {
     final balance = _walletService.currentBalance;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -97,10 +105,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
         children: [
           Text(
             context.tr('current_balance'),
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.grey,
-            ),
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 8),
           Text(
@@ -136,49 +141,56 @@ class _TopUpScreenState extends State<TopUpScreen> {
         children: [
           Text(
             context.tr('select_amount'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           // Quick Amount Buttons
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _quickAmounts.map((amount) {
-              final isSelected = _selectedAmount == amount;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedAmount = amount;
-                    _amountController.text = amount.toString();
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? ThemeConstants.primaryColor : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isSelected ? ThemeConstants.primaryColor : Colors.grey[300]!,
+            children:
+                _quickAmounts.map((amount) {
+                  final isSelected = _selectedAmount == amount;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedAmount = amount;
+                        _amountController.text = amount.toString();
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isSelected
+                                ? ThemeConstants.primaryColor
+                                : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              isSelected
+                                  ? ThemeConstants.primaryColor
+                                  : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Text(
+                        'TZS ${amount.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    'TZS ${amount.toStringAsFixed(0)}',
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Custom Amount Input
           TextFormField(
             controller: _amountController,
@@ -220,7 +232,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
 
   Widget _buildPaymentMethodSelection() {
     final paymentMethods = _walletService.getAvailablePaymentMethods();
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -240,13 +252,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
         children: [
           Text(
             context.tr('payment_method'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           ...paymentMethods.map((method) {
             final isSelected = _selectedPaymentMethod?.id == method.id;
             return GestureDetector(
@@ -259,10 +268,16 @@ class _TopUpScreenState extends State<TopUpScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isSelected ? ThemeConstants.primaryColor.withOpacity(0.1) : Colors.grey[50],
+                  color:
+                      isSelected
+                          ? ThemeConstants.primaryColor.withOpacity(0.1)
+                          : Colors.grey[50],
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? ThemeConstants.primaryColor : Colors.grey[300]!,
+                    color:
+                        isSelected
+                            ? ThemeConstants.primaryColor
+                            : Colors.grey[300]!,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -270,7 +285,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                   children: [
                     Icon(
                       _getPaymentIcon(method.name),
-                      color: isSelected ? ThemeConstants.primaryColor : Colors.grey[600],
+                      color:
+                          isSelected
+                              ? ThemeConstants.primaryColor
+                              : Colors.grey[600],
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -282,7 +300,10 @@ class _TopUpScreenState extends State<TopUpScreen> {
                             method.name,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? ThemeConstants.primaryColor : Colors.black,
+                              color:
+                                  isSelected
+                                      ? ThemeConstants.primaryColor
+                                      : Colors.black,
                             ),
                           ),
                           Text(
@@ -331,10 +352,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
         children: [
           Text(
             context.tr('phone_number'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -384,10 +402,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                context.tr('amount'),
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text(context.tr('amount'), style: const TextStyle(fontSize: 16)),
               Text(
                 'TZS ${_selectedAmount.toStringAsFixed(0)}',
                 style: const TextStyle(
@@ -401,10 +416,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                context.tr('fee'),
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text(context.tr('fee'), style: const TextStyle(fontSize: 16)),
               Text(
                 'TZS 0',
                 style: const TextStyle(
@@ -436,7 +448,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Process Button
           SizedBox(
             width: double.infinity,
@@ -450,22 +462,25 @@ class _TopUpScreenState extends State<TopUpScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: _isProcessing
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              child:
+                  _isProcessing
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                      : Text(
+                        context.tr('process_payment'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
-                  : Text(
-                      context.tr('process_payment'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
             ),
           ),
         ],
@@ -561,4 +576,4 @@ class _TopUpScreenState extends State<TopUpScreen> {
       });
     }
   }
-} 
+}

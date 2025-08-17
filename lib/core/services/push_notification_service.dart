@@ -502,14 +502,10 @@ class PushNotificationService extends ChangeNotifier {
       }
     } catch (e) {
       // If navigation fails, just mark as read
-      NotificationService().markAsRead(notificationId!);
+      NotificationService().markAsRead(notificationId);
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 // Background message handler

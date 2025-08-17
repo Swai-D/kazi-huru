@@ -23,7 +23,7 @@ dependencies {
 android {
     namespace = "com.example.kazi_huru_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // ndkVersion = "27.0.12077973" // Commented out to use default NDK
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

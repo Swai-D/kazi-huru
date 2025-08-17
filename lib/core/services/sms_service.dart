@@ -4,15 +4,16 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SMSService {
-  // API Configuration
-  static const String _apiUrl = 'https://messaging-service.co.tz/api/sms/v1/text/single';
+  // NextSMS API Configuration
+  static const String _apiUrl =
+      'https://messaging-service.co.tz/api/sms/v1/text/single';
   static const String _authHeader = 'Basic ZGF2eXN3YWk6ZGF2eXN3YWkxOTk1';
-  static const String _senderId = 'KAZIHURU'; // Changed from OTP to KAZIHURU
+  static const String _senderId = 'KAZIHURU';
   static const String _clientId = 'KAZI-HURU';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Development mode flag - set to true for testing
-  static const bool _isDevelopmentMode = true;
+  // Development mode flag - set to false for production SMS
+  static const bool _isDevelopmentMode = false;
 
   // Generate a 6-digit OTP
   String _generateOTP() {
@@ -25,9 +26,11 @@ class SMSService {
     try {
       // Generate OTP
       final otp = _generateOTP();
-      
+
       // Format phone number consistently
-      String formattedPhone = phoneNumber.replaceAll('+', '').replaceAll(' ', '');
+      String formattedPhone = phoneNumber
+          .replaceAll('+', '')
+          .replaceAll(' ', '');
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '255${formattedPhone.substring(1)}';
       } else if (formattedPhone.startsWith('255')) {
@@ -35,10 +38,10 @@ class SMSService {
       } else if (formattedPhone.length == 9) {
         formattedPhone = '255$formattedPhone';
       }
-      
+
       print('📱 Storing OTP for formatted phone: $formattedPhone');
       print('🔢 Generated OTP: $otp');
-      
+
       // Store OTP in Firestore with 5-minute expiry
       final otpDoc = await _firestore.collection('otps').add({
         'phoneNumber': formattedPhone,
@@ -58,9 +61,9 @@ class SMSService {
         return otp;
       }
 
-      // Send OTP via SMS
+      // Send OTP via NextSMS
       final success = await sendOTP(phoneNumber, otp);
-      
+
       if (success) {
         print('✅ SMS sent successfully!');
         return otp;
@@ -80,7 +83,9 @@ class SMSService {
   Future<bool> verifyOTP(String phoneNumber, String otp) async {
     try {
       // Format phone number consistently
-      String formattedPhone = phoneNumber.replaceAll('+', '').replaceAll(' ', '');
+      String formattedPhone = phoneNumber
+          .replaceAll('+', '')
+          .replaceAll(' ', '');
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '255${formattedPhone.substring(1)}';
       } else if (formattedPhone.startsWith('255')) {
@@ -88,15 +93,16 @@ class SMSService {
       } else if (formattedPhone.length == 9) {
         formattedPhone = '255$formattedPhone';
       }
-      
+
       print('🔍 Verifying OTP: $otp for formatted phone: $formattedPhone');
-      
-      final otpQuery = await _firestore
-          .collection('otps')
-          .where('phoneNumber', isEqualTo: formattedPhone)
-          .where('otp', isEqualTo: otp)
-          .where('isUsed', isEqualTo: false)
-          .get();
+
+      final otpQuery =
+          await _firestore
+              .collection('otps')
+              .where('phoneNumber', isEqualTo: formattedPhone)
+              .where('otp', isEqualTo: otp)
+              .where('isUsed', isEqualTo: false)
+              .get();
 
       print('📋 Found ${otpQuery.docs.length} OTP documents');
 
@@ -112,7 +118,7 @@ class SMSService {
         final bData = b.data();
         final aCreatedAt = aData['createdAt'] as Timestamp?;
         final bCreatedAt = bData['createdAt'] as Timestamp?;
-        
+
         if (aCreatedAt == null || bCreatedAt == null) return 0;
         return bCreatedAt.compareTo(aCreatedAt);
       });
@@ -138,22 +144,52 @@ class SMSService {
     }
   }
 
+  // Send OTP via NextSMS
   static Future<bool> sendOTP(String phoneNumber, String otp) async {
+    return await _sendNextSMS(
+      phoneNumber: phoneNumber,
+      message: "Your Kazi Huru verification code is: $otp",
+      messageType: 'OTP',
+    );
+  }
+
+  // Send custom message (for job assignments, notifications, etc.)
+  static Future<bool> sendCustomMessage(
+    String phoneNumber,
+    String message,
+  ) async {
+    return await _sendNextSMS(
+      phoneNumber: phoneNumber,
+      message: message,
+      messageType: 'NOTIFICATION',
+    );
+  }
+
+  // Core NextSMS sending method
+  static Future<bool> _sendNextSMS({
+    required String phoneNumber,
+    required String message,
+    required String messageType,
+  }) async {
     // In development mode, don't actually send SMS
     if (_isDevelopmentMode) {
       print('🛠️ DEVELOPMENT MODE: Skipping actual SMS sending');
-      print('📱 Would send SMS to: $phoneNumber with OTP: $otp');
+      print('📱 Would send SMS to: $phoneNumber');
+      print('💬 Message: $message');
+      print('📋 Message Type: $messageType');
       return true; // Return true to simulate success
     }
 
     int maxRetries = 3;
     int currentRetry = 0;
-    
+
     while (currentRetry < maxRetries) {
       try {
         // Format phone number properly
-        String formattedNumber = phoneNumber.replaceAll('+', '').replaceAll(' ', '');
-        
+        String formattedNumber = phoneNumber
+            .replaceAll('+', '')
+            .replaceAll(' ', '');
+
         // Handle Tanzanian numbers
         if (formattedNumber.startsWith('0')) {
           formattedNumber = '255${formattedNumber.substring(1)}';
@@ -166,55 +202,59 @@ class SMSService {
         print('📤 Attempt ${currentRetry + 1} of $maxRetries');
         print('📱 Original phone number: $phoneNumber');
         print('📱 Formatted phone number: $formattedNumber');
-        print('🔢 Generated OTP: $otp');
+        print('💬 Message: $message');
+        print('📋 Message Type: $messageType');
         print('📤 Sender ID: $_senderId');
         print('🏢 Client ID: $_clientId');
 
         // Create request
         var request = http.Request('POST', Uri.parse(_apiUrl));
-        
+
         // Add headers
         request.headers.addAll({
           'Authorization': _authHeader,
           'Content-Type': 'application/json; charset=utf-8',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         });
 
         // Add body with all required and optional parameters
         final body = {
           "from": _senderId,
           "to": formattedNumber,
-          "text": "Your Kazi Huru verification code is: $otp",
-          "reference": "kazi_huru_${DateTime.now().millisecondsSinceEpoch}",
+          "text": message,
+          "reference":
+              "kazi_huru_${messageType.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}",
           "clientId": _clientId,
           "priority": "HIGH",
           "validity": "5",
           "callbackUrl": "",
           "dlr": "1",
-          "type": "text"
+          "type": "text",
         };
         request.body = jsonEncode(body);
-        
+
         print('🌐 Request URL: $_apiUrl');
         print('📋 Request body: ${request.body}');
 
         // Send request
         http.StreamedResponse response = await request.send();
         final responseBody = await response.stream.bytesToString();
-        
+
         print('📡 SMS Response Status: ${response.statusCode}');
         print('📡 SMS Response: $responseBody');
 
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(responseBody);
-          if (jsonResponse['messages'] != null && jsonResponse['messages'].isNotEmpty) {
+          if (jsonResponse['messages'] != null &&
+              jsonResponse['messages'].isNotEmpty) {
             final messageStatus = jsonResponse['messages'][0]['status'];
             print('📊 Message Status: ${messageStatus['name']}');
             print('📝 Status Description: ${messageStatus['description']}');
-            
+
             // Check if message is in a valid state
-            if (messageStatus['groupId'] == 18 && messageStatus['name'] == 'PENDING_ENROUTE') {
-              print('✅ SMS sent successfully! OTP: $otp');
+            if (messageStatus['groupId'] == 18 &&
+                messageStatus['name'] == 'PENDING_ENROUTE') {
+              print('✅ NextSMS sent successfully!');
               return true;
             } else {
               print('❌ Unexpected message status: ${messageStatus['name']}');
@@ -230,8 +270,8 @@ class SMSService {
           }
           return true;
         } else {
-          print('❌ SMS Error: Status ${response.statusCode}');
-          print('❌ SMS Error Response: $responseBody');
+          print('❌ NextSMS Error: Status ${response.statusCode}');
+          print('❌ NextSMS Error Response: $responseBody');
           // If we get an error status, retry
           currentRetry++;
           if (currentRetry < maxRetries) {
@@ -242,7 +282,7 @@ class SMSService {
           return false;
         }
       } catch (e, stackTrace) {
-        print('❌ Error sending SMS: $e');
+        print('❌ Error sending NextSMS: $e');
         print('📚 Stack trace: $stackTrace');
         // If we get an exception, retry
         currentRetry++;
@@ -256,4 +296,45 @@ class SMSService {
     }
     return false;
   }
-} 
+
+  // Send job assignment notification SMS
+  static Future<bool> sendJobAssignmentSMS({
+    required String phoneNumber,
+    required String jobTitle,
+    required String providerName,
+    required bool isHired,
+  }) async {
+    String message;
+    if (isHired) {
+      message =
+          'Hongera! Umeajiriwa kwenye kazi "$jobTitle" na $providerName. '
+          'Tafadhali wasiliana na mwenye kazi kwa maelezo zaidi. - Kazi Huru';
+    } else {
+      message =
+          'Samahani, kazi "$jobTitle" imekwisha kwa mtumishi mwingine. '
+          'Endelea kutafuta kazi nyingine. - Kazi Huru';
+    }
+
+    return await sendCustomMessage(phoneNumber, message);
+  }
+
+  // Send general notification SMS
+  static Future<bool> sendNotificationSMS({
+    required String phoneNumber,
+    required String title,
+    required String body,
+  }) async {
+    final message = '$title: $body - Kazi Huru';
+    return await sendCustomMessage(phoneNumber, message);
+  }
+
+  // Send chat notification SMS
+  static Future<bool> sendChatNotificationSMS({
+    required String phoneNumber,
+    required String senderName,
+    required String message,
+  }) async {
+    final smsMessage = 'Ujumbe mpya kutoka $senderName: $message - Kazi Huru';
+    return await sendCustomMessage(phoneNumber, smsMessage);
+  }
+}
