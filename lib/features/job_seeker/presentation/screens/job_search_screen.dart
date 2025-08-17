@@ -92,7 +92,8 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                     _isLoading = false;
                     _hasLoadedJobs = true;
                   });
-                  _loadProviderDetailsInBackground();
+                  // Load provider details immediately after jobs are loaded
+                  await _loadProviderDetailsInBackground();
                 }
               }
             },
@@ -116,21 +117,42 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   }
 
   Future<void> _loadProviderDetailsInBackground() async {
-    final providerIds = _jobs.map((job) => job.providerId).toSet();
+    if (_jobs.isEmpty) return;
 
-    final futures = providerIds
-        .where((providerId) => !_providerDetails.containsKey(providerId))
-        .map((providerId) async {
-          try {
-            final providerData = await _firestoreService.getUserProfile(
-              providerId,
-            );
-            return {'id': providerId, 'data': providerData};
-          } catch (e) {
-            print('Error loading provider details for $providerId: $e');
-            return null;
-          }
-        });
+    final providerIds = _jobs.map((job) => job.providerId).toSet();
+    print('All provider IDs found: $providerIds');
+
+    final missingProviderIds =
+        providerIds
+            .where(
+              (providerId) =>
+                  !_providerDetails.containsKey(providerId) &&
+                  providerId.isNotEmpty,
+            )
+            .toList();
+
+    if (missingProviderIds.isEmpty) {
+      print('No missing provider IDs to load');
+      return;
+    }
+
+    print(
+      'Loading provider details for ${missingProviderIds.length} providers: $missingProviderIds',
+    );
+
+    final futures = missingProviderIds.map((providerId) async {
+      try {
+        print('Attempting to load provider data for: $providerId');
+        final providerData = await _firestoreService.getUserProfile(providerId);
+        print(
+          'Successfully loaded provider data for $providerId: ${providerData?['name'] ?? 'No name'}',
+        );
+        return {'id': providerId, 'data': providerData};
+      } catch (e) {
+        print('Error loading provider details for $providerId: $e');
+        return null;
+      }
+    });
 
     final results = await Future.wait(futures);
 
@@ -140,9 +162,16 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
           if (result != null && result['data'] != null) {
             _providerDetails[result['id'] as String] =
                 result['data'] as Map<String, dynamic>;
+            print('Added provider ${result['id']} to _providerDetails');
+          } else {
+            print('Failed to add provider data for result: $result');
           }
         }
       });
+      print(
+        'Updated provider details. Total providers loaded: ${_providerDetails.length}',
+      );
+      print('Current _providerDetails keys: ${_providerDetails.keys.toList()}');
     }
   }
 
@@ -439,62 +468,85 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   }
 
   Widget _buildJobList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _filteredJobs.length,
-      itemBuilder: (context, index) {
-        final job = _filteredJobs[index];
-        final providerData = _providerDetails[job.providerId];
-        final providerName = providerData?['name'] ?? 'Unknown Provider';
-        final providerImage = providerData?['profileImageUrl'];
-
-        return Column(
-          children: [
-            _JobCard(
-              title: job.title,
-              location: job.location,
-              pay: job.formattedPayment,
-              distance: _isLocationEnabled ? '2.5 km' : null,
-              estimatedTime: _isLocationEnabled ? '12 min' : null,
-              image: job.imageUrl ?? 'assets/images/image_1.jpg',
-              category: job.categoryDisplayName,
-              providerName: providerName,
-              providerImage: providerImage,
-              description: job.description,
-              postedTime: _formatTimeSinceCreation(job.createdAt),
-              applicantsCount: job.applicationsCount,
-              onPressed: () {
-                final jobData = {
-                  'id': job.id,
-                  'title': job.title,
-                  'location': job.location,
-                  'payment': job.formattedPayment,
-                  'category': job.categoryDisplayName,
-                  'type': 'Temporary',
-                  'description': job.description,
-                  'requirements':
-                      job.requirements.split(',').map((e) => e.trim()).toList(),
-                  'provider_name': providerName,
-                  'provider_location': job.location,
-                  'schedule': 'Flexible',
-                  'start_date': job.formattedDate,
-                  'payment_method': 'Cash',
-                  'latitude': 0.0,
-                  'longitude': 0.0,
-                  'image': job.imageUrl ?? 'assets/images/image_1.jpg',
-                };
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => JobDetailsScreen(job: jobData),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Clear provider details and reload them
+        setState(() {
+          _providerDetails.clear();
+        });
+        await _loadProviderDetailsInBackground();
       },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _filteredJobs.length,
+        itemBuilder: (context, index) {
+          final job = _filteredJobs[index];
+          print('Job ${job.id} has providerId: ${job.providerId}');
+          print(
+            'Available provider details keys: ${_providerDetails.keys.toList()}',
+          );
+          final providerData = _providerDetails[job.providerId];
+          print('Provider data for ${job.providerId}: $providerData');
+          final providerName =
+              providerData?['name'] ??
+              (job.providerId.isNotEmpty
+                  ? 'Provider ${job.providerId.substring(0, 8)}...'
+                  : 'Unknown Provider');
+          final providerImage = providerData?['profileImageUrl'];
+          print('Provider name for job ${job.id}: $providerName');
+          print('Provider image for job ${job.id}: $providerImage');
+
+          return Column(
+            children: [
+              _JobCard(
+                title: job.title,
+                location: job.location,
+                pay: job.formattedPayment,
+                distance: _isLocationEnabled ? '2.5 km' : null,
+                estimatedTime: _isLocationEnabled ? '12 min' : null,
+                image: job.imageUrl ?? 'assets/images/image_1.jpg',
+                category: job.categoryDisplayName,
+                providerName: providerName,
+                providerImage: providerImage,
+                description: job.description,
+                postedTime: _formatTimeSinceCreation(job.createdAt),
+                applicantsCount: job.applicationsCount,
+                onPressed: () {
+                  final jobData = {
+                    'id': job.id,
+                    'title': job.title,
+                    'location': job.location,
+                    'payment': job.formattedPayment,
+                    'category': job.categoryDisplayName,
+                    'type': 'Temporary',
+                    'description': job.description,
+                    'requirements':
+                        job.requirements
+                            .split(',')
+                            .map((e) => e.trim())
+                            .toList(),
+                    'provider_name': providerName,
+                    'provider_location': job.location,
+                    'schedule': 'Flexible',
+                    'start_date': job.formattedDate,
+                    'payment_method': 'Cash',
+                    'latitude': 0.0,
+                    'longitude': 0.0,
+                    'image': job.imageUrl ?? 'assets/images/image_1.jpg',
+                  };
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => JobDetailsScreen(job: jobData),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -1047,25 +1099,25 @@ class _FilterBottomSheet extends StatelessWidget {
           Wrap(
             spacing: 8,
             children: [
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'all',
                 context.tr('all_locations'),
                 selectedLocation,
                 onLocationChanged,
               ),
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'dar_es_salaam',
                 'Dar es Salaam',
                 selectedLocation,
                 onLocationChanged,
               ),
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'arusha',
                 'Arusha',
                 selectedLocation,
                 onLocationChanged,
               ),
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'mwanza',
                 'Mwanza',
                 selectedLocation,
@@ -1085,19 +1137,19 @@ class _FilterBottomSheet extends StatelessWidget {
           Wrap(
             spacing: 8,
             children: [
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'recent',
                 context.tr('most_recent'),
                 selectedSortBy,
                 onSortByChanged,
               ),
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'payment_high',
                 context.tr('highest_payment'),
                 selectedSortBy,
                 onSortByChanged,
               ),
-              _buildFilterChip(
+              _buildFilterChipWithCallback(
                 'payment_low',
                 context.tr('lowest_payment'),
                 selectedSortBy,
@@ -1112,7 +1164,7 @@ class _FilterBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChip(
+  Widget _buildFilterChipWithCallback(
     String value,
     String label,
     String selected,

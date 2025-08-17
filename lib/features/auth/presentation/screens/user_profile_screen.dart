@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/localization_service.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/widgets/image_upload_widget.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String userRole; // 'job_seeker' or 'job_provider'
@@ -16,6 +17,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isEditing = false;
+  String? _profileImageUrl;
 
   // Controllers for form fields
   final _nameController = TextEditingController();
@@ -411,66 +413,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  // --- Edit flows (simplified for MVP) ---
-  Future<void> _editBio(
-    BuildContext context,
-    AuthProvider auth, {
-    required String initial,
-  }) async {
-    final controller = TextEditingController(text: initial);
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Hariri Kuhusu (Bio)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Andika kuhusu wewe...',
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Hifadhi'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (saved == true) {
-      await auth.updateUserProfile(
-        additionalData: {'description': controller.text.trim()},
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Bio imehifadhiwa')));
-      }
-    }
-  }
-
   Widget _buildProfileHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -489,17 +431,27 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Column(
         children: [
           // Profile Picture
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: ThemeConstants.primaryColor,
-            child: Text(
-              _nameController.text.isNotEmpty ? _nameController.text[0] : '',
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+          ImageUploadWidget(
+            folder: 'profile_pictures',
+            currentImageUrl: _profileImageUrl,
+            onImageUploaded: (imageUrl) {
+              setState(() {
+                _profileImageUrl = imageUrl;
+              });
+              // TODO: Update user profile in Firestore with new image URL
+              _updateProfileImage(imageUrl);
+            },
+            onImageDeleted: () {
+              setState(() {
+                _profileImageUrl = null;
+              });
+              // TODO: Remove image URL from user profile in Firestore
+              _removeProfileImage();
+            },
+            width: 100,
+            height: 100,
+            label: null, // No label for profile picture
+            showDeleteButton: _isEditing,
           ),
           const SizedBox(height: 16),
           // Name
@@ -1297,6 +1249,52 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         );
       },
     );
+  }
+
+  /// Update profile image in Firestore
+  Future<void> _updateProfileImage(String imageUrl) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.updateProfileImage(imageUrl);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picha ya profaili imewekwa kikamilifu!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hitilafu: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// Remove profile image from Firestore
+  Future<void> _removeProfileImage() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.removeProfileImage();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picha ya profaili imefutwa!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hitilafu: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }
 

@@ -1,240 +1,263 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseStorageService {
-  static final FirebaseStorageService _instance = FirebaseStorageService._internal();
+  static final FirebaseStorageService _instance =
+      FirebaseStorageService._internal();
   factory FirebaseStorageService() => _instance;
   FirebaseStorageService._internal();
 
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
-  // Upload profile image
-  Future<String> uploadProfileImage({
-    required String userId,
-    required File imageFile,
-  }) async {
+  /// Upload image from file to Firebase Storage
+  Future<String?> uploadImageFromFile(File imageFile, String folder) async {
     try {
-      String fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child('users/$userId/profile_images/$fileName');
-      
-      UploadTask uploadTask = ref.putFile(imageFile);
-      TaskSnapshot snapshot = await uploadTask;
-      
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      throw Exception('Hitilafu katika kupakia picha ya wasifu: $e');
-    }
-  }
-
-  // Upload ID verification document
-  Future<String> uploadVerificationDocument({
-    required String userId,
-    required File documentFile,
-    required String documentType, // 'national_id', 'passport', 'driving_license'
-  }) async {
-    try {
-      String fileName = '${documentType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child('users/$userId/verification_documents/$fileName');
-      
-      UploadTask uploadTask = ref.putFile(documentFile);
-      TaskSnapshot snapshot = await uploadTask;
-      
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      throw Exception('Hitilafu katika kupakia hati ya uthibitishaji: $e');
-    }
-  }
-
-  // Upload resume/CV
-  Future<String> uploadResume({
-    required String userId,
-    required File resumeFile,
-  }) async {
-    try {
-      String fileName = 'resume_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      Reference ref = _storage.ref().child('users/$userId/resumes/$fileName');
-      
-      UploadTask uploadTask = ref.putFile(resumeFile);
-      TaskSnapshot snapshot = await uploadTask;
-      
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      throw Exception('Hitilafu katika kupakia resume: $e');
-    }
-  }
-
-  // Upload company logo
-  Future<String> uploadCompanyLogo({
-    required String companyId,
-    required File logoFile,
-  }) async {
-    try {
-      String fileName = 'logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child('companies/$companyId/logos/$fileName');
-      
-      UploadTask uploadTask = ref.putFile(logoFile);
-      TaskSnapshot snapshot = await uploadTask;
-      
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      throw Exception('Hitilafu katika kupakia logo ya kampuni: $e');
-    }
-  }
-
-  // Pick image from gallery
-  Future<File?> pickImageFromGallery() async {
-    try {
-      XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-        maxWidth: 1024,
-        maxHeight: 1024,
-      );
-      
-      if (image != null) {
-        return File(image.path);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not authenticated');
+        return null;
       }
-      return null;
+
+      final fileName = _generateFileName(imageFile.path);
+      final storageRef = _storage.ref().child('$folder/${user.uid}/$fileName');
+
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('Image uploaded successfully: $downloadUrl');
+      return downloadUrl;
     } catch (e) {
-      throw Exception('Hitilafu katika kuchagua picha: $e');
+      print('Error uploading image: $e');
+      return null;
     }
   }
 
-  // Pick image from camera
-  Future<File?> pickImageFromCamera() async {
+  /// Upload image from bytes to Firebase Storage
+  Future<String?> uploadImageFromBytes(
+    Uint8List imageBytes,
+    String folder,
+    String extension,
+  ) async {
     try {
-      XFile? image = await _picker.pickImage(
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not authenticated');
+        return null;
+      }
+
+      final fileName = _generateFileName('image.$extension');
+      final storageRef = _storage.ref().child('$folder/${user.uid}/$fileName');
+
+      final uploadTask = storageRef.putData(imageBytes);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      print('Image uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image from bytes: $e');
+      return null;
+    }
+  }
+
+  /// Pick and upload image from camera
+  Future<String?> pickAndUploadFromCamera(String folder) async {
+    try {
+      final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 80,
         maxWidth: 1024,
         maxHeight: 1024,
+        imageQuality: 85,
       );
-      
+
       if (image != null) {
-        return File(image.path);
+        return await uploadImageFromFile(File(image.path), folder);
       }
       return null;
     } catch (e) {
-      throw Exception('Hitilafu katika kupiga picha: $e');
+      print('Error picking and uploading from camera: $e');
+      return null;
     }
   }
 
-  // Pick document (PDF)
-  Future<File?> pickDocument() async {
+  /// Pick and upload image from gallery
+  Future<String?> pickAndUploadFromGallery(String folder) async {
     try {
-      XFile? document = await _picker.pickMedia();
-      
-      if (document != null) {
-        return File(document.path);
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        return await uploadImageFromFile(File(image.path), folder);
       }
       return null;
     } catch (e) {
-      throw Exception('Hitilafu katika kuchagua hati: $e');
+      print('Error picking and uploading from gallery: $e');
+      return null;
     }
   }
 
-  // Delete file from storage
-  Future<void> deleteFile(String fileUrl) async {
+  /// Delete image from Firebase Storage
+  Future<bool> deleteImage(String imageUrl) async {
     try {
-      Reference ref = _storage.refFromURL(fileUrl);
+      final ref = _storage.refFromURL(imageUrl);
       await ref.delete();
-    } catch (e) {
-      throw Exception('Hitilafu katika kufuta faili: $e');
-    }
-  }
-
-  // Get file size
-  Future<int> getFileSize(String fileUrl) async {
-    try {
-      Reference ref = _storage.refFromURL(fileUrl);
-      FullMetadata metadata = await ref.getMetadata();
-      return metadata.size ?? 0;
-    } catch (e) {
-      throw Exception('Hitilafu katika kupata ukubwa wa faili: $e');
-    }
-  }
-
-  // Check if file exists
-  Future<bool> fileExists(String fileUrl) async {
-    try {
-      Reference ref = _storage.refFromURL(fileUrl);
-      await ref.getMetadata();
+      print('Image deleted successfully');
       return true;
     } catch (e) {
+      print('Error deleting image: $e');
       return false;
     }
   }
 
-  // Get download URL for a file
-  Future<String> getDownloadUrl(String filePath) async {
+  /// Get all images for a user in a specific folder
+  Future<List<String>> getUserImages(String folder) async {
     try {
-      Reference ref = _storage.ref().child(filePath);
-      return await ref.getDownloadURL();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not authenticated');
+        return [];
+      }
+
+      final storageRef = _storage.ref().child('$folder/${user.uid}');
+      final result = await storageRef.listAll();
+
+      final urls = <String>[];
+      for (final item in result.items) {
+        final url = await item.getDownloadURL();
+        urls.add(url);
+      }
+
+      return urls;
     } catch (e) {
-      throw Exception('Hitilafu katika kupata URL ya kupakua: $e');
+      print('Error getting user images: $e');
+      return [];
     }
   }
 
-  // Upload with progress tracking
-  Future<String> uploadWithProgress({
-    required String filePath,
-    required File file,
-    Function(double)? onProgress,
-  }) async {
+  /// Upload profile picture
+  Future<String?> uploadProfilePicture(File imageFile) async {
+    return await uploadImageFromFile(imageFile, 'profile_pictures');
+  }
+
+  /// Upload job image
+  Future<String?> uploadJobImage(File imageFile) async {
+    return await uploadImageFromFile(imageFile, 'job_images');
+  }
+
+  /// Upload ID verification document
+  Future<String?> uploadIdDocument(File imageFile) async {
+    return await uploadImageFromFile(imageFile, 'id_documents');
+  }
+
+  /// Upload company logo
+  Future<String?> uploadCompanyLogo(File imageFile) async {
+    return await uploadImageFromFile(imageFile, 'company_logos');
+  }
+
+  /// Upload chat image
+  Future<String?> uploadChatImage(File imageFile) async {
+    return await uploadImageFromFile(imageFile, 'chat_images');
+  }
+
+  /// Generate unique filename
+  String _generateFileName(String originalPath) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final extension = originalPath.split('.').last;
+    return '${timestamp}_${DateTime.now().microsecondsSinceEpoch}.$extension';
+  }
+
+  /// Get storage usage info for current user
+  Future<Map<String, dynamic>> getStorageUsage() async {
     try {
-      Reference ref = _storage.ref().child(filePath);
-      UploadTask uploadTask = ref.putFile(file);
-      
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        double progress = snapshot.bytesTransferred / snapshot.totalBytes;
-        onProgress?.call(progress);
-      });
-      
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return {'totalSize': 0, 'totalSizeMB': '0.00', 'fileCount': 0};
+      }
+
+      int totalSize = 0;
+      int fileCount = 0;
+
+      // Check all folders
+      final folders = [
+        'profile_pictures',
+        'job_images',
+        'id_documents',
+        'company_logos',
+        'chat_images',
+      ];
+
+      for (final folder in folders) {
+        try {
+          final storageRef = _storage.ref().child('$folder/${user.uid}');
+          final result = await storageRef.listAll();
+
+          for (final item in result.items) {
+            final metadata = await item.getMetadata();
+            totalSize += metadata.size ?? 0;
+            fileCount++;
+          }
+        } catch (e) {
+          // Folder might not exist, continue
+          continue;
+        }
+      }
+
+      return {
+        'totalSize': totalSize,
+        'totalSizeMB': (totalSize / (1024 * 1024)).toStringAsFixed(2),
+        'fileCount': fileCount,
+      };
     } catch (e) {
-      throw Exception('Hitilafu katika kupakia faili: $e');
+      print('Error getting storage usage: $e');
+      return {'totalSize': 0, 'totalSizeMB': '0.00', 'fileCount': 0};
     }
   }
 
-  // Validate file size (max 10MB)
-  bool isValidFileSize(File file) {
-    int maxSize = 10 * 1024 * 1024; // 10MB
-    return file.lengthSync() <= maxSize;
-  }
-
-  // Validate image dimensions
-  Future<bool> isValidImageDimensions(File imageFile) async {
+  /// Clear all user images (for account deletion)
+  Future<bool> clearAllUserImages() async {
     try {
-      // You can add image dimension validation here
-      // For now, we'll just check if it's a valid image file
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not authenticated');
+        return false;
+      }
+
+      final folders = [
+        'profile_pictures',
+        'job_images',
+        'id_documents',
+        'company_logos',
+        'chat_images',
+      ];
+
+      for (final folder in folders) {
+        try {
+          final storageRef = _storage.ref().child('$folder/${user.uid}');
+          final result = await storageRef.listAll();
+
+          for (final item in result.items) {
+            await item.delete();
+          }
+        } catch (e) {
+          // Folder might not exist, continue
+          continue;
+        }
+      }
+
+      print('All user images cleared successfully');
       return true;
     } catch (e) {
+      print('Error clearing user images: $e');
       return false;
     }
   }
-
-  // Get file extension
-  String getFileExtension(String fileName) {
-    return fileName.split('.').last.toLowerCase();
-  }
-
-  // Check if file is an image
-  bool isImageFile(String fileName) {
-    List<String> imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    String extension = getFileExtension(fileName);
-    return imageExtensions.contains(extension);
-  }
-
-  // Check if file is a PDF
-  bool isPdfFile(String fileName) {
-    return getFileExtension(fileName) == 'pdf';
-  }
-} 
+}

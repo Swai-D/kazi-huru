@@ -86,7 +86,8 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                   _isLoading = false;
                   _hasLoadedJobs = true;
                 });
-                _loadProviderDetailsInBackground();
+                // Load provider details immediately after jobs are loaded
+                await _loadProviderDetailsInBackground();
               }
             },
             onError: (error) {
@@ -109,21 +110,36 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   }
 
   Future<void> _loadProviderDetailsInBackground() async {
-    final providerIds = _recentJobs.map((job) => job.providerId).toSet();
+    if (_recentJobs.isEmpty) return;
 
-    final futures = providerIds
-        .where((providerId) => !_providerDetails.containsKey(providerId))
-        .map((providerId) async {
-          try {
-            final providerData = await _firestoreService.getUserProfile(
-              providerId,
-            );
-            return {'id': providerId, 'data': providerData};
-          } catch (e) {
-            print('Error loading provider details for $providerId: $e');
-            return null;
-          }
-        });
+    final providerIds = _recentJobs.map((job) => job.providerId).toSet();
+    final missingProviderIds =
+        providerIds
+            .where(
+              (providerId) =>
+                  !_providerDetails.containsKey(providerId) &&
+                  providerId.isNotEmpty,
+            )
+            .toList();
+
+    if (missingProviderIds.isEmpty) return;
+
+    print(
+      'Loading provider details for ${missingProviderIds.length} providers...',
+    );
+
+    final futures = missingProviderIds.map((providerId) async {
+      try {
+        final providerData = await _firestoreService.getUserProfile(providerId);
+        print(
+          'Loaded provider data for $providerId: ${providerData?['name'] ?? 'No name'}',
+        );
+        return {'id': providerId, 'data': providerData};
+      } catch (e) {
+        print('Error loading provider details for $providerId: $e');
+        return null;
+      }
+    });
 
     final results = await Future.wait(futures);
 
@@ -136,6 +152,9 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
           }
         }
       });
+      print(
+        'Updated provider details. Total providers loaded: ${_providerDetails.length}',
+      );
     }
   }
 
@@ -513,78 +532,96 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                               ],
                             ),
                           )
-                          : ListView.builder(
-                            itemCount: _recentJobs.length,
-                            itemBuilder: (context, index) {
-                              final job = _recentJobs[index];
-                              final providerData =
-                                  _providerDetails[job.providerId];
-                              final providerName =
-                                  providerData?['name'] ?? 'Unknown Provider';
-                              final providerImage =
-                                  providerData?['profileImageUrl'];
-
-                              return Column(
-                                children: [
-                                  _JobCard(
-                                    title: job.title,
-                                    location: job.location,
-                                    pay: job.formattedPayment,
-                                    distance:
-                                        _isLocationEnabled ? '2.5 km' : null,
-                                    estimatedTime:
-                                        _isLocationEnabled ? '12 min' : null,
-                                    image:
-                                        job.imageUrl ??
-                                        'assets/images/image_1.jpg',
-                                    category: job.categoryDisplayName,
-                                    providerName: providerName,
-                                    providerImage: providerImage,
-                                    description: job.description,
-                                    postedTime: _formatTimeSinceCreation(
-                                      job.createdAt,
-                                    ),
-                                    applicantsCount: job.applicationsCount,
-                                    onPressed: () {
-                                      final jobData = {
-                                        'id': job.id,
-                                        'title': job.title,
-                                        'location': job.location,
-                                        'payment': job.formattedPayment,
-                                        'category': job.categoryDisplayName,
-                                        'type': 'Temporary',
-                                        'description': job.description,
-                                        'requirements':
-                                            job.requirements
-                                                .split(',')
-                                                .map((e) => e.trim())
-                                                .toList(),
-                                        'provider_name': providerName,
-                                        'provider_location': job.location,
-                                        'schedule': 'Flexible',
-                                        'start_date': job.formattedDate,
-                                        'payment_method': 'Cash',
-                                        'latitude': 0.0,
-                                        'longitude': 0.0,
-                                        'image':
-                                            job.imageUrl ??
-                                            'assets/images/image_1.jpg',
-                                      };
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => JobDetailsScreen(
-                                                job: jobData,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                              );
+                          : RefreshIndicator(
+                            onRefresh: () async {
+                              // Clear provider details and reload them
+                              setState(() {
+                                _providerDetails.clear();
+                              });
+                              await _loadProviderDetailsInBackground();
                             },
+                            child: ListView.builder(
+                              itemCount: _recentJobs.length,
+                              itemBuilder: (context, index) {
+                                final job = _recentJobs[index];
+                                print(
+                                  'Job ${job.id} has providerId: ${job.providerId}',
+                                );
+                                final providerData =
+                                    _providerDetails[job.providerId];
+                                final providerName =
+                                    providerData?['name'] ??
+                                    (job.providerId.isNotEmpty
+                                        ? 'Provider ${job.providerId.substring(0, 8)}...'
+                                        : 'Unknown Provider');
+                                final providerImage =
+                                    providerData?['profileImageUrl'];
+                                print(
+                                  'Provider name for job ${job.id}: $providerName',
+                                );
+
+                                return Column(
+                                  children: [
+                                    _JobCard(
+                                      title: job.title,
+                                      location: job.location,
+                                      pay: job.formattedPayment,
+                                      distance:
+                                          _isLocationEnabled ? '2.5 km' : null,
+                                      estimatedTime:
+                                          _isLocationEnabled ? '12 min' : null,
+                                      image:
+                                          job.imageUrl ??
+                                          'assets/images/image_1.jpg',
+                                      category: job.categoryDisplayName,
+                                      providerName: providerName,
+                                      providerImage: providerImage,
+                                      description: job.description,
+                                      postedTime: _formatTimeSinceCreation(
+                                        job.createdAt,
+                                      ),
+                                      applicantsCount: job.applicationsCount,
+                                      onPressed: () {
+                                        final jobData = {
+                                          'id': job.id,
+                                          'title': job.title,
+                                          'location': job.location,
+                                          'payment': job.formattedPayment,
+                                          'category': job.categoryDisplayName,
+                                          'type': 'Temporary',
+                                          'description': job.description,
+                                          'requirements':
+                                              job.requirements
+                                                  .split(',')
+                                                  .map((e) => e.trim())
+                                                  .toList(),
+                                          'provider_name': providerName,
+                                          'provider_location': job.location,
+                                          'schedule': 'Flexible',
+                                          'start_date': job.formattedDate,
+                                          'payment_method': 'Cash',
+                                          'latitude': 0.0,
+                                          'longitude': 0.0,
+                                          'image':
+                                              job.imageUrl ??
+                                              'assets/images/image_1.jpg',
+                                        };
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) => JobDetailsScreen(
+                                                  job: jobData,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                 ),
               ],

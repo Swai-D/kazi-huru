@@ -73,7 +73,8 @@ class JobService {
   }) async {
     try {
       final jobData = {
-        'providerId': providerId,
+        'jobProviderId':
+            providerId, // Changed from 'providerId' to 'jobProviderId'
         'title': title,
         'description': description,
         'category': category,
@@ -95,7 +96,9 @@ class JobService {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      DocumentReference docRef = await _firestore.collection('jobs').add(jobData);
+      DocumentReference docRef = await _firestore
+          .collection('jobs')
+          .add(jobData);
       return docRef.id;
     } catch (e) {
       throw Exception('Hitilafu katika kuunda kazi: $e');
@@ -154,21 +157,30 @@ class JobService {
         .where('status', isEqualTo: 'active')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => JobModel.fromMap(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+                  .toList(),
+        );
   }
 
   // Get Jobs by Provider Stream
   Stream<List<JobModel>> getJobsByProvider(String providerId) {
     return _firestore
         .collection('jobs')
-        .where('providerId', isEqualTo: providerId)
+        .where(
+          'jobProviderId',
+          isEqualTo: providerId,
+        ) // Changed from 'providerId' to 'jobProviderId'
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => JobModel.fromMap(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map((doc) => JobModel.fromMap(doc.data(), doc.id))
+                  .toList(),
+        );
   }
 
   // Update Job Status
@@ -200,11 +212,12 @@ class JobService {
   }) async {
     try {
       // Check if already applied
-      final existingApplication = await _firestore
-          .collection('applications')
-          .where('jobId', isEqualTo: jobId)
-          .where('seekerId', isEqualTo: seekerId)
-          .get();
+      final existingApplication =
+          await _firestore
+              .collection('applications')
+              .where('jobId', isEqualTo: jobId)
+              .where('seekerId', isEqualTo: seekerId)
+              .get();
 
       if (existingApplication.docs.isNotEmpty) {
         throw Exception('Umeshakwisha omba kazi hii');
@@ -235,18 +248,24 @@ class JobService {
   // Get Job Statistics
   Future<Map<String, dynamic>> getJobStatistics(String providerId) async {
     try {
-      final jobsSnapshot = await _firestore
-          .collection('jobs')
-          .where('providerId', isEqualTo: providerId)
-          .get();
+      final jobsSnapshot =
+          await _firestore
+              .collection('jobs')
+              .where(
+                'jobProviderId',
+                isEqualTo: providerId,
+              ) // Changed from 'providerId' to 'jobProviderId'
+              .get();
 
       int totalJobs = jobsSnapshot.docs.length;
-      int activeJobs = jobsSnapshot.docs
-          .where((doc) => doc.data()['status'] == 'active')
-          .length;
-      int completedJobs = jobsSnapshot.docs
-          .where((doc) => doc.data()['status'] == 'completed')
-          .length;
+      int activeJobs =
+          jobsSnapshot.docs
+              .where((doc) => doc.data()['status'] == 'active')
+              .length;
+      int completedJobs =
+          jobsSnapshot.docs
+              .where((doc) => doc.data()['status'] == 'completed')
+              .length;
 
       int totalApplications = 0;
       for (final doc in jobsSnapshot.docs) {
@@ -265,32 +284,38 @@ class JobService {
   }
 
   // Get Provider Applications Stream
-  Stream<List<Map<String, dynamic>>> getProviderApplications(String providerId) {
+  Stream<List<Map<String, dynamic>>> getProviderApplications(
+    String providerId,
+  ) {
     return _firestore
         .collection('jobs')
-        .where('providerId', isEqualTo: providerId)
+        .where(
+          'jobProviderId',
+          isEqualTo: providerId,
+        ) // Changed from 'providerId' to 'jobProviderId'
         .snapshots()
         .asyncMap((jobsSnapshot) async {
-      List<Map<String, dynamic>> allApplications = [];
-      
-      for (final jobDoc in jobsSnapshot.docs) {
-        final applicationsSnapshot = await _firestore
-            .collection('applications')
-            .where('jobId', isEqualTo: jobDoc.id)
-            .orderBy('createdAt', descending: true)
-            .get();
-        
-        for (final appDoc in applicationsSnapshot.docs) {
-          final appData = appDoc.data();
-          appData['id'] = appDoc.id;
-          appData['jobTitle'] = jobDoc.data()['title'];
-          appData['jobId'] = jobDoc.id;
-          allApplications.add(appData);
-        }
-      }
-      
-      return allApplications;
-    });
+          List<Map<String, dynamic>> allApplications = [];
+
+          for (final jobDoc in jobsSnapshot.docs) {
+            final applicationsSnapshot =
+                await _firestore
+                    .collection('applications')
+                    .where('jobId', isEqualTo: jobDoc.id)
+                    .orderBy('createdAt', descending: true)
+                    .get();
+
+            for (final appDoc in applicationsSnapshot.docs) {
+              final appData = appDoc.data();
+              appData['id'] = appDoc.id;
+              appData['jobTitle'] = jobDoc.data()['title'];
+              appData['jobId'] = jobDoc.id;
+              allApplications.add(appData);
+            }
+          }
+
+          return allApplications;
+        });
   }
 
   // Accept Application
@@ -350,18 +375,21 @@ class JobService {
   }
 
   // Get Job Applications with Details
-  Stream<List<Map<String, dynamic>>> getJobApplicationsWithDetails(String jobId) {
+  Stream<List<Map<String, dynamic>>> getJobApplicationsWithDetails(
+    String jobId,
+  ) {
     return _firestore
         .collection('applications')
         .where('jobId', isEqualTo: jobId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) {
-              final data = doc.data();
-              data['id'] = doc.id;
-              return data;
-            })
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return data;
+              }).toList(),
+        );
   }
 }

@@ -657,6 +657,56 @@ class AuthProvider extends ChangeNotifier {
   // Get user's profile image URL
   String? get userProfileImageUrl => _userProfile?['profileImageUrl'];
 
+  // Update profile image URL
+  Future<void> updateProfileImage(String imageUrl) async {
+    if (_currentUser == null) {
+      throw Exception('No user logged in');
+    }
+
+    try {
+      await _firestoreService.updateUserProfile(
+        userId: _currentUser!.uid,
+        updateData: {
+          'profileImageUrl': imageUrl,
+        },
+      );
+      
+      // Update local profile data
+      if (_userProfile != null) {
+        _userProfile!['profileImageUrl'] = imageUrl;
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Failed to update profile image: $e');
+    }
+  }
+
+  // Remove profile image URL
+  Future<void> removeProfileImage() async {
+    if (_currentUser == null) {
+      throw Exception('No user logged in');
+    }
+
+    try {
+      await _firestoreService.updateUserProfile(
+        userId: _currentUser!.uid,
+        updateData: {
+          'profileImageUrl': null,
+        },
+      );
+      
+      // Update local profile data
+      if (_userProfile != null) {
+        _userProfile!.remove('profileImageUrl');
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      throw Exception('Failed to remove profile image: $e');
+    }
+  }
+
   // Refresh user profile
   Future<void> refreshUserProfile() async {
     await _loadUserProfile();

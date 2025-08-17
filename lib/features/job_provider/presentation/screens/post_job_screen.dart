@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -7,7 +8,7 @@ import '../../../../core/services/localization_service.dart';
 import '../../../../core/services/job_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/models/job_model.dart';
-import '../../../../core/utils/image_placeholders.dart';
+import '../../../../core/widgets/image_upload_widget.dart';
 
 class PostJobScreen extends StatefulWidget {
   final JobModel? jobToEdit;
@@ -44,9 +45,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
   List<String> _requirements = [];
 
   bool _isLoading = false;
-  File? _selectedImage;
   bool _hasImage = false;
   bool _isEditMode = false;
+  String? _jobImageUrl;
+  File? _selectedImage; // Added for backward compatibility
 
   // Get categories, payment types, and durations from service
   late final List<Map<String, String>> _categories =
@@ -61,6 +63,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
     super.initState();
     _checkVerificationStatus();
     _initializeForm();
+
+    // Add listener to title controller for real-time character count
+    _titleController.addListener(() {
+      setState(() {
+        // This will trigger rebuild to update character count
+      });
+    });
   }
 
   void _initializeForm() {
@@ -183,240 +192,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    // Show bottom sheet with camera and gallery options
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Chagua Picha ya Kazi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Chagua njia ya kupata picha ya kazi',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
-
-              // Gallery Option
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.photo_library_outlined,
-                    color: ThemeConstants.primaryColor,
-                    size: 24,
-                  ),
-                ),
-                title: const Text(
-                  'Chagua kutoka Gallery',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'Chagua picha iliyopo kwenye simu yako',
-                  style: TextStyle(fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Future.delayed(const Duration(milliseconds: 300), () {
-                    _pickImageFromSource(ImageSource.gallery);
-                  });
-                },
-              ),
-
-              const SizedBox(height: 8),
-
-              // Camera Option
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt_outlined,
-                    color: ThemeConstants.primaryColor,
-                    size: 24,
-                  ),
-                ),
-                title: const Text(
-                  'Piga Picha Mpya',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'Tumia kamera kupiga picha mpya',
-                  style: TextStyle(fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Future.delayed(const Duration(milliseconds: 300), () {
-                    _pickImageFromSource(ImageSource.camera);
-                  });
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Cancel Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey[400]!),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text(
-                    'Ghairi',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickImageFromSource(ImageSource source) async {
-    try {
-      // Request permissions based on source
-      List<Permission> permissions = [];
-
-      if (source == ImageSource.camera) {
-        permissions.add(Permission.camera);
-      } else {
-        // For gallery, request storage permissions
-        permissions.add(Permission.storage);
-        permissions.add(Permission.photos);
-      }
-
-      // Request all permissions
-      Map<Permission, PermissionStatus> statuses = await permissions.request();
-
-      // Check if any permission is denied
-      bool hasDeniedPermission = statuses.values.any(
-        (status) => status.isDenied || status.isPermanentlyDenied,
-      );
-
-      if (hasDeniedPermission) {
-        String permissionName =
-            source == ImageSource.camera ? 'kamera' : 'hifadhi';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Ruhusa ya $permissionName inahitajika. Fungua mipangilio na ruhusu ruhusa.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Mipangilio',
-              onPressed: () => openAppSettings(),
-            ),
-          ),
-        );
-        return;
-      }
-
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(child: CircularProgressIndicator());
-        },
-      );
-
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 1800,
-        maxHeight: 1800,
-        imageQuality: 85,
-      );
-
-      // Hide loading indicator
-      Navigator.of(context).pop();
-
-      if (image != null && mounted) {
-        setState(() {
-          _selectedImage = File(image.path);
-          _hasImage = true;
-        });
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              source == ImageSource.camera
-                  ? 'Picha imepigwa kikamilifu!'
-                  : 'Picha imechaguliwa kikamilifu!',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      // Hide loading indicator if it's still showing
-      if (Navigator.canPop(context)) {
-        Navigator.of(context).pop();
-      }
-
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${context.tr('error')}: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-
-      print('Image picker error: $e');
-    }
-  }
-
-  void _removeImage() {
-    setState(() {
-      _selectedImage = null;
-      _hasImage = false;
-    });
-  }
+  // Image picker methods removed - using ImageUploadWidget instead
 
   void _addRequirement() {
     if (_requirementsController.text.trim().isNotEmpty) {
@@ -433,13 +209,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     });
   }
 
-  String _getCategoryDisplayName(String categoryValue) {
-    final category = _categories.firstWhere(
-      (cat) => cat['value'] == categoryValue,
-      orElse: () => {'value': 'nyingine', 'label': 'Nyingine'},
-    );
-    return category['label'] ?? 'Nyingine';
-  }
+
 
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
@@ -558,7 +328,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         }
       } else {
         // Create new job
-        final jobId = await _jobService.createJob(
+        await _jobService.createJob(
           providerId: 'provider_123', // TODO: Get actual provider ID
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -809,10 +579,26 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       Icons.work_outline,
                       color: ThemeConstants.primaryColor,
                     ),
+                    counterText: '${_titleController.text.length}/50',
+                    counterStyle: TextStyle(
+                      color:
+                          _titleController.text.length > 45
+                              ? Colors.red
+                              : Colors.grey[600],
+                      fontSize: 12,
+                    ),
                   ),
+                  maxLength: 50,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a job title';
+                    }
+                    if (value.length < 3) {
+                      return 'Job title must be at least 3 characters';
+                    }
+                    if (value.length > 50) {
+                      return 'Job title must be 50 characters or less';
                     }
                     return null;
                   },
@@ -1054,151 +840,36 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child:
-                          _hasImage
-                              ? Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.asset(
-                                      _getCategoryImage(_selectedCategory),
-                                      width: double.infinity,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: _removeImage,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                              : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Template preview based on category
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      color: ThemeConstants.primaryColor
-                                          .withOpacity(0.1),
-                                    ),
-                                    child: JobImagePlaceholders.getJobImage(
-                                      null,
-                                      _getCategoryDisplayName(
-                                        _selectedCategory,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    context.tr('add_job_image'),
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    context.tr('image_optional_desc'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Add Image Button
-                    if (!_hasImage)
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _pickImage,
-                          icon: const Icon(Icons.add_photo_alternate_outlined),
-                          label: Text(context.tr('add_image')),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: ThemeConstants.primaryColor,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-
-                    // Display Selected Image
-                    if (_hasImage && _selectedImage != null)
-                      Container(
+                      child: ImageUploadWidget(
+                        folder: 'job_images',
+                        currentImageUrl: _jobImageUrl,
+                        onImageUploaded: (imageUrl) {
+                          setState(() {
+                            _jobImageUrl = imageUrl;
+                            _hasImage = true;
+                          });
+                        },
+                        onImageDeleted: () {
+                          setState(() {
+                            _jobImageUrl = null;
+                            _hasImage = false;
+                          });
+                        },
                         width: double.infinity,
                         height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                _selectedImage!,
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: IconButton(
-                                  onPressed: _removeImage,
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        label: context.tr('add_job_image'),
+                        showDeleteButton: true,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.tr('image_optional_desc'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ],
                 ),
               ),

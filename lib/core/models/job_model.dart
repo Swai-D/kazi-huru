@@ -1,23 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-enum JobStatus {
-  active,
-  paused,
-  completed,
-  cancelled,
-}
+enum JobStatus { active, paused, completed, cancelled }
 
-enum PaymentType {
-  per_job,
-  per_hour,
-  per_day,
-}
+enum PaymentType { per_job, per_hour, per_day }
 
-enum ContactPreference {
-  in_app,
-  phone,
-}
+enum ContactPreference { in_app, phone }
 
 class JobModel {
   final String id;
@@ -67,24 +55,35 @@ class JobModel {
   });
 
   factory JobModel.fromMap(Map<String, dynamic> map, String documentId) {
+    // Handle both old and new field names for backward compatibility
+    final providerId = map['jobProviderId'] ?? map['providerId'] ?? '';
+    print('JobModel.fromMap: providerId = $providerId for job $documentId');
+
     return JobModel(
       id: documentId,
-      providerId: map['jobProviderId'] ?? map['providerId'] ?? '',
+      providerId: providerId,
       title: map['title'] ?? '',
       description: map['description'] ?? '',
       category: map['category'] ?? '',
       location: map['location'] ?? '',
-      minPayment: (map['salary'] ?? map['minPayment'] ?? map['payment'] ?? 0).toDouble(),
-      maxPayment: (map['salary'] ?? map['maxPayment'] ?? map['payment'] ?? 0).toDouble(),
+      minPayment:
+          (map['salary'] ?? map['minPayment'] ?? map['payment'] ?? 0)
+              .toDouble(),
+      maxPayment:
+          (map['salary'] ?? map['maxPayment'] ?? map['payment'] ?? 0)
+              .toDouble(),
       paymentType: PaymentType.values.firstWhere(
-        (e) => e.toString() == 'PaymentType.${map['salaryType'] ?? map['paymentType']}',
+        (e) =>
+            e.toString() ==
+            'PaymentType.${map['salaryType'] ?? map['paymentType']}',
         orElse: () => PaymentType.per_job,
       ),
       duration: map['duration'] ?? '',
       workersNeeded: map['workersNeeded'] ?? 1,
-      requirements: map['requirements'] is List 
-        ? (map['requirements'] as List).join(', ')
-        : (map['requirements'] ?? ''),
+      requirements:
+          map['requirements'] is List
+              ? (map['requirements'] as List).join(', ')
+              : (map['requirements'] ?? ''),
       contactPreference: ContactPreference.values.firstWhere(
         (e) => e.toString() == 'ContactPreference.${map['contactPreference']}',
         orElse: () => ContactPreference.in_app,
@@ -94,7 +93,9 @@ class JobModel {
         hour: map['startTimeHour'] ?? 0,
         minute: map['startTimeMinute'] ?? 0,
       ),
-      deadline: (map['deadline'] as Timestamp?)?.toDate() ?? DateTime.now().add(const Duration(days: 1)),
+      deadline:
+          (map['deadline'] as Timestamp?)?.toDate() ??
+          DateTime.now().add(const Duration(days: 1)),
       imageUrl: map['imageUrl'],
       status: JobStatus.values.firstWhere(
         (e) => e.toString() == 'JobStatus.${map['status']}',
@@ -108,7 +109,8 @@ class JobModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'providerId': providerId,
+      'jobProviderId':
+          providerId, // Changed from 'providerId' to 'jobProviderId'
       'title': title,
       'description': description,
       'category': category,
@@ -235,11 +237,18 @@ class JobModel {
     }
   }
 
+  String _formatNumber(double number) {
+    return number.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match match) => '${match[1]},',
+    );
+  }
+
   String get formattedPayment {
     if (minPayment == maxPayment) {
-      return 'TZS ${minPayment.toStringAsFixed(0)}';
+      return 'TZS ${_formatNumber(minPayment)}';
     }
-    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+    return 'TZS ${_formatNumber(minPayment)} - ${_formatNumber(maxPayment)}';
   }
 
   bool get isSalaryRange => minPayment != maxPayment;
@@ -248,9 +257,9 @@ class JobModel {
 
   String get salaryRangeDisplay {
     if (minPayment == maxPayment) {
-      return 'TZS ${minPayment.toStringAsFixed(0)}';
+      return 'TZS ${_formatNumber(minPayment)}';
     }
-    return 'TZS ${minPayment.toStringAsFixed(0)} - ${maxPayment.toStringAsFixed(0)}';
+    return 'TZS ${_formatNumber(minPayment)} - ${_formatNumber(maxPayment)}';
   }
 
   String get negotiationHint {
